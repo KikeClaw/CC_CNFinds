@@ -1,0 +1,21 @@
+# dependencias
+node_modules/
+
+# base de datos generada (se regenera con `npm run import` + `npm run enrich`)
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# secretos / entorno
+.env
+.env.*
+
+# temporales / logs
+*.log
+tmp/
+scratchpad/
+
+# OS
+.DS_Store
+Thumbs.db

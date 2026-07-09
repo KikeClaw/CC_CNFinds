@@ -1,0 +1,19 @@
+{
+  "name": "w2c-catalog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Importador de catalogo W2C: Google Sheet -> normaliza -> dedup -> genera links de afiliado propios -> SQLite",
+  "scripts": {
+    "import": "node --no-warnings src/importer.js",
+    "enrich": "node --no-warnings src/enrich.js",
+    "serve": "node --no-warnings src/server.js",
+    "ai:tag": "node --no-warnings src/ai-tag.js",
+    "ai:content": "node --no-warnings src/ai-content.js",
+    "ai:qc": "node --no-warnings src/ai-qc.js",
+    "query": "node --no-warnings src/query.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
