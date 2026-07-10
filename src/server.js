@@ -278,6 +278,17 @@ function baseUrl(req) {
   return `${proto}://${req.headers.host || "localhost:" + PORT}`;
 }
 
+// Idioma para SSR: ?lang=  ->  cookie cnf_lang  ->  Accept-Language  (por defecto es)
+function reqLang(req) {
+  try {
+    const q = new URL(req.url, "http://x").searchParams.get("lang");
+    if (q === "en" || q === "es") return q;
+  } catch {}
+  const c = String(req.headers.cookie || "").match(/(?:^|;\s*)cnf_lang=(en|es)/);
+  if (c) return c[1];
+  return String(req.headers["accept-language"] || "").toLowerCase().startsWith("en") ? "en" : "es";
+}
+
 function getProductById(id) {
   const r = db.prepare("SELECT * FROM products WHERE id=?").get(id);
   if (!r) return null;
@@ -300,7 +311,7 @@ function relatedProducts(p) {
 function handleProductPage(req, res, id) {
   const p = getProductById(id);
   if (!p) return html(res, "<h1>404 — producto no encontrado</h1>", 404);
-  html(res, productPage(p, relatedProducts(p), baseUrl(req)));
+  html(res, productPage(p, relatedProducts(p), baseUrl(req), reqLang(req)));
 }
 function handleListPage(req, res, kind, name) {
   const col = kind === "marca" ? "brand" : "category";
@@ -311,7 +322,9 @@ function handleListPage(req, res, kind, name) {
   const topLinks = kind === "marca"
     ? db.prepare("SELECT DISTINCT category c FROM products WHERE brand=? AND category IS NOT NULL").all(name).map((x) => ({ href: `/categoria/${encodeURIComponent(x.c)}`, label: x.c }))
     : db.prepare("SELECT brand b FROM products WHERE category=? AND brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 10").all(name).map((x) => ({ href: `/marca/${encodeURIComponent(x.b)}`, label: x.b }));
-  html(res, listPage({ kind, name, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/", label: "Inicio" }] }));
+  const lang = reqLang(req);
+  const lp = lang === "en" ? "?lang=en" : "";
+  html(res, listPage({ kind, name, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/" + lp, label: lang === "en" ? "Home" : "Inicio" }], lang }));
 }
 function handleSitemap(req, res) {
   const ids = db.prepare("SELECT id FROM products").all().map((r) => r.id);
@@ -539,8 +552,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }
     if (u.pathname === "/sitemap.xml") return handleSitemap(req, res);
     const parts = u.pathname.split("/").filter(Boolean);
-    if (u.pathname === "/guias") return html(res, guidesIndexPage(GUIDES, baseUrl(req)));
-    if (parts[0] === "guia" && parts[1]) { const g = guideBySlug(decodeURIComponent(parts[1])); return g ? html(res, articlePage(g, baseUrl(req))) : html(res, "<h1>404</h1>", 404); }
+    if (u.pathname === "/guias") return html(res, guidesIndexPage(GUIDES, baseUrl(req), reqLang(req)));
+    if (parts[0] === "guia" && parts[1]) { const g = guideBySlug(decodeURIComponent(parts[1])); return g ? html(res, articlePage(g, baseUrl(req), reqLang(req))) : html(res, "<h1>404</h1>", 404); }
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));

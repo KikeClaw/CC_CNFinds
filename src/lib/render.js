@@ -9,6 +9,34 @@ const eur = (p) => (p == null ? "—" : "€" + Number(p).toFixed(2));
 const th = (u, w = 500, h = 500) => (u ? `${u}.webp?w=${w}&h=${h}&cp=1` : "");
 export const slug = (s) => encodeURIComponent(String(s));
 
+const L = {
+  es: {
+    tagline: "Catálogo W2C · fotos QC · precios de fábrica",
+    footer_legal: "CNFinds es un recurso informativo independiente: no vende productos ni gestiona pagos. Todas las compras se realizan a través de agentes de terceros. © 2026 CNFinds.",
+    home: "Inicio", guides: "Guías", guide: "Guía",
+    choose_agent: "Elige tu agente de compra",
+    note: "Precio orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.",
+    related: "También te puede gustar", products: "productos", of: " de ",
+    guias_h: "Guías W2C", guias_title: "Guías W2C — cómo comprar, agentes y fotos QC | CNFinds",
+    guias_desc: "Guías para comprar productos W2C con confianza: cómo usar un agente de compras, elegir el mejor y revisar las fotos QC.",
+    ld_more: "productos W2C", ld_desc: (l, n) => `Descubre ${l} en CNFinds: ${n}+ productos con fotos QC y precios de fábrica, listos para comprar vía agente (Kakobuy, Mulebuy, OOPBuy).`,
+    p_desc: (n, b, price) => `${n}${b ? " de " + b : ""}, ${price}. Compra vía agente (Kakobuy, Mulebuy, OOPBuy) con CNFinds.`,
+  },
+  en: {
+    tagline: "W2C catalog · QC photos · factory prices",
+    footer_legal: "CNFinds is an independent informational resource: it does not sell products or handle payments. All purchases are made through third-party agents. © 2026 CNFinds.",
+    home: "Home", guides: "Guides", guide: "Guide",
+    choose_agent: "Choose your shopping agent",
+    note: "Indicative price (factory). Final cost includes the international shipping handled by the agent. CNFinds does not sell or process payments.",
+    related: "You might also like", products: "products", of: " by ",
+    guias_h: "W2C Guides", guias_title: "W2C Guides — how to buy, agents and QC photos | CNFinds",
+    guias_desc: "Guides to buy W2C products with confidence: how to use a shopping agent, choose the best one and review QC photos.",
+    ld_more: "W2C products", ld_desc: (l, n) => `Discover ${l} on CNFinds: ${n}+ products with QC photos and factory prices, ready to buy via agent (Kakobuy, Mulebuy, OOPBuy).`,
+    p_desc: (n, b, price) => `${n}${b ? " by " + b : ""}, ${price}. Buy via agent (Kakobuy, Mulebuy, OOPBuy) with CNFinds.`,
+  },
+};
+const tr = (lang, k) => (L[lang] && L[lang][k] != null ? L[lang][k] : L.es[k]);
+
 const CSS = `
 :root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.09);--brand:#ff4d2e;--hot:#ff2d55;--radius:20px;
 --fd:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--ft:"Geist",-apple-system,system-ui,sans-serif}
@@ -62,12 +90,16 @@ footer .t{color:var(--muted);font-size:12px;line-height:1.6}
 .guide .tip{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--muted)}
 `;
 
-function head({ title, desc, canonical, image, jsonld }) {
+function head({ title, desc, canonical, image, jsonld, lang = "es" }) {
+  const enUrl = canonical + (canonical.includes("?") ? "&" : "?") + "lang=en";
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(canonical)}">
-<meta property="og:type" content="website"><meta property="og:title" content="${esc(title)}">
+<link rel="alternate" hreflang="es" href="${esc(canonical)}">
+<link rel="alternate" hreflang="en" href="${esc(enUrl)}">
+<link rel="alternate" hreflang="x-default" href="${esc(canonical)}">
+<meta property="og:type" content="website"><meta property="og:locale" content="${lang === "en" ? "en_US" : "es_ES"}"><meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(canonical)}">
 ${image ? `<meta property="og:image" content="${esc(image)}"><meta name="twitter:card" content="summary_large_image">` : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,31 +108,33 @@ ${image ? `<meta property="og:image" content="${esc(image)}"><meta name="twitter
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}`;
 }
 
-const shellHeader = `<header><div class="wrap nav">
+const shellHeader = (lang) => `<header><div class="wrap nav">
 <a class="brand" href="/"><span class="m"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg></span><span><b>CN</b>Finds</span></a>
-<span class="sp">Catálogo W2C · fotos QC · precios de fábrica</span></div></header>`;
+<span class="sp">${esc(tr(lang, "tagline"))}</span></div></header>`;
 
-const shellFooter = (crumbs) => `<footer><div class="wrap">
+const shellFooter = (crumbs, lang) => `<footer><div class="wrap">
 <div class="chips">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join("")}</div>
-<p class="t">CNFinds es un recurso informativo independiente: no vende productos ni gestiona pagos. Todas las compras se realizan a través de agentes de terceros. © 2026 CNFinds.</p>
+<p class="t">${esc(tr(lang, "footer_legal"))}</p>
 </div></footer>`;
 
 function doc(meta, body, crumbs = []) {
-  return `<!doctype html><html lang="es"><head>${head(meta)}</head><body>${shellHeader}<main class="wrap">${body}</main>${shellFooter(crumbs)}</body></html>`;
+  const lang = meta.lang || "es";
+  return `<!doctype html><html lang="${lang}"><head>${head(meta)}</head><body>${shellHeader(lang)}<main class="wrap">${body}</main>${shellFooter(crumbs, lang)}</body></html>`;
 }
 
-function cardHtml(p) {
-  return `<a class="card" href="/producto/${p.id}">
+function cardHtml(p, lp = "") {
+  return `<a class="card" href="/producto/${p.id}${lp}">
 <div class="ph">${p.image ? `<img loading="lazy" src="${th(p.image)}" alt="${esc(p.name)}">` : ""}</div>
 <div class="b"><div class="cb">${esc(p.brand || "")}</div><div class="cn">${esc(p.name)}</div><div class="cp">${eur(p.price_eur)}</div></div></a>`;
 }
 
 // --- Ficha de producto ---
-export function productPage(p, related, base) {
+export function productPage(p, related, base, lang = "es") {
+  const lp = lang === "en" ? "?lang=en" : "";
   const canonical = `${base}/producto/${p.id}`;
   const imgs = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
   const title = `${p.name}${p.brand ? " — " + p.brand : ""} | CNFinds`;
-  const desc = (p.ai_description ? p.ai_description.replace(/\s+/g, " ") : `${p.name}${p.brand ? " de " + p.brand : ""}, ${eur(p.price_eur)}. Compra vía agente (Kakobuy, Mulebuy, OOPBuy) con CNFinds.`).slice(0, 160);
+  const desc = (p.ai_description ? p.ai_description.replace(/\s+/g, " ") : tr(lang, "p_desc")(p.name, p.brand, eur(p.price_eur))).slice(0, 160);
   const jsonld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name,
     image: imgs.slice(0, 5).map((u) => th(u, 800, 800)), category: p.category || undefined,
@@ -111,9 +145,9 @@ export function productPage(p, related, base) {
   };
   const agents = Object.entries(p.links).map(([k, l]) =>
     `<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</a>`).join("");
-  const crumbs = [{ href: "/", label: "Inicio" }];
-  if (p.category) crumbs.push({ href: `/categoria/${slug(p.category)}`, label: p.category });
-  if (p.brand) crumbs.push({ href: `/marca/${slug(p.brand)}`, label: p.brand });
+  const crumbs = [{ href: "/" + lp, label: tr(lang, "home") }];
+  if (p.category) crumbs.push({ href: `/categoria/${slug(p.category)}${lp}`, label: p.category });
+  if (p.brand) crumbs.push({ href: `/marca/${slug(p.brand)}${lp}`, label: p.brand });
 
   const body = `
 <div class="crumb">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join(" › ")} › ${esc(p.name)}</div>
@@ -123,57 +157,65 @@ export function productPage(p, related, base) {
     ${imgs.length > 1 ? `<div class="ts">${imgs.slice(0, 8).map((u) => `<img loading="lazy" src="${th(u, 120, 120)}" alt="">`).join("")}</div>` : ""}
   </div>
   <div>
-    ${p.brand ? `<div class="pbrand"><a href="/marca/${slug(p.brand)}">${esc(p.brand)}</a></div>` : ""}
+    ${p.brand ? `<div class="pbrand"><a href="/marca/${slug(p.brand)}${lp}">${esc(p.brand)}</a></div>` : ""}
     <h1>${esc(p.name)}</h1>
     ${p.qc_score ? `<div class="qc">★ QC ${p.qc_score}/10${p.qc_summary ? " · " + esc(p.qc_summary) : ""}</div>` : ""}
     <div class="price">${eur(p.price_eur)}</div>
     ${p.ai_description ? `<div class="desc">${esc(p.ai_description)}</div>` : ""}
-    <div class="at">Elige tu agente de compra</div>
+    <div class="at">${esc(tr(lang, "choose_agent"))}</div>
     <div class="agents">${agents}</div>
-    <p class="note">Precio orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.</p>
+    <p class="note">${esc(tr(lang, "note"))}</p>
   </div>
 </div>
-${related.length ? `<section><h2 class="h2">También te puede gustar</h2><div class="grid">${related.map(cardHtml).join("")}</div></section>` : ""}`;
-  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld }, body, crumbs);
+${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}</h2><div class="grid">${related.map((r) => cardHtml(r, lp)).join("")}</div></section>` : ""}`;
+  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld, lang }, body, crumbs);
 }
 
 // --- Landing de listado (categoria / marca) ---
-export function listPage({ kind, name, items, base, crumbs, topLinks }) {
+export function listPage({ kind, name, items, base, crumbs, topLinks, lang = "es" }) {
+  const lp = lang === "en" ? "?lang=en" : "";
   const path = `${base}/${kind}/${slug(name)}`;
   const label = kind === "marca" ? name : name;
-  const title = `${label} — ${items.length}+ productos W2C | CNFinds`;
-  const desc = `Descubre ${label} en CNFinds: ${items.length}+ productos con fotos QC y precios de fábrica, listos para comprar vía agente (Kakobuy, Mulebuy, OOPBuy).`;
+  const title = `${label} — ${items.length}+ ${tr(lang, "ld_more")} | CNFinds`;
+  const desc = tr(lang, "ld_desc")(label, items.length);
   const jsonld = {
     "@context": "https://schema.org", "@type": "ItemList",
     itemListElement: items.slice(0, 20).map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${base}/producto/${p.id}`, name: p.name })),
   };
   const body = `
-<div class="crumb"><a href="/">Inicio</a> › ${esc(label)}</div>
-<section><h2 class="h2" style="font-size:28px">${esc(label)} <span style="color:var(--muted);font-weight:500;font-size:16px">· ${items.length} productos</span></h2>
-${topLinks && topLinks.length ? `<div class="chips" style="margin-bottom:18px">${topLinks.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join("")}</div>` : ""}
-<div class="grid">${items.map(cardHtml).join("")}</div></section>`;
-  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld }, body, crumbs || []);
+<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(label)}</div>
+<section><h2 class="h2" style="font-size:28px">${esc(label)} <span style="color:var(--muted);font-weight:500;font-size:16px">· ${items.length} ${esc(tr(lang, "products"))}</span></h2>
+${topLinks && topLinks.length ? `<div class="chips" style="margin-bottom:18px">${topLinks.map((c) => `<a href="${c.href}${lp}">${esc(c.label)}</a>`).join("")}</div>` : ""}
+<div class="grid">${items.map((r) => cardHtml(r, lp)).join("")}</div></section>`;
+  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld, lang }, body, crumbs || []);
 }
 
 // --- Guías (contenido / SEO) ---
-export function articlePage(guide, base) {
+const gTitle = (g, lang) => (lang === "en" && g.title_en ? g.title_en : g.title);
+const gDesc = (g, lang) => (lang === "en" && g.desc_en ? g.desc_en : g.desc);
+const gBody = (g, lang) => (lang === "en" && g.body_en ? g.body_en : g.body);
+
+export function articlePage(guide, base, lang = "es") {
+  const lp = lang === "en" ? "?lang=en" : "";
   const canonical = `${base}/guia/${guide.slug}`;
-  const jsonld = { "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.desc, mainEntityOfPage: canonical };
+  const title = gTitle(guide, lang);
+  const jsonld = { "@context": "https://schema.org", "@type": "Article", headline: title, description: gDesc(guide, lang), mainEntityOfPage: canonical, inLanguage: lang };
   const body = `
-<div class="crumb"><a href="/">Inicio</a> › <a href="/guias">Guías</a> › ${esc(guide.title)}</div>
-<article class="guide"><h1>${esc(guide.title)}</h1>${guide.body}</article>`;
-  return doc({ title: `${guide.title} | CNFinds`, desc: guide.desc, canonical, jsonld }, body, [{ href: "/guias", label: "Guías" }, { href: "/", label: "Inicio" }]);
+<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › <a href="/guias${lp}">${esc(tr(lang, "guides"))}</a> › ${esc(title)}</div>
+<article class="guide"><h1>${esc(title)}</h1>${gBody(guide, lang)}</article>`;
+  return doc({ title: `${title} | CNFinds`, desc: gDesc(guide, lang), canonical, jsonld, lang }, body, [{ href: "/guias" + lp, label: tr(lang, "guides") }, { href: "/" + lp, label: tr(lang, "home") }]);
 }
 
-export function guidesIndexPage(guides, base) {
+export function guidesIndexPage(guides, base, lang = "es") {
+  const lp = lang === "en" ? "?lang=en" : "";
   const canonical = `${base}/guias`;
-  const cards = guides.map((g) => `<a class="card" href="/guia/${g.slug}" style="padding:20px">
-    <div style="color:var(--brand);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em">Guía</div>
-    <div style="font-weight:600;font-size:16px;margin:6px 0;letter-spacing:-.02em">${esc(g.title)}</div>
-    <div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(g.desc)}</div></a>`).join("");
-  const body = `<div class="crumb"><a href="/">Inicio</a> › Guías</div>
-<section><h2 class="h2" style="font-size:28px">Guías W2C</h2><div class="grid">${cards}</div></section>`;
-  return doc({ title: "Guías W2C — cómo comprar, agentes y fotos QC | CNFinds", desc: "Guías para comprar productos W2C con confianza: cómo usar un agente de compras, elegir el mejor y revisar las fotos QC.", canonical }, body, [{ href: "/", label: "Inicio" }]);
+  const cards = guides.map((g) => `<a class="card" href="/guia/${g.slug}${lp}" style="padding:20px">
+    <div style="color:var(--brand);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em">${esc(tr(lang, "guide"))}</div>
+    <div style="font-weight:600;font-size:16px;margin:6px 0;letter-spacing:-.02em">${esc(gTitle(g, lang))}</div>
+    <div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(gDesc(g, lang))}</div></a>`).join("");
+  const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(tr(lang, "guides"))}</div>
+<section><h2 class="h2" style="font-size:28px">${esc(tr(lang, "guias_h"))}</h2><div class="grid">${cards}</div></section>`;
+  return doc({ title: tr(lang, "guias_title"), desc: tr(lang, "guias_desc"), canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
 }
 
 // --- Sitemap ---
