@@ -156,8 +156,9 @@ comando de arranque `npm start`, y **disco persistente** para `data/`. Define
 
 1. **New Project → Deploy from GitHub repo** → elige `KikeClaw/CC_CNFinds`.
    Railway detecta el `Dockerfile` y construye solo.
-2. **Volumen persistente** (imprescindible para el SQLite): en el servicio →
-   *Settings → Volumes → New Volume*, **Mount path `/data`**.
+2. **Volumen persistente** (imprescindible para el SQLite): en el **lienzo del
+   proyecto**, **clic derecho sobre la tarjeta del servicio → Attach Volume**
+   (o paleta de comandos ⌘K/Ctrl+K → "volume"). **Mount path: `/data`**.
 3. **Variables** (*Variables*):
    - `DB_PATH=/data/catalog.db`  ← dentro del volumen
    - `ANTHROPIC_API_KEY=…`  (funciones IA)
