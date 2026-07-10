@@ -126,6 +126,10 @@ Panel para añadir contenido al catálogo desde **cualquier fuente**, con **tus 
 - Previsualiza (nuevos vs existentes) antes de aplicar.
 - Protegido con `ADMIN_TOKEN` (por defecto `cnfinds-admin` — **cámbialo**).
 
+**Gestor de afiliación** (misma página): rellena tu código por agente y actívalo
+según te registres. Se guarda en la DB (`agent_settings`) y **solo los agentes
+activos con código real** aparecen en la web y generan tu comisión.
+
 Tras importar, lanza `npm run enrich` (fotos) y `npm run ai:tag` (limpieza IA).
 
 ## Deploy

@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { openDb } from "./lib/db.js";
-import { buildLinks, originalUrl } from "../config/agents.js";
+import { buildLinks, originalUrl, getAgentState, setAgentState } from "../config/agents.js";
 import { parseAnyUrl } from "./lib/parse.js";
 import { hasKey } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
@@ -31,6 +31,12 @@ const DB_PATH = process.env.DB_PATH || "data/catalog.db";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "cnfinds-admin"; // ⚠️ cámbialo en producción
 
 const db = openDb(DB_PATH);
+
+// Aplica los códigos/estado de afiliado persistidos en la DB.
+try {
+  for (const r of db.prepare("SELECT id, code, enabled FROM agent_settings").all())
+    setAgentState(r.id, { code: r.code || undefined, enabled: !!r.enabled });
+} catch {}
 
 // Miniatura optimizada servida por el CDN de Weidian (webp + resize al vuelo).
 function thumb(url, w = 500, h = 500) {
@@ -226,6 +232,22 @@ async function handleVisualSearch(req, res) {
   }
 }
 
+// ---- Admin: gestor de afiliación por agente ----
+function handleAdminAgentsGet(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  json(res, 200, { ok: true, agents: getAgentState() });
+}
+async function handleAdminAgentsSet(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  if (!setAgentState(body.id, { code: body.code, enabled: body.enabled }))
+    return json(res, 200, { ok: false, error: "Agente desconocido." });
+  const cur = getAgentState().find((a) => a.id === body.id);
+  db.prepare("INSERT INTO agent_settings(id,code,enabled) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET code=excluded.code, enabled=excluded.enabled")
+    .run(body.id, cur.code || null, cur.enabled ? 1 : 0);
+  json(res, 200, { ok: true, agents: getAgentState() });
+}
+
 // ---- Paginas SSR indexables (SEO) ----
 function html(res, body, code = 200) { res.writeHead(code, { "Content-Type": "text/html; charset=utf-8" }); res.end(body); }
 function baseUrl(req) { return process.env.SITE_URL || `http://${req.headers.host || "localhost:" + PORT}`; }
@@ -337,6 +359,8 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
+    if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
+    if (u.pathname === "/api/admin/agents" && req.method === "POST") return void handleAdminAgentsSet(req, res);
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);

@@ -65,6 +65,13 @@
   </div>
 
   <div id="out"></div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Agentes y afiliación</h2>
+    <p class="hint" style="margin-bottom:14px">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
+    <button class="ghost" id="loadAgents">Cargar agentes</button>
+    <div id="agents"></div>
+  </div>
 </div>
 
 <script>
@@ -106,6 +113,33 @@ $("#apply").onclick=async()=>{
   if(!d.ok){ $("#out").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`); return; }
   $("#out").insertAdjacentHTML("beforeend",`<p class="msg" style="color:var(--ok)">✓ ${d.added} añadidos · ${d.updated} actualizados · catálogo: ${d.total} productos.</p>`);
 };
+
+/* Gestor de agentes / afiliación */
+async function loadAgents(){
+  const r=await fetch("/api/admin/agents",{headers:{"x-admin-token":$("#token").value}});
+  const d=await r.json();
+  if(!d.ok){ $("#agents").innerHTML=`<p class="msg err">${d.error||"Error"}</p>`; return; }
+  renderAgents(d.agents);
+}
+function renderAgents(agents){
+  $("#agents").innerHTML=`<table style="margin-top:14px"><thead><tr><th>Agente</th><th>Código de afiliado</th><th style="text-align:center">Activo</th><th></th></tr></thead><tbody>${agents.map(a=>`
+    <tr data-id="${a.id}">
+      <td><b>${a.name}</b></td>
+      <td><input class="ac-code" value="${a.configured?a.code:''}" placeholder="tu código" style="padding:7px 10px"></td>
+      <td style="text-align:center"><input type="checkbox" class="ac-en" ${a.enabled?'checked':''}></td>
+      <td><button class="primary ac-save" style="padding:7px 14px">Guardar</button></td>
+    </tr>`).join("")}</tbody></table>
+    <p class="hint">Kakobuy ya tiene tu código. Rellena Mulebuy/OOPBuy cuando te registres y márcalos "Activo".</p>`;
+  $("#agents").querySelectorAll(".ac-save").forEach(b=>b.onclick=async()=>{
+    const tr=b.closest("tr"), id=tr.dataset.id;
+    const code=tr.querySelector(".ac-code").value.trim(), enabled=tr.querySelector(".ac-en").checked;
+    b.disabled=true; b.textContent="…";
+    const r=await fetch("/api/admin/agents",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id,code,enabled})});
+    const d=await r.json(); b.disabled=false; b.textContent="Guardar";
+    if(d.ok) renderAgents(d.agents); else $("#agents").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`);
+  });
+}
+$("#loadAgents").onclick=loadAgents;
 </script>
 </body>
 </html>

@@ -89,14 +89,35 @@ export const AGENTS = [
 ];
 
 // Genera todos los links de afiliado para un producto.
+// Estado en runtime de cada agente (código + activado). Se inicializa desde
+// AFFILIATE_CODES; el admin lo edita y se persiste en la DB (agent_settings).
+// Un agente arranca activado solo si trae un código real (no placeholder).
+const STATE = {};
+for (const a of AGENTS) STATE[a.id] = { code: AFFILIATE_CODES[a.id], enabled: !isPlaceholder(AFFILIATE_CODES[a.id]) };
+
+export function getAgentState() {
+  return AGENTS.map((a) => ({
+    id: a.id, name: a.name, code: STATE[a.id].code || "",
+    enabled: STATE[a.id].enabled, configured: !isPlaceholder(STATE[a.id].code),
+  }));
+}
+
+export function setAgentState(id, { code, enabled } = {}) {
+  if (!STATE[id]) return false;
+  if (code !== undefined) STATE[id].code = code;
+  if (enabled !== undefined) STATE[id].enabled = !!enabled;
+  return true;
+}
+
 export function buildLinks(platform, itemId) {
   const out = {};
   for (const agent of AGENTS) {
-    const code = AFFILIATE_CODES[agent.id];
+    const st = STATE[agent.id];
+    if (!st.enabled) continue; // solo agentes activados y con código real
     out[agent.id] = {
       name: agent.name,
-      url: agent.buildUrl(platform, itemId, code),
-      configured: !isPlaceholder(code),
+      url: agent.buildUrl(platform, itemId, st.code || ""),
+      configured: !isPlaceholder(st.code),
     };
   }
   return out;

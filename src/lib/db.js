@@ -46,6 +46,8 @@ export function openDb(path) {
   for (const [name, type] of Object.entries(aiCols)) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);
   }
+  // Ajustes de afiliación por agente (editables desde /admin)
+  db.exec("CREATE TABLE IF NOT EXISTS agent_settings (id TEXT PRIMARY KEY, code TEXT, enabled INTEGER NOT NULL DEFAULT 1)");
   return db;
 }
 
