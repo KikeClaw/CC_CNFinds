@@ -19,7 +19,7 @@
 export const AFFILIATE_CODES = {
   cnfans:  process.env.CNFANS_REF  || "YOUR_CNFANS_CODE",
   mulebuy: process.env.MULEBUY_REF || "YOUR_MULEBUY_CODE",
-  kakobuy: process.env.KAKOBUY_REF || "YOUR_KAKOBUY_CODE",
+  kakobuy: process.env.KAKOBUY_REF || "4mqkq", // affcode de KikeClaw (invite: ikako.vip/r/4mqkq)
   oopbuy:  process.env.OOPBUY_REF  || "YOUR_OOPBUY_CODE",
 };
 
