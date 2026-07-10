@@ -23,6 +23,8 @@ import { discoverTabs, cleanCategory } from "./lib/tabs.js";
 import { rowsToCandidates, dedupe as dedupeCands, apply as applyCands, sheetIdFromUrl } from "./lib/ingest.js";
 import { harvestText } from "./lib/harvest.js";
 import { mapColumnsAI, candidatesFromMap } from "./lib/aimap.js";
+import { enrichProduct } from "./lib/enrich.js";
+import { tagOne } from "./lib/aitag.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, "..");
@@ -341,6 +343,52 @@ async function handleAdminPreview(req, res) {
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }
 }
 
+// --- Jobs en segundo plano (auto-encadenado: enriquecer fotos + etiquetar IA) ---
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+const jobs = new Map();
+let jobSeq = 0;
+
+function startEnrichTagJob(items) {
+  const id = "job_" + (++jobSeq);
+  const job = { id, total: items.length, done: 0, withImage: 0, dead: 0, failed: 0, tagged: 0, phase: "fotos", status: "running" };
+  jobs.set(id, job);
+  if (jobs.size > 40) jobs.delete(jobs.keys().next().value); // GC básico
+  (async () => {
+    for (const it of items) { // Fase 1: fotos (Weidian)
+      if (it.platform !== "weidian") { job.done++; continue; }
+      try {
+        const res = await enrichProduct(it.platform, it.item_id, {});
+        const now = new Date().toISOString();
+        if (res.ok && res.images.length) {
+          db.prepare("UPDATE products SET image_url=?, images=?, last_checked=? WHERE id=?")
+            .run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, it.id);
+          job.withImage++;
+        } else if (res.ok) { db.prepare("UPDATE products SET last_checked=? WHERE id=?").run(now, it.id); job.dead++; }
+        else job.failed++;
+      } catch { job.failed++; }
+      job.done++;
+      await sleepMs(1200);
+    }
+    if (hasKey()) { // Fase 2: etiquetado IA
+      job.phase = "etiquetado"; job.done = 0;
+      for (const it of items) {
+        try {
+          const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(it.id);
+          if (r) {
+            const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
+            db.prepare("UPDATE products SET clean_title=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
+              .run(out.clean_title, out.brand, out.model_name, out.colorway, out.gender, out.category, JSON.stringify(out.tags || []), it.id);
+            job.tagged++;
+          }
+        } catch {}
+        job.done++;
+      }
+    }
+    job.phase = "listo"; job.status = "done";
+  })().catch(() => { job.status = "error"; });
+  return id;
+}
+
 async function handleAdminApply(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
@@ -349,8 +397,24 @@ async function handleAdminApply(req, res) {
     const deduped = dedupeCands(db, cands);
     const src = `admin:${body.mode}:${(body.content || "").slice(0, 60)}`;
     const r = applyCands(db, deduped, src);
-    json(res, 200, { ok: true, ...r, total: db.prepare("SELECT COUNT(*) c FROM products").get().c });
+    // Auto-encadenar: enriquecer + etiquetar los NUEVOS (weidian, sin foto).
+    const getRow = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=? AND image_url IS NULL");
+    const toEnrich = [];
+    for (const c of deduped) {
+      if (c.status !== "new" || c.platform !== "weidian") continue;
+      const row = getRow.get(c.platform, c.itemId);
+      if (row) toEnrich.push({ id: row.id, platform: c.platform, item_id: c.itemId });
+    }
+    const jobId = toEnrich.length ? startEnrichTagJob(toEnrich) : null;
+    json(res, 200, { ok: true, ...r, total: db.prepare("SELECT COUNT(*) c FROM products").get().c, jobId, enriching: toEnrich.length });
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }
+}
+
+function handleAdminJob(req, res, id) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  const job = jobs.get(id);
+  if (!job) return json(res, 200, { ok: false, error: "Job no encontrado." });
+  json(res, 200, { ok: true, job });
 }
 
 const server = createServer((req, res) => {
@@ -361,6 +425,7 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "POST") return void handleAdminAgentsSet(req, res);
+    if (u.pathname === "/api/admin/job") return void handleAdminJob(req, res, u.searchParams.get("id"));
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);

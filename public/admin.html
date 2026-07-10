@@ -112,7 +112,29 @@ $("#apply").onclick=async()=>{
   $("#apply").disabled=false; $("#apply").textContent="Añadir al catálogo";
   if(!d.ok){ $("#out").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`); return; }
   $("#out").insertAdjacentHTML("beforeend",`<p class="msg" style="color:var(--ok)">✓ ${d.added} añadidos · ${d.updated} actualizados · catálogo: ${d.total} productos.</p>`);
+  if(d.jobId){
+    const line=document.createElement("p"); line.className="msg";
+    line.textContent=`⏳ Enriqueciendo fotos de ${d.enriching} productos nuevos… (en segundo plano)`;
+    $("#out").appendChild(line);
+    pollJob(d.jobId,line);
+  }
 };
+async function pollJob(id,line){
+  try{
+    const r=await fetch("/api/admin/job?id="+encodeURIComponent(id),{headers:{"x-admin-token":$("#token").value}});
+    const d=await r.json();
+    if(!d.ok){ line.textContent="(no pude leer el progreso del enriquecimiento)"; return; }
+    const j=d.job;
+    if(j.status==="running"){
+      const ph=j.phase==="etiquetado"?"Etiquetando con IA":"Enriqueciendo fotos";
+      line.textContent=`⏳ ${ph} ${j.done}/${j.total}…`;
+      setTimeout(()=>pollJob(id,line),2000);
+    } else {
+      line.style.color="var(--ok)";
+      line.textContent=`✓ Enriquecido: ${j.withImage} con foto · ${j.dead} caídos · ${j.tagged} etiquetados con IA.`;
+    }
+  }catch{ setTimeout(()=>pollJob(id,line),3000); }
+}
 
 /* Gestor de agentes / afiliación */
 async function loadAgents(){
