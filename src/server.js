@@ -461,21 +461,26 @@ const server = createServer((req, res) => {
 
 // Auto-siembra: si el catálogo está vacío (primer arranque en un volumen nuevo),
 // importa desde la Sheet y enriquece fotos en segundo plano. No bloquea el listen.
-async function seedIfEmpty() {
-  if (!SEED_SHEET_URL) return;
-  if (db.prepare("SELECT COUNT(*) c FROM products").get().c > 0) return;
-  console.log("Catálogo vacío — importando semilla...");
+async function bootstrap() {
   try {
-    const deduped = dedupeCands(db, await gatherCandidates("sheet", SEED_SHEET_URL));
-    const r = applyCands(db, deduped, "seed:boot");
-    console.log(`Semilla importada: ${r.added} productos.`);
-    const items = db.prepare("SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL")
-      .all().map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
-    if (items.length) { startEnrichTagJob(items, { tag: false }); console.log(`Enriqueciendo ${items.length} fotos en segundo plano...`); }
-  } catch (e) { console.error("Seed falló:", e.message); }
+    const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
+    if (count === 0 && SEED_SHEET_URL) { // primer arranque: siembra
+      console.log("Catálogo vacío — importando semilla...");
+      const deduped = dedupeCands(db, await gatherCandidates("sheet", SEED_SHEET_URL));
+      const r = applyCands(db, deduped, "seed:boot");
+      console.log(`Semilla importada: ${r.added} productos.`);
+    }
+    // Continúa fotos pendientes (self-healing tras reinicios); salta los caídos
+    // revisados hace menos de 7 días para no re-machacarlos.
+    const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();
+    const items = db.prepare(
+      "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND (last_checked IS NULL OR last_checked < ?)"
+    ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
+    if (items.length) { startEnrichTagJob(items, { tag: false }); console.log(`Enriqueciendo ${items.length} fotos pendientes en segundo plano...`); }
+  } catch (e) { console.error("Bootstrap falló:", e.message); }
 }
 
 server.listen(PORT, () => {
   console.log(`CNFinds en http://localhost:${PORT}`);
-  seedIfEmpty();
+  bootstrap();
 });
