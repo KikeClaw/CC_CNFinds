@@ -67,6 +67,13 @@
   <div id="out"></div>
 
   <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Etiquetado con IA</h2>
+    <p class="hint" style="margin-bottom:14px">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
+    <button class="primary" id="tagAll">Etiquetar catálogo con IA</button>
+    <div id="tagOut"></div>
+  </div>
+
+  <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Agentes y afiliación</h2>
     <p class="hint" style="margin-bottom:14px">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
     <button class="ghost" id="loadAgents">Cargar agentes</button>
@@ -131,10 +138,23 @@ async function pollJob(id,line){
       setTimeout(()=>pollJob(id,line),2000);
     } else {
       line.style.color="var(--ok)";
-      line.textContent=`✓ Enriquecido: ${j.withImage} con foto · ${j.dead} caídos · ${j.tagged} etiquetados con IA.`;
+      const parts=[]; if(j.withImage) parts.push(`${j.withImage} con foto`); if(j.dead) parts.push(`${j.dead} caídos`); if(j.tagged) parts.push(`${j.tagged} etiquetados`);
+      line.textContent="✓ Listo: "+(parts.join(" · ")||"nada que hacer");
     }
   }catch{ setTimeout(()=>pollJob(id,line),3000); }
 }
+
+/* Etiquetar todo el catálogo con IA */
+$("#tagAll").onclick=async()=>{
+  $("#tagAll").disabled=true; $("#tagAll").textContent="Lanzando…";
+  const r=await fetch("/api/admin/tag-all",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value}});
+  const d=await r.json(); $("#tagAll").disabled=false; $("#tagAll").textContent="Etiquetar catálogo con IA";
+  if(!d.ok){ $("#tagOut").innerHTML=`<p class="msg err">${d.error}</p>`; return; }
+  if(!d.jobId){ $("#tagOut").innerHTML=`<p class="msg" style="color:var(--ok)">Todo el catálogo ya está etiquetado ✓</p>`; return; }
+  const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ Etiquetando ${d.count} productos con IA… (en segundo plano)`;
+  $("#tagOut").innerHTML=""; $("#tagOut").appendChild(line);
+  pollJob(d.jobId,line);
+};
 
 /* Gestor de agentes / afiliación */
 async function loadAgents(){

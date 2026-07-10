@@ -256,6 +256,13 @@ async function handleAdminAgentsSet(req, res) {
 
 // ---- Paginas SSR indexables (SEO) ----
 function html(res, body, code = 200) { res.writeHead(code, { "Content-Type": "text/html; charset=utf-8" }); res.end(body); }
+function serveStatic(res, name, type) {
+  try {
+    const b = readFileSync(join(ROOT, "public", name));
+    res.writeHead(200, { "Content-Type": type, "Cache-Control": "public, max-age=86400" });
+    res.end(b);
+  } catch { res.writeHead(404); res.end("not found"); }
+}
 function baseUrl(req) {
   if (process.env.SITE_URL) return process.env.SITE_URL;
   const proto = String(req.headers["x-forwarded-proto"] || "http").split(",")[0].trim();
@@ -397,6 +404,37 @@ function startEnrichTagJob(items, opts = {}) {
   return id;
 }
 
+function startTagJob(ids) {
+  const id = "job_" + (++jobSeq);
+  const job = { id, total: ids.length, done: 0, tagged: 0, withImage: 0, dead: 0, phase: "etiquetado", status: "running" };
+  jobs.set(id, job);
+  if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+  (async () => {
+    for (const pid of ids) {
+      try {
+        const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(pid);
+        if (r) {
+          const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
+          db.prepare("UPDATE products SET clean_title=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
+            .run(out.clean_title, out.brand, out.model_name, out.colorway, out.gender, out.category, JSON.stringify(out.tags || []), pid);
+          job.tagged++;
+        }
+      } catch {}
+      job.done++;
+    }
+    job.phase = "listo"; job.status = "done";
+  })().catch(() => { job.status = "error"; });
+  return id;
+}
+
+async function handleAdminTagAll(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  const ids = db.prepare("SELECT id FROM products WHERE clean_title IS NULL").all().map((r) => r.id);
+  const jobId = ids.length ? startTagJob(ids) : null;
+  json(res, 200, { ok: true, count: ids.length, jobId });
+}
+
 async function handleAdminApply(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
@@ -434,7 +472,10 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "POST") return void handleAdminAgentsSet(req, res);
     if (u.pathname === "/api/admin/job") return void handleAdminJob(req, res, u.searchParams.get("id"));
+    if (req.method === "POST" && u.pathname === "/api/admin/tag-all") return void handleAdminTagAll(req, res);
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
+    if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
+    if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);
