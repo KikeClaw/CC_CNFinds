@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CNFinds — Descubre productos de calidad, con confianza</title>
+<title>CNFinds — Catálogo W2C con IA: busca, encuentra y compra con confianza</title>
+<meta name="description" content="CNFinds: catálogo W2C con fotos QC y precios de fábrica. Búsqueda por IA en lenguaje natural, búsqueda visual (sube una foto) y armador de outfits. Compra vía CNFans, Kakobuy, Mulebuy y OOPBuy." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="CNFinds — Catálogo W2C potenciado por IA" />
+<meta property="og:description" content="Busca en lenguaje natural, sube una foto para encontrar equivalentes y monta outfits con IA. Fotos QC, precios de fábrica." />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
@@ -199,6 +204,16 @@
   .agent .ag{ margin-left:auto; color:var(--muted); }
   .note{ margin-top:20px; font-size:12px; color:var(--muted); line-height:1.55; }
 
+  /* showcase IA */
+  .ia-grid{ display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); }
+  .ia-card{ text-align:left; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); padding:20px; display:flex; flex-direction:column; gap:10px; transition:.22s cubic-bezier(.2,.7,.3,1); cursor:pointer; font:inherit; color:inherit; }
+  .ia-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
+  .ia-card.static{ cursor:default; }
+  .ia-card .ii{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb,var(--cc,#8b5cf6) 14%,transparent); color:var(--cc,#8b5cf6); }
+  .ia-card .it{ font-weight:600; font-size:15px; letter-spacing:-.02em; }
+  .ia-card .id{ font-size:13px; color:var(--muted); line-height:1.45; }
+  .ia-card .ib{ font-size:11px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:.05em; margin-top:auto; display:inline-flex; align-items:center; gap:4px; }
+
   footer{ border-top:1px solid var(--line2); background:var(--soft); margin-top:24px; }
   .fgrid{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:34px; padding:52px 0 30px; }
   @media(max-width:760px){ .fgrid{ grid-template-columns:1fr 1fr; } }
@@ -251,7 +266,7 @@
 <div class="hero">
   <div class="hero-bg"></div>
   <div class="wrap hero-in">
-    <span class="eyebrow" id="eyebrow">Fotos QC reales · Precios de fábrica</span>
+    <span class="eyebrow" id="eyebrow">Potenciado por IA · Fotos QC reales · Precios de fábrica</span>
     <h1>Descubre productos de <span class="gr">calidad</span>, con confianza.</h1>
     <p class="sub">Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.</p>
     <div class="searchbox">
@@ -274,6 +289,16 @@
 </div>
 
 <main class="wrap">
+  <section id="ia">
+    <div class="head"><h2><span class="sq" id="hia"></span>Comprar con <span class="gr">superpoderes de IA</span></h2><span class="muted" style="font-size:13px">Lo que nos diferencia</span></div>
+    <div class="ia-grid">
+      <button class="ia-card" data-ia="nl" style="--cc:#2d7ff9"><div class="ii" id="ia1"></div><div class="it">Búsqueda en lenguaje natural</div><div class="id">"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.</div><span class="ib">Probar <span class="iba"></span></span></button>
+      <button class="ia-card" data-ia="vis" style="--cc:#8b5cf6"><div class="ii" id="ia2"></div><div class="it">Búsqueda visual «W2C this»</div><div class="id">Sube la foto de cualquier prenda y encuentra su equivalente al instante.</div><span class="ib">Subir foto <span class="iba"></span></span></button>
+      <button class="ia-card" data-ia="fit" style="--cc:#16a34a"><div class="ii" id="ia3"></div><div class="it">Armador de fits con IA</div><div class="id">Dinos tu presupuesto y montamos un outfit completo y coherente.</div><span class="ib">Armar <span class="iba"></span></span></button>
+      <div class="ia-card static" style="--cc:#f59e0b"><div class="ii" id="ia4"></div><div class="it">QC con IA + catálogo limpio</div><div class="id">Puntuación de calidad por visión y fichas normalizadas automáticamente.</div><span class="ib" style="color:var(--muted)">Bajo el capó</span></div>
+    </div>
+  </section>
+
   <section id="convertidor">
     <div class="head"><h2><span class="sq" id="hlink"></span>Conversor de enlaces</h2><span class="muted" style="font-size:13px">Pega un link de Taobao, Weidian, 1688 o de un agente</span></div>
     <div class="conv">
@@ -604,6 +629,17 @@ $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
 $("#more").onclick=()=>load(false);
 document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); tb.classList.add("active"); $("#q").focus(); });
 addEventListener("scroll",()=>{ if(state.loading||state.offset>=state.total)return; if(innerHeight+scrollY>document.body.offsetHeight-750) load(false); });
+
+/* showcase IA: iconos + acciones */
+$("#hia").innerHTML=ic("sparkles",21,1.9); $("#hia").style.color="#8b5cf6";
+[["ia1","search"],["ia2","image"],["ia3","sparkles"],["ia4","shield"]].forEach(([id,name])=>{ const el=$("#"+id); if(el) el.innerHTML=ic(name,22,1.8); });
+document.querySelectorAll(".ia-card .iba").forEach(e=>e.innerHTML=ic("arrow",12,2));
+document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
+  const k=c.dataset.ia;
+  if(k==="nl"){ $("#q").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>{ $("#q").focus(); $("#q").placeholder="Ej: techwear negro por menos de 50€ con buena calidad"; },400); }
+  else if(k==="vis"){ $("#visFile").click(); }
+  else if(k==="fit"){ document.getElementById("fit").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#fitBudget").focus(),400); }
+});
 
 loadCats(); loadBrands(); loadTrending(); load(true);
 </script>

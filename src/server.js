@@ -16,6 +16,7 @@ import { hasKey } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
+import { productPage, listPage, sitemapXml } from "./lib/render.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, "..");
@@ -218,6 +219,53 @@ async function handleVisualSearch(req, res) {
   }
 }
 
+// ---- Paginas SSR indexables (SEO) ----
+function html(res, body, code = 200) { res.writeHead(code, { "Content-Type": "text/html; charset=utf-8" }); res.end(body); }
+function baseUrl(req) { return process.env.SITE_URL || `http://${req.headers.host || "localhost:" + PORT}`; }
+
+function getProductById(id) {
+  const r = db.prepare("SELECT * FROM products WHERE id=?").get(id);
+  if (!r) return null;
+  let images = []; try { images = r.images ? JSON.parse(r.images) : []; } catch {}
+  let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
+  return {
+    id: r.id, platform: r.platform, item_id: r.item_id,
+    name: r.clean_title || r.name, brand: r.brand, category: r.category,
+    price_eur: r.price_eur, image: r.image_url, images,
+    ai_description: r.ai_description, qc_score: r.qc_score, qc_summary: qc.summary,
+    links: buildLinks(r.platform, r.item_id),
+  };
+}
+function relatedProducts(p) {
+  return db.prepare(
+    "SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE id<>? AND image_url IS NOT NULL AND (brand=? OR category=?) ORDER BY (brand=?) DESC, hot DESC LIMIT 8"
+  ).all(p.id, p.brand, p.category, p.brand)
+    .map((r) => ({ id: r.id, name: r.clean_title || r.name, brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
+}
+function handleProductPage(req, res, id) {
+  const p = getProductById(id);
+  if (!p) return html(res, "<h1>404 — producto no encontrado</h1>", 404);
+  html(res, productPage(p, relatedProducts(p), baseUrl(req)));
+}
+function handleListPage(req, res, kind, name) {
+  const col = kind === "marca" ? "brand" : "category";
+  const rows = db.prepare(
+    `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${col}=? ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
+  ).all(name).map((r) => ({ id: r.id, name: r.clean_title || r.name, brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
+  if (!rows.length) return html(res, "<h1>404</h1>", 404);
+  const topLinks = kind === "marca"
+    ? db.prepare("SELECT DISTINCT category c FROM products WHERE brand=? AND category IS NOT NULL").all(name).map((x) => ({ href: `/categoria/${encodeURIComponent(x.c)}`, label: x.c }))
+    : db.prepare("SELECT brand b FROM products WHERE category=? AND brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 10").all(name).map((x) => ({ href: `/marca/${encodeURIComponent(x.b)}`, label: x.b }));
+  html(res, listPage({ kind, name, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/", label: "Inicio" }] }));
+}
+function handleSitemap(req, res) {
+  const ids = db.prepare("SELECT id FROM products").all().map((r) => r.id);
+  const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
+  const brands = db.prepare("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL").all().map((r) => r.brand);
+  res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
+  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands }));
+}
+
 const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
@@ -228,6 +276,13 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/ai-search") return void handleAiSearch(res, u.searchParams);
     if (u.pathname === "/api/ai-fit") return void handleAiFit(res, u.searchParams);
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
+    // --- Paginas SSR (SEO) ---
+    if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }
+    if (u.pathname === "/sitemap.xml") return handleSitemap(req, res);
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
+    if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
+    if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
     if (u.pathname === "/" || u.pathname === "/index.html") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(readFileSync(join(ROOT, "public", "index.html")));
