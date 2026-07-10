@@ -122,7 +122,7 @@ function handleProducts(res, params) {
     try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
     let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.clean_title || r.name, brand: r.brand, category: r.category,
+      id: r.id, name: r.clean_title || r.name, raw_name: r.name, brand: r.brand, category: r.category,
       price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
       qc_score: r.qc_score, qc_summary: qc.summary,

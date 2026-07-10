@@ -266,15 +266,15 @@
       <span class="wm"><b>CN</b>Finds</span>
     </a>
     <div class="links">
-      <a href="#catalogo">Productos</a>
-      <a href="#categorias">Categorías</a>
-      <a href="#marcas">Marcas</a>
-      <a href="#fit">Fit IA</a>
-      <a href="#convertidor">Conversor</a>
-      <a href="/guias">Guías</a>
+      <a href="#catalogo" data-i18n="productos">Productos</a>
+      <a href="#categorias" data-i18n="categorias">Categorías</a>
+      <a href="#marcas" data-i18n="marcas">Marcas</a>
+      <a href="#fit" data-i18n="fit">Fit IA</a>
+      <a href="#convertidor" data-i18n="conversor">Conversor</a>
+      <a href="/guias" data-i18n="guias">Guías</a>
     </div>
     <div class="right">
-      <div class="seg"><span class="on" id="curBtn" style="cursor:pointer" title="Cambiar divisa">EUR</span><span>ES</span></div>
+      <div class="seg"><span class="on" id="curBtn" style="cursor:pointer" title="Cambiar divisa">EUR</span><span id="langBtn" style="cursor:pointer" title="Language">ES</span></div>
       <button class="iconbtn" id="fav" title="Favoritos"></button>
       <button class="iconbtn" id="theme" title="Tema"></button>
       <button class="iconbtn burger" id="burger" title="Menú"></button>
@@ -286,21 +286,21 @@
   <div class="hero-bg"></div>
   <div class="wrap hero-in">
     <span class="eyebrow" id="eyebrow">Potenciado por IA · Fotos QC reales · Precios de fábrica</span>
-    <h1>Descubre productos de <span class="gr">calidad</span>, con confianza.</h1>
-    <p class="sub">Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.</p>
+    <h1><span data-i18n="h1a">Descubre productos de </span><span class="gr" data-i18n="h1b">calidad</span><span data-i18n="h1c">, con confianza.</span></h1>
+    <p class="sub" data-i18n="sub">Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.</p>
     <div class="searchbox">
       <div class="tabs">
-        <button class="tab active" data-tab="kw"><span class="ti"></span>Palabras clave</button>
-        <button class="tab" data-tab="cat"><span class="ti"></span>Categorías</button>
-        <button class="tab" data-tab="brand"><span class="ti"></span>Marcas</button>
+        <button class="tab active" data-tab="kw"><span class="ti"></span><span data-i18n="tab_kw">Palabras clave</span></button>
+        <button class="tab" data-tab="cat"><span class="ti"></span><span data-i18n="tab_cat">Categorías</span></button>
+        <button class="tab" data-tab="brand"><span class="ti"></span><span data-i18n="tab_brand">Marcas</span></button>
       </div>
       <div class="searchrow">
         <span class="sic" id="searchIc"></span>
-        <input id="q" type="search" placeholder="Busca, pega una URL, o pregunta a la IA…" />
+        <input id="q" type="search" data-i18n-ph="search_ph" placeholder="Busca, pega una URL, o pregunta a la IA…" />
         <button class="go ai" id="visBtn" title="Buscar por imagen"><span id="visIc"></span></button>
         <input type="file" id="visFile" accept="image/*" style="display:none" />
         <button class="go ai" id="aiBtn" title="Buscar con IA"><span id="aiIc"></span> IA</button>
-        <button class="go" id="goBtn">Buscar</button>
+        <button class="go" id="goBtn" data-i18n="buscar">Buscar</button>
       </div>
     </div>
     <div class="trust" id="trust"></div>
@@ -309,80 +309,80 @@
 
 <main class="wrap">
   <section id="ia">
-    <div class="head"><h2><span class="sq" id="hia"></span>Comprar con <span class="gr">superpoderes de IA</span></h2><span class="muted" style="font-size:13px">Lo que nos diferencia</span></div>
+    <div class="head"><h2><span class="sq" id="hia"></span><span data-i18n="ia1">Comprar con </span><span class="gr" data-i18n="ia2">superpoderes de IA</span></h2><span class="muted" style="font-size:13px" data-i18n="ia_sub">Lo que nos diferencia</span></div>
     <div class="ia-grid">
-      <button class="ia-card" data-ia="nl" style="--cc:#2d7ff9"><div class="ii" id="ia1"></div><div class="it">Búsqueda en lenguaje natural</div><div class="id">"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.</div><span class="ib">Probar <span class="iba"></span></span></button>
-      <button class="ia-card" data-ia="vis" style="--cc:#8b5cf6"><div class="ii" id="ia2"></div><div class="it">Búsqueda visual «W2C this»</div><div class="id">Sube la foto de cualquier prenda y encuentra su equivalente al instante.</div><span class="ib">Subir foto <span class="iba"></span></span></button>
-      <button class="ia-card" data-ia="fit" style="--cc:#16a34a"><div class="ii" id="ia3"></div><div class="it">Armador de fits con IA</div><div class="id">Dinos tu presupuesto y montamos un outfit completo y coherente.</div><span class="ib">Armar <span class="iba"></span></span></button>
-      <div class="ia-card static" style="--cc:#f59e0b"><div class="ii" id="ia4"></div><div class="it">QC con IA + catálogo limpio</div><div class="id">Puntuación de calidad por visión y fichas normalizadas automáticamente.</div><span class="ib" style="color:var(--muted)">Bajo el capó</span></div>
+      <button class="ia-card" data-ia="nl" style="--cc:#2d7ff9"><div class="ii" id="ia1"></div><div class="it" data-i18n="c_nl_t">Búsqueda en lenguaje natural</div><div class="id" data-i18n="c_nl_d">"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.</div><span class="ib"><span data-i18n="c_try">Probar</span> <span class="iba"></span></span></button>
+      <button class="ia-card" data-ia="vis" style="--cc:#8b5cf6"><div class="ii" id="ia2"></div><div class="it" data-i18n="c_vis_t">Búsqueda visual «W2C this»</div><div class="id" data-i18n="c_vis_d">Sube la foto de cualquier prenda y encuentra su equivalente al instante.</div><span class="ib"><span data-i18n="c_upload">Subir foto</span> <span class="iba"></span></span></button>
+      <button class="ia-card" data-ia="fit" style="--cc:#16a34a"><div class="ii" id="ia3"></div><div class="it" data-i18n="c_fit_t">Armador de fits con IA</div><div class="id" data-i18n="c_fit_d">Dinos tu presupuesto y montamos un outfit completo y coherente.</div><span class="ib"><span data-i18n="armar">Armar</span> <span class="iba"></span></span></button>
+      <div class="ia-card static" style="--cc:#f59e0b"><div class="ii" id="ia4"></div><div class="it" data-i18n="c_qc_t">QC con IA + catálogo limpio</div><div class="id" data-i18n="c_qc_d">Puntuación de calidad por visión y fichas normalizadas automáticamente.</div><span class="ib" style="color:var(--muted)" data-i18n="c_hood">Bajo el capó</span></div>
     </div>
   </section>
 
   <section id="como">
-    <div class="head"><h2><span class="sq" id="hcomo"></span>Cómo funciona</h2><span class="muted" style="font-size:13px">De descubrir a comprar, sin fricción</span></div>
+    <div class="head"><h2><span class="sq" id="hcomo"></span><span data-i18n="como">Cómo funciona</span></h2><span class="muted" style="font-size:13px" data-i18n="como_sub">De descubrir a comprar, sin fricción</span></div>
     <div class="ia-grid">
-      <div class="ia-card static" style="--cc:#2d7ff9"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">1</div><div class="it">Busca o descubre</div><div class="id">Explora el catálogo, busca en lenguaje natural o sube una foto para encontrar su equivalente.</div></div>
-      <div class="ia-card static" style="--cc:#8b5cf6"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">2</div><div class="it">Elige tu agente</div><div class="id">Cada producto trae el link del agente (Kakobuy). El agente lo compra en China por ti.</div></div>
-      <div class="ia-card static" style="--cc:#16a34a"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">3</div><div class="it">Recibe en casa</div><div class="id">Revisas las fotos QC, pagas el envío internacional al agente y te llega a casa.</div></div>
+      <div class="ia-card static" style="--cc:#2d7ff9"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">1</div><div class="it" data-i18n="st1_t">Busca o descubre</div><div class="id" data-i18n="st1_d">Explora el catálogo, busca en lenguaje natural o sube una foto para encontrar su equivalente.</div></div>
+      <div class="ia-card static" style="--cc:#8b5cf6"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">2</div><div class="it" data-i18n="st2_t">Elige tu agente</div><div class="id" data-i18n="st2_d">Cada producto trae el link del agente (Kakobuy). El agente lo compra en China por ti.</div></div>
+      <div class="ia-card static" style="--cc:#16a34a"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">3</div><div class="it" data-i18n="st3_t">Recibe en casa</div><div class="id" data-i18n="st3_d">Revisas las fotos QC, pagas el envío internacional al agente y te llega a casa.</div></div>
     </div>
   </section>
 
   <section id="convertidor">
-    <div class="head"><h2><span class="sq" id="hlink"></span>Conversor de enlaces</h2><span class="muted" style="font-size:13px">Pega un link de Taobao, Weidian, 1688 o de un agente</span></div>
+    <div class="head"><h2><span class="sq" id="hlink"></span><span data-i18n="conv">Conversor de enlaces</span></h2><span class="muted" style="font-size:13px" data-i18n="conv_sub">Pega un link de Taobao, Weidian, 1688 o de un agente</span></div>
     <div class="conv">
       <span class="sic" id="convIc"></span>
       <input id="convUrl" placeholder="https://weidian.com/item.html?itemID=7541774329" />
-      <button class="go" id="convBtn">Convertir</button>
+      <button class="go" id="convBtn" data-i18n="convertir">Convertir</button>
     </div>
     <div id="convResult" class="conv-result"></div>
   </section>
 
   <section id="categorias">
-    <div class="head"><h2><span class="sq" id="hgrid"></span>Explorar por categoría</h2><a class="link" href="#catalogo">Ver todo <span id="l1"></span></a></div>
+    <div class="head"><h2><span class="sq" id="hgrid"></span><span data-i18n="cat">Explorar por categoría</span></h2><a class="link" href="#catalogo"><span data-i18n="vertodo">Ver todo</span> <span id="l1"></span></a></div>
     <div class="strip" id="strip"></div>
   </section>
 
   <section id="tendencias">
-    <div class="head"><h2><span class="sq" id="hflame"></span>Tendencias ahora</h2><span class="muted" style="font-size:13px">Lo más buscado esta semana</span></div>
+    <div class="head"><h2><span class="sq" id="hflame"></span><span data-i18n="trend">Tendencias ahora</span></h2><span class="muted" style="font-size:13px" data-i18n="trend_sub">Lo más buscado esta semana</span></div>
     <div class="grid" id="trending"></div>
   </section>
 
   <section id="fit">
-    <div class="head"><h2><span class="sq" id="hfit"></span>Arma tu fit con IA</h2><span class="muted" style="font-size:13px">Dinos tu presupuesto y montamos un outfit</span></div>
+    <div class="head"><h2><span class="sq" id="hfit"></span><span data-i18n="fit_title">Arma tu fit con IA</span></h2><span class="muted" style="font-size:13px" data-i18n="fit_sub">Dinos tu presupuesto y montamos un outfit</span></div>
     <div class="conv">
       <span class="sic" id="fitIc"></span>
-      <input id="fitBudget" type="number" min="10" placeholder="Presupuesto € (ej. 150)" style="max-width:190px; flex:none" />
-      <input id="fitStyle" placeholder="Estilo (opcional): techwear, minimal, y2k…" />
-      <button class="go" id="fitBtn">Armar</button>
+      <input id="fitBudget" type="number" min="10" data-i18n-ph="fit_budget" placeholder="Presupuesto € (ej. 150)" style="max-width:190px; flex:none" />
+      <input id="fitStyle" data-i18n-ph="fit_style" placeholder="Estilo (opcional): techwear, minimal, y2k…" />
+      <button class="go" id="fitBtn" data-i18n="armar">Armar</button>
     </div>
     <div id="fitResult" class="conv-result"></div>
   </section>
 
   <section id="marcas">
-    <div class="head"><h2><span class="sq" id="htag"></span>Marcas populares</h2><span class="muted" style="font-size:13px">Toca para filtrar</span></div>
+    <div class="head"><h2><span class="sq" id="htag"></span><span data-i18n="brands">Marcas populares</span></h2><span class="muted" style="font-size:13px" data-i18n="brands_sub">Toca para filtrar</span></div>
     <div class="brands" id="brands"></div>
   </section>
 
   <section id="catalogo">
-    <div class="head"><h2>Catálogo</h2><span class="muted" id="count" style="font-size:13px"></span></div>
+    <div class="head"><h2 data-i18n="catalogo">Catálogo</h2><span class="muted" id="count" style="font-size:13px"></span></div>
     <div class="toolbar">
       <div class="gseg" id="gseg">
-        <button class="gon" data-g="">Todos</button>
-        <button data-g="men">Hombre</button>
-        <button data-g="women">Mujer</button>
+        <button class="gon" data-g="" data-i18n="all">Todos</button>
+        <button data-g="men" data-i18n="men">Hombre</button>
+        <button data-g="women" data-i18n="women">Mujer</button>
       </div>
       <div class="chips" id="activeFilters"></div>
       <select class="sort" id="sort">
-        <option value="trending">Destacados</option>
-        <option value="newest">Novedades</option>
-        <option value="price_asc">Precio: menor a mayor</option>
-        <option value="price_desc">Precio: mayor a menor</option>
-        <option value="name">Nombre A–Z</option>
+        <option value="trending" data-i18n="s_trending">Destacados</option>
+        <option value="newest" data-i18n="s_new">Novedades</option>
+        <option value="price_asc" data-i18n="s_pa">Precio: menor a mayor</option>
+        <option value="price_desc" data-i18n="s_pd">Precio: mayor a menor</option>
+        <option value="name" data-i18n="s_name">Nombre A–Z</option>
       </select>
     </div>
     <div class="grid" id="grid"></div>
-    <div class="empty" id="empty" style="display:none">Sin resultados para tu búsqueda.</div>
-    <div class="more"><button id="more" style="display:none">Cargar más</button></div>
+    <div class="empty" id="empty" style="display:none" data-i18n="noresults">Sin resultados para tu búsqueda.</div>
+    <div class="more"><button id="more" style="display:none" data-i18n="loadmore">Cargar más</button></div>
   </section>
 </main>
 
@@ -397,10 +397,10 @@
         </svg></span>
         <span class="wm"><b>CN</b>Finds</span>
       </a>
-      <p style="margin-top:12px">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
+      <p style="margin-top:12px" data-i18n="f_desc">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
     </div>
-    <div><h4>Tienda</h4><a href="#catalogo">Todos los productos</a><a href="#categorias">Categorías</a><a href="#marcas">Marcas</a></div>
-    <div><h4>Guías</h4><a href="/guias">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
+    <div><h4 data-i18n="f_shop">Tienda</h4><a href="#catalogo" data-i18n="f_all">Todos los productos</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
+    <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
   </div>
   <div class="wrap disclaimer">
@@ -412,6 +412,86 @@
 
 <script>
 const $=(s)=>document.querySelector(s);
+
+/* ---- i18n (ES/EN) ---- */
+let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,2)==="en"?"en":"es");
+document.documentElement.lang=LANG;
+const T={
+  es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
+    eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
+    h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
+    sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
+    tab_kw:"Palabras clave",tab_cat:"Categorías",tab_brand:"Marcas",
+    search_ph:"Busca, pega una URL, o pregunta a la IA…",buscar:"Buscar",
+    all:"Todos",men:"Hombre",women:"Mujer",
+    ia1:"Comprar con ",ia2:"superpoderes de IA",ia_sub:"Lo que nos diferencia",
+    como:"Cómo funciona",como_sub:"De descubrir a comprar, sin fricción",
+    conv:"Conversor de enlaces",conv_sub:"Pega un link de Taobao, Weidian, 1688 o de un agente",convertir:"Convertir",
+    cat:"Explorar por categoría",vertodo:"Ver todo",
+    trend:"Tendencias ahora",trend_sub:"Lo más buscado esta semana",
+    fit_title:"Arma tu fit con IA",fit_sub:"Dinos tu presupuesto y montamos un outfit",armar:"Armar",
+    brands:"Marcas populares",brands_sub:"Toca para filtrar",catalogo:"Catálogo",
+    s_trending:"Destacados",s_new:"Novedades",s_pa:"Precio: menor a mayor",s_pd:"Precio: mayor a menor",s_name:"Nombre A–Z",
+    ver_agentes:"Ver agentes",elige_agente:"Elige tu agente de compra",
+    note:"El precio es orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.",
+    p_count:"productos",noresults:"Sin resultados para tu búsqueda.",loadmore:"Cargar más",
+    f_shop:"Tienda",f_all:"Todos los productos",f_all_guides:"Todas las guías",f_legal:"Legal",f_desc:"Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.",
+    fav_empty:"Aún no tienes favoritos. Toca el ♡ en cualquier producto.",
+    arts:"artículos",prods:"productos",favs:"favoritos",favs_f:"Favoritos",lang_name:"ES",detected:"Detectado",
+    men_short:"Hombre",women_short:"Mujer",
+    trust1:"Descubrimiento con QC primero",trust2:"Comparativa de agentes",trust3:"1.400+ productos indexados",
+    fit_budget:"Presupuesto € (ej. 150)",fit_style:"Estilo (opcional): techwear, minimal, y2k…",
+    c_nl_t:"Búsqueda en lenguaje natural",c_nl_d:'"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.',c_try:"Probar",
+    c_vis_t:"Búsqueda visual «W2C this»",c_vis_d:"Sube la foto de cualquier prenda y encuentra su equivalente al instante.",c_upload:"Subir foto",
+    c_fit_t:"Armador de fits con IA",c_fit_d:"Dinos tu presupuesto y montamos un outfit completo y coherente.",
+    c_qc_t:"QC con IA + catálogo limpio",c_qc_d:"Puntuación de calidad por visión y fichas normalizadas automáticamente.",c_hood:"Bajo el capó",
+    st1_t:"Busca o descubre",st1_d:"Explora el catálogo, busca en lenguaje natural o sube una foto para encontrar su equivalente.",
+    st2_t:"Elige tu agente",st2_d:"Cada producto trae el link del agente (Kakobuy). El agente lo compra en China por ti.",
+    st3_t:"Recibe en casa",st3_d:"Revisas las fotos QC, pagas el envío internacional al agente y te llega a casa.",
+    ai_analyzing:"Analizando la imagen con IA…",ai_na:"IA no disponible",net_err:"Error de red",no_results:"Sin resultados",
+    conv_placeholder:'Ej: techwear negro por menos de 50€ con buena calidad',ai_search_tag:"Búsqueda IA",
+    conv_none:"No pude reconocer un producto en ese enlace.",view_original:"Ver producto original",copiar:"Copiar",copiado:"¡Copiado!",
+    converting:"Convirtiendo…",platform:"plataforma",interpreting:"La IA está interpretando tu búsqueda…",
+    building_fit:"Montando tu fit dentro de",total_est:"Total estimado",budget_w:"Presupuesto",pieces:"piezas" },
+  en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
+    eyebrow:"AI-powered · Real QC photos · Factory prices",
+    h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
+    sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
+    tab_kw:"Keywords",tab_cat:"Categories",tab_brand:"Brands",
+    search_ph:"Search, paste a URL, or ask the AI…",buscar:"Search",
+    all:"All",men:"Men",women:"Women",
+    ia1:"Shop with ",ia2:"AI superpowers",ia_sub:"What sets us apart",
+    como:"How it works",como_sub:"From discovery to checkout, frictionless",
+    conv:"Link converter",conv_sub:"Paste a Taobao, Weidian, 1688 or agent link",convertir:"Convert",
+    cat:"Browse by category",vertodo:"See all",
+    trend:"Trending now",trend_sub:"Most searched this week",
+    fit_title:"Build your fit with AI",fit_sub:"Tell us your budget and we'll build an outfit",armar:"Build",
+    brands:"Popular brands",brands_sub:"Tap to filter",catalogo:"Catalog",
+    s_trending:"Featured",s_new:"New",s_pa:"Price: low to high",s_pd:"Price: high to low",s_name:"Name A–Z",
+    ver_agentes:"View agents",elige_agente:"Choose your shopping agent",
+    note:"Price is indicative (factory). Final cost includes international shipping handled by the agent. CNFinds does not sell or process payments.",
+    p_count:"products",noresults:"No results for your search.",loadmore:"Load more",
+    f_shop:"Shop",f_all:"All products",f_all_guides:"All guides",f_legal:"Legal",f_desc:"Your platform to discover products, review QC photos and find the best shopping agent at the best price.",
+    fav_empty:"No favorites yet. Tap the ♡ on any product.",
+    arts:"items",prods:"products",favs:"favorites",favs_f:"Favorites",lang_name:"EN",detected:"Detected",
+    men_short:"Men",women_short:"Women",
+    trust1:"QC-first discovery",trust2:"Agent comparison",trust3:"1,400+ products indexed",
+    fit_budget:"Budget € (e.g. 150)",fit_style:"Style (optional): techwear, minimal, y2k…",
+    c_nl_t:"Natural-language search",c_nl_d:'"Black techwear under €50" — the AI understands and filters for you.',c_try:"Try it",
+    c_vis_t:"Visual search «W2C this»",c_vis_d:"Upload a photo of any item and find its match instantly.",c_upload:"Upload photo",
+    c_fit_t:"AI outfit builder",c_fit_d:"Tell us your budget and we'll build a complete, coherent outfit.",
+    c_qc_t:"AI QC + clean catalog",c_qc_d:"Vision-based quality scoring and automatically normalized listings.",c_hood:"Under the hood",
+    st1_t:"Search or discover",st1_d:"Browse the catalog, search in natural language or upload a photo to find its match.",
+    st2_t:"Choose your agent",st2_d:"Every product carries the agent link (Kakobuy). The agent buys it in China for you.",
+    st3_t:"Get it at home",st3_d:"Review the QC photos, pay the agent for international shipping and it ships to you.",
+    ai_analyzing:"Analyzing the image with AI…",ai_na:"AI unavailable",net_err:"Network error",no_results:"No results",
+    conv_placeholder:'e.g. black techwear under €50 with good quality',ai_search_tag:"AI search",
+    conv_none:"Couldn't recognize a product in that link.",view_original:"View original product",copiar:"Copy",copiado:"Copied!",
+    converting:"Converting…",platform:"platform",interpreting:"The AI is interpreting your search…",
+    building_fit:"Building your fit under",total_est:"Estimated total",budget_w:"Budget",pieces:"pieces" },
+};
+const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
+const pname=(p)=> LANG==="en"?(p.raw_name||p.name):p.name;
 const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:48,total:0,loading:false };
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
@@ -480,10 +560,7 @@ $("#htag").innerHTML=ic("tag",21,1.9); $("#htag").style.color="#ff2d8f";
 $("#hlink").innerHTML=ic("link",21,1.9); $("#hlink").style.color="#16a34a";
 $("#convIc").innerHTML=ic("link",20);
 $("#l1").innerHTML=ic("chev",15,2);
-$("#eyebrow").insertAdjacentHTML("afterbegin",ic("shield",14,1.9));
-document.querySelectorAll(".tab").forEach((t,i)=>t.querySelector(".ti").innerHTML=ic(["search","grid","tag"][i],15,1.8));
-$("#trust").innerHTML=[["shield","Descubrimiento con QC primero"],["layers","Comparativa de agentes"],["grid","1.400+ productos indexados"]]
-  .map(([i,t])=>`<span>${ic(i,16,1.8)} ${t}</span>`).join("");
+document.querySelectorAll(".tab").forEach((tb,i)=>tb.querySelector(".ti").innerHTML=ic(["search","grid","tag"][i],15,1.8));
 
 /* theme + fav + promo */
 function themeNow(){ return document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"); }
@@ -503,10 +580,10 @@ $("#fav").onclick=()=>{
   const items=[...FAVS].map(id=>CACHE[id]).filter(Boolean);
   document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
   $("#more").style.display="none";
-  if(!items.length){ $("#grid").innerHTML=`<div class="empty" style="grid-column:1/-1">Aún no tienes favoritos. Toca el ♡ en cualquier producto.</div>`; $("#count").textContent="0 favoritos"; $("#activeFilters").innerHTML=""; return; }
+  if(!items.length){ $("#grid").innerHTML=`<div class="empty" style="grid-column:1/-1">${t("fav_empty")}</div>`; $("#count").textContent=`0 ${t("favs")}`; $("#activeFilters").innerHTML=""; return; }
   $("#grid").innerHTML=items.map(cardHtml).join(""); bindCards($("#grid"));
-  $("#count").textContent=`${items.length} favoritos`; $("#empty").style.display="none";
-  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("heart",13,1.9)} Favoritos <button data-clear="fav">${ic("x",13,2.2)}</button></span>`;
+  $("#count").textContent=`${items.length} ${t("favs")}`; $("#empty").style.display="none";
+  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("heart",13,1.9)} ${t("favs_f")} <button data-clear="fav">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; load(true); };
 };
 
@@ -517,7 +594,7 @@ async function loadCats(){
     <div class="cat" data-cat="${esc(c.category)}" style="--cc:${catColor(c.category)}">
       <div class="ci">${ic(catIcon(c.category),22,1.7)}</div>
       <div class="cname">${esc(c.category)}</div>
-      <div class="ccount">${c.count} artículos</div>
+      <div class="ccount">${c.count} ${t("arts")}</div>
     </div>`).join("");
   $("#strip").querySelectorAll(".cat").forEach(el=>el.onclick=()=>{ state.category=state.category===el.dataset.cat?"":el.dataset.cat; state.brand=""; applyAndScroll(); });
 }
@@ -528,7 +605,7 @@ async function loadBrands(){
   $("#brands").innerHTML=d.brands.map(b=>{
     const mono=b.thumb?`<img src="${b.thumb}" alt="">`:esc(b.brand.slice(0,2));
     return `<div class="bcard" data-brand="${esc(b.brand)}"><div class="mono">${mono}</div>
-      <div class="bmeta"><div class="bn">${esc(b.brand)}</div><div class="bc">${b.count} productos</div></div></div>`;
+      <div class="bmeta"><div class="bn">${esc(b.brand)}</div><div class="bc">${b.count} ${t("prods")}</div></div></div>`;
   }).join("");
   $("#brands").querySelectorAll(".bcard").forEach(el=>el.onclick=()=>{ state.brand=state.brand===el.dataset.brand?"":el.dataset.brand; state.category=""; applyAndScroll(); });
 }
@@ -542,13 +619,13 @@ async function loadTrending(){
 
 /* card */
 function cardHtml(p){
-  const img=p.thumb?`<img loading="lazy" src="${p.thumb}" alt="${esc(p.name)}" onerror="this.style.visibility='hidden'">`:"";
+  const img=p.thumb?`<img loading="lazy" src="${p.thumb}" alt="${esc(pname(p))}" onerror="this.style.visibility='hidden'">`:"";
   return `<a class="card" href="/producto/${p.id}" data-id="${p.id}">
     <div class="ph">${img}${p.hot?`<span class="tag">${ic("flame",13,2)} HOT</span>`:""}<button class="heart${FAVS.has(p.id)?' on':''}" onclick="toggleFav(event,this)" aria-label="Favorito">${ic("heart",18,1.8)}</button></div>
     <div class="cbody">
       <div class="cbrand">${p.brand?esc(p.brand):"&nbsp;"}</div>
-      <div class="cname">${esc(p.name)}</div>
-      <div class="cfoot"><span class="price">${eur(p.price_eur)}</span><span class="cta">Ver agentes ${ic("arrow",13,2)}</span></div>
+      <div class="cname">${esc(pname(p))}</div>
+      <div class="cfoot"><span class="price">${eur(p.price_eur)}</span><span class="cta">${t("ver_agentes")} ${ic("arrow",13,2)}</span></div>
     </div></a>`;
 }
 const CACHE={};
@@ -564,7 +641,7 @@ async function load(reset){
   if(reset) $("#grid").innerHTML="";
   $("#grid").insertAdjacentHTML("beforeend",d.items.map(cardHtml).join("")); bindCards($("#grid"));
   state.offset+=d.items.length;
-  $("#count").textContent=`${state.total} productos`;
+  $("#count").textContent=`${state.total} ${t("p_count")}`;
   $("#empty").style.display=state.total===0?"block":"none";
   $("#more").style.display=state.offset<state.total?"inline-block":"none";
   renderFilters(); state.loading=false;
@@ -592,13 +669,13 @@ function openModal(p){
     <div class="mbody">
       <button class="close" onclick="closeModal()">${ic("x",17,2)}</button>
       ${p.brand?`<div class="mbrand">${esc(p.brand)}</div>`:""}
-      <h3>${esc(p.name)}</h3>
+      <h3>${esc(pname(p))}</h3>
       <div class="mcat">${ic("tag",13,1.9)} ${esc(p.category||"")}</div>
       <div class="mprice">${eur(p.price_eur)}</div>
       ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${p.qc_summary?` · ${esc(p.qc_summary)}`:""}</div>`:""}
-      <div class="agents-title">Elige tu agente de compra</div>
+      <div class="agents-title">${t("elige_agente")}</div>
       <div class="agents">${agents}</div>
-      <div class="note">El precio es orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.</div>
+      <div class="note">${t("note")}</div>
     </div>`;
   $("#overlay").classList.add("open");
 }
@@ -609,12 +686,12 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 /* conversor de enlaces */
 async function convert(){
   const url=$("#convUrl").value.trim(); if(!url) return;
-  $("#convResult").innerHTML=`<div class="muted" style="font-size:14px">Convirtiendo…</div>`;
+  $("#convResult").innerHTML=`<div class="muted" style="font-size:14px">${t("converting")}</div>`;
   const d=await (await fetch("/api/convert?url="+encodeURIComponent(url))).json();
-  if(!d.ok){ $("#convResult").innerHTML=`<div class="muted" style="font-size:14px">${esc(d.message||"No pude reconocer un producto en ese enlace.")}</div>`; return; }
+  if(!d.ok){ $("#convResult").innerHTML=`<div class="muted" style="font-size:14px">${esc(d.message||t("conv_none"))}</div>`; return; }
   const agents=Object.entries(d.links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",16,2)}</span></a>`).join("");
   $("#convResult").innerHTML=`<div class="conv-card">
-    <div class="conv-meta">Detectado · plataforma <b>${esc(d.platform)}</b> · ID <b>${esc(d.itemId)}</b><br><a href="${d.original}" target="_blank" rel="noopener" style="color:var(--brandc)">Ver producto original ${ic("arrow",12,2)}</a></div>
+    <div class="conv-meta">${t("detected")} · ${t("platform")} <b>${esc(d.platform)}</b> · ID <b>${esc(d.itemId)}</b><br><a href="${d.original}" target="_blank" rel="noopener" style="color:var(--brandc)">${t("view_original")} ${ic("arrow",12,2)}</a></div>
     <div class="conv-agents">${agents}</div>
   </div>`;
 }
@@ -623,7 +700,7 @@ $("#convUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") convert(); });
 
 /* search + sort + scroll */
 const looksUrl=(v)=>/^https?:|weidian|taobao|tmall|1688|^\d{9,}$/i.test(v);
-let t; $("#q").addEventListener("input",e=>{ clearTimeout(t); const v=e.target.value.trim(); if(looksUrl(v)) return; t=setTimeout(()=>{ state.q=v; load(true); },250); });
+let debT; $("#q").addEventListener("input",e=>{ clearTimeout(debT); const v=e.target.value.trim(); if(looksUrl(v)) return; debT=setTimeout(()=>{ state.q=v; load(true); },250); });
 $("#goBtn").onclick=()=>{ const v=$("#q").value.trim(); if(looksUrl(v)){ $("#convUrl").value=v; document.getElementById("convertidor").scrollIntoView({behavior:"smooth"}); convert(); return; } state.q=v; applyAndScroll(); };
 
 /* buscador en lenguaje natural (IA) */
@@ -631,15 +708,15 @@ $("#aiIc").innerHTML=ic("sparkles",15,1.9);
 async function aiSearch(){
   const q=$("#q").value.trim(); if(!q) return;
   document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
-  $("#grid").innerHTML=`<div class="muted" style="padding:40px;grid-column:1/-1">${ic("sparkles",16,1.9)} La IA está interpretando tu búsqueda…</div>`;
+  $("#grid").innerHTML=`<div class="muted" style="padding:40px;grid-column:1/-1">${ic("sparkles",16,1.9)} ${t("interpreting")}</div>`;
   $("#empty").style.display="none"; $("#more").style.display="none";
-  let d; try{ d=await (await fetch("/api/ai-search?q="+encodeURIComponent(q))).json(); }catch{ d={ok:false,error:"Error de red"}; }
-  if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||"IA no disponible"; return; }
+  let d; try{ d=await (await fetch("/api/ai-search?q="+encodeURIComponent(q))).json(); }catch{ d={ok:false,error:t("net_err")}; }
+  if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||t("ai_na"); return; }
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid"));
-  $("#count").textContent=`${d.total} productos`;
+  $("#count").textContent=`${d.total} ${t("p_count")}`;
   $("#empty").style.display=d.items.length?"none":"block";
-  $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("sparkles",13,1.9)} ${esc(d.explanation||"Búsqueda IA")} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
+  $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("sparkles",13,1.9)} ${esc(d.explanation||t("ai_search_tag"))} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
 }
 $("#aiBtn").onclick=aiSearch;
@@ -650,13 +727,13 @@ $("#fitIc").innerHTML=ic("sparkles",20);
 async function armarFit(){
   const budget=parseFloat($("#fitBudget").value)||150;
   const style=$("#fitStyle").value.trim();
-  $("#fitResult").innerHTML=`<div class="muted" style="padding:22px">${ic("sparkles",16,1.9)} Montando tu fit dentro de €${budget}…</div>`;
-  let d; try{ d=await (await fetch(`/api/ai-fit?budget=${budget}&style=${encodeURIComponent(style)}`)).json(); }catch{ d={ok:false,error:"Error de red"}; }
-  if(!d.ok){ $("#fitResult").innerHTML=`<div class="muted" style="font-size:14px">${esc(d.error||"IA no disponible")}</div>`; return; }
+  $("#fitResult").innerHTML=`<div class="muted" style="padding:22px">${ic("sparkles",16,1.9)} ${t("building_fit")} €${budget}…</div>`;
+  let d; try{ d=await (await fetch(`/api/ai-fit?budget=${budget}&style=${encodeURIComponent(style)}`)).json(); }catch{ d={ok:false,error:t("net_err")}; }
+  if(!d.ok){ $("#fitResult").innerHTML=`<div class="muted" style="font-size:14px">${esc(d.error||t("ai_na"))}</div>`; return; }
   d.picks.forEach(p=>CACHE[p.id]=p);
   const total=d.total_estimate!=null?`~€${Number(d.total_estimate).toFixed(2)}`:"";
   $("#fitResult").innerHTML=`<div class="conv-card" style="flex-direction:column; align-items:stretch; gap:16px">
-    <div class="conv-meta"><b>${esc(d.summary||"")}</b><br>Total estimado ${total} · Presupuesto €${budget} · ${d.picks.length} piezas</div>
+    <div class="conv-meta"><b>${esc(d.summary||"")}</b><br>${t("total_est")} ${total} · ${t("budget_w")} €${budget} · ${d.picks.length} ${t("pieces")}</div>
     <div class="grid" style="gap:14px">${d.picks.map(cardHtml).join("")}</div>
   </div>`;
   bindCards($("#fitResult"));
@@ -673,16 +750,16 @@ $("#visFile").addEventListener("change",async(e)=>{
   const dataUrl=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f); });
   e.target.value="";
   document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
-  $("#grid").innerHTML=`<div class="muted" style="padding:40px;grid-column:1/-1">${ic("image",16,1.8)} Analizando la imagen con IA…</div>`;
+  $("#grid").innerHTML=`<div class="muted" style="padding:40px;grid-column:1/-1">${ic("image",16,1.8)} ${t("ai_analyzing")}</div>`;
   $("#empty").style.display="none"; $("#more").style.display="none";
-  let d; try{ d=await (await fetch("/api/visual-search",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:dataUrl})})).json(); }catch{ d={ok:false,error:"Error de red"}; }
-  if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||"IA no disponible"; return; }
+  let d; try{ d=await (await fetch("/api/visual-search",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:dataUrl})})).json(); }catch{ d={ok:false,error:t("net_err")}; }
+  if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||t("ai_na"); return; }
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid"));
-  $("#count").textContent=`${d.total} productos`;
+  $("#count").textContent=`${d.total} ${t("p_count")}`;
   $("#empty").style.display=d.items.length?"none":"block";
-  const t=d.detected||{}; const label=[t.brand,t.item_type||t.category,t.colorway].filter(Boolean).join(" · ")||t.description||"imagen";
-  $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("image",13,1.8)} Detectado: ${esc(label)} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
+  const det=d.detected||{}; const label=[det.brand,det.item_type||det.category,det.colorway].filter(Boolean).join(" · ")||det.description||"imagen";
+  $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("image",13,1.8)} ${t("detected")}: ${esc(label)} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
 });
 $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
@@ -697,13 +774,26 @@ $("#hcomo").innerHTML=ic("layers",21,1.9); $("#hcomo").style.color="#2d7ff9";
 document.querySelectorAll(".ia-card .iba").forEach(e=>e.innerHTML=ic("arrow",12,2));
 document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   const k=c.dataset.ia;
-  if(k==="nl"){ $("#q").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>{ $("#q").focus(); $("#q").placeholder="Ej: techwear negro por menos de 50€ con buena calidad"; },400); }
+  if(k==="nl"){ $("#q").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>{ $("#q").focus(); $("#q").placeholder=t("conv_placeholder"); },400); }
   else if(k==="vis"){ $("#visFile").click(); }
   else if(k==="fit"){ document.getElementById("fit").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#fitBudget").focus(),400); }
 });
 
 document.getElementById("curBtn").onclick=cycleCur; loadRates();
 document.querySelectorAll("#gseg button").forEach(b=>b.onclick=()=>{ document.querySelectorAll("#gseg button").forEach(x=>x.classList.remove("gon")); b.classList.add("gon"); state.gender=b.dataset.g; load(true); });
+
+/* i18n */
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const v=t(el.getAttribute("data-i18n")); if(v!=null) el.textContent=v; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=t(el.getAttribute("data-i18n-ph")); if(v!=null) el.setAttribute("placeholder",v); });
+  const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
+  const tr=$("#trust"); if(tr) tr.innerHTML=[["shield",t("trust1")],["layers",t("trust2")],["grid",t("trust3")]].map(([i,x])=>`<span>${ic(i,16,1.8)} ${x}</span>`).join("");
+  const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
+}
+function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); load(true); }
+{ const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
+applyLang();
 loadCats(); loadBrands(); loadTrending(); load(true);
 </script>
 </body>
