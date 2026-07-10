@@ -21,6 +21,9 @@ export const AFFILIATE_CODES = {
   mulebuy: process.env.MULEBUY_REF || "YOUR_MULEBUY_CODE",
   kakobuy: process.env.KAKOBUY_REF || "4mqkq", // affcode de KikeClaw (invite: ikako.vip/r/4mqkq)
   oopbuy:  process.env.OOPBUY_REF  || "YOUR_OOPBUY_CODE",
+  hoobuy:  process.env.HOOBUY_REF  || "YOUR_HOOBUY_CODE",
+  superbuy: process.env.SUPERBUY_REF || "YOUR_SUPERBUY_CODE",
+  sugargoo: process.env.SUGARGOO_REF || "YOUR_SUGARGOO_CODE",
 };
 
 export function isPlaceholder(code) {
@@ -51,6 +54,8 @@ const SHOP_TYPE = {
   family: { taobao: "taobao", weidian: "weidian", "1688": "ali_1688" },
   // OOPBuy usa slug en la ruta (VERIFICAR)
   oopbuy: { taobao: "taobao", weidian: "weidian", "1688": "1688" },
+  // Hoobuy usa número de plataforma en la ruta (VERIFICAR)
+  hoobuy: { taobao: "1", weidian: "2", "1688": "3" },
 };
 
 // --- Generadores de link por agente -----------------------------------------
@@ -84,6 +89,33 @@ export const AGENTS = [
     buildUrl: (platform, itemId, code) => {
       const slug = SHOP_TYPE.oopbuy[platform] || "taobao";
       return `https://oopbuy.com/product/${slug}/${itemId}?inviteCode=${code}`;
+    },
+  },
+  {
+    id: "hoobuy",
+    name: "Hoobuy",
+    // VERIFICAR al activar: https://hoobuy.com/product/2/XXXX?inviteCode=CODE (2=weidian)
+    buildUrl: (platform, itemId, code) => {
+      const n = SHOP_TYPE.hoobuy[platform] || "1";
+      return `https://hoobuy.com/product/${n}/${itemId}?inviteCode=${code}`;
+    },
+  },
+  {
+    id: "superbuy",
+    name: "Superbuy",
+    // VERIFICAR al activar: https://www.superbuy.com/en/page/buy?url=<URL_ENCODED>&partnercode=CODE
+    buildUrl: (platform, itemId, code) => {
+      const orig = encodeURIComponent(originalUrl(platform, itemId));
+      return `https://www.superbuy.com/en/page/buy?url=${orig}&partnercode=${code}`;
+    },
+  },
+  {
+    id: "sugargoo",
+    name: "Sugargoo",
+    // VERIFICAR al activar: https://www.sugargoo.com/#/home/productDetail?productLink=<URL_ENCODED>&memberId=CODE
+    buildUrl: (platform, itemId, code) => {
+      const orig = encodeURIComponent(originalUrl(platform, itemId));
+      return `https://www.sugargoo.com/#/home/productDetail?productLink=${orig}&memberId=${code}`;
     },
   },
 ];
