@@ -16,6 +16,9 @@ const delayMs = parseInt(getArg("--delay", "1200"), 10); // Weidian throttlea: i
 const sleep = (base) =>
   new Promise((r) => setTimeout(r, base + Math.floor((Math.random() - 0.5) * base * 0.6)));
 
+// Que un fallo de red suelto no tumbe todo el proceso.
+process.on("unhandledRejection", (e) => console.error("[warn] unhandledRejection:", e?.message || e));
+
 const db = openDb(DB_PATH);
 const rows = db.prepare(
   "SELECT id, platform, item_id, name FROM products WHERE (image_url IS NULL OR images IS NULL) AND platform='weidian' ORDER BY hot DESC, id LIMIT ?"

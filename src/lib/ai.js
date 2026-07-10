@@ -51,7 +51,11 @@ function firstText(msg) {
 // Salida estructurada validada contra un JSON Schema.
 export async function structured({ system, prompt, schema, model = MODELS.fast, maxTokens = 1024, images }) {
   const content = [];
-  if (images) for (const url of images) content.push({ type: "image", source: { type: "url", url } });
+  if (images) for (const img of images) {
+    const m = /^data:(.*?);base64,(.*)$/s.exec(img);
+    if (m) content.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
+    else content.push({ type: "image", source: { type: "url", url: img } });
+  }
   content.push({ type: "text", text: prompt });
   const msg = await call({
     model,

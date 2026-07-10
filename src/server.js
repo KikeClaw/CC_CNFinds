@@ -15,6 +15,7 @@ import { parseAnyUrl } from "./lib/parse.js";
 import { hasKey } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
+import { imageToQuery } from "./lib/visualsearch.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, "..");
@@ -185,9 +186,42 @@ async function handleAiFit(res, params) {
   }
 }
 
+function readBody(req, maxBytes = 8_000_000) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (c) => { data += c; if (data.length > maxBytes) { req.destroy(); reject(new Error("cuerpo demasiado grande")); } });
+    req.on("end", () => { try { resolve(JSON.parse(data || "{}")); } catch (e) { reject(e); } });
+    req.on("error", reject);
+  });
+}
+
+// Busqueda visual: imagen (data URL o URL) -> atributos -> productos equivalentes.
+async function handleVisualSearch(req, res) {
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  let body;
+  try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const image = body.image || body.url;
+  if (!image) return json(res, 400, { ok: false, error: "Falta 'image'." });
+  try {
+    const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
+    const brands = db.prepare("SELECT brand FROM products WHERE brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 25").all().map((r) => r.brand);
+    const det = await imageToQuery(image, { categories: cats, brands });
+    // Si hay marca o categoria, esos son los "equivalentes"; las keywords
+    // descriptivas no casan con los nombres terse del catalogo (todavia).
+    const q = det.brand || det.category ? "" : (det.keywords || "");
+    const { total, items } = selectProducts({
+      q, category: det.category, brand: det.brand, onlyImg: false, sort: "trending", limit: 48,
+    });
+    json(res, 200, { ok: true, detected: det, total, items });
+  } catch (e) {
+    json(res, 200, { ok: false, error: e.message });
+  }
+}
+
 const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
+    if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);
