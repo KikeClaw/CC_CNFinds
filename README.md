@@ -116,6 +116,18 @@ OpenGraph y JSON-LD:
 
 Las URLs canónicas usan `SITE_URL` (configúralo al desplegar; en local usa el host).
 
+## Admin — importador universal (`/admin`)
+
+Panel para añadir contenido al catálogo desde **cualquier fuente**, con **tus IDs**:
+
+- **Google Sheet (URL)**, **CSV/TSV pegado** o **links/texto** (Reddit/Telegram).
+- Pipeline: cosecha ciega al formato (URLs) + detección de bloques (hojas reps) +
+  **mapeo con IA** de fallback → **dedup contra el catálogo** → inserta con tus links.
+- Previsualiza (nuevos vs existentes) antes de aplicar.
+- Protegido con `ADMIN_TOKEN` (por defecto `cnfinds-admin` — **cámbialo**).
+
+Tras importar, lanza `npm run enrich` (fotos) y `npm run ai:tag` (limpieza IA).
+
 ## Deploy
 
 Sin dependencias externas — solo necesita **Node ≥ 22.5** (por el SQLite integrado).

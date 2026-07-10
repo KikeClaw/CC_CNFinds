@@ -17,11 +17,18 @@ import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
 import { productPage, listPage, sitemapXml } from "./lib/render.js";
+import { parseCsv } from "./lib/csv.js";
+import { fetchSheet } from "./lib/sheet.js";
+import { discoverTabs, cleanCategory } from "./lib/tabs.js";
+import { rowsToCandidates, dedupe as dedupeCands, apply as applyCands, sheetIdFromUrl } from "./lib/ingest.js";
+import { harvestText } from "./lib/harvest.js";
+import { mapColumnsAI, candidatesFromMap } from "./lib/aimap.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, "..");
 const PORT = parseInt(process.env.PORT || "5178", 10);
 const DB_PATH = process.env.DB_PATH || "data/catalog.db";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "cnfinds-admin"; // ⚠️ cámbialo en producción
 
 const db = openDb(DB_PATH);
 
@@ -266,10 +273,71 @@ function handleSitemap(req, res) {
   res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands }));
 }
 
+// ---- Admin: importador universal ----
+function adminAuth(req) { return (req.headers["x-admin-token"] || "") === ADMIN_TOKEN; }
+
+async function gatherCandidates(mode, content) {
+  if (mode === "text") return harvestText(content);
+  if (mode === "csv") {
+    const rows = parseCsv(content);
+    let c = rowsToCandidates(rows);
+    if (!c.length && hasKey()) { // fallback IA para hojas estructuradas raras
+      try { c = candidatesFromMap(rows, await mapColumnsAI(rows)); } catch {}
+    }
+    return c;
+  }
+  if (mode === "sheet") {
+    const id = sheetIdFromUrl(content);
+    if (!id) throw new Error("URL de Google Sheet no válida.");
+    let tabs; try { tabs = await discoverTabs(id); } catch { tabs = [{ gid: "0", name: "" }]; }
+    if (!tabs.length) tabs = [{ gid: "0", name: "" }];
+    const all = [];
+    for (const t of tabs) {
+      let csv; try { csv = await fetchSheet(id, t.gid); } catch { continue; }
+      const cands = rowsToCandidates(parseCsv(csv));
+      const cat = cleanCategory(t.name || "");
+      for (const c of cands) if (!c.category && cat) c.category = cat;
+      all.push(...cands);
+    }
+    return all;
+  }
+  throw new Error("modo desconocido");
+}
+
+async function handleAdminPreview(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  try {
+    const cands = await gatherCandidates(body.mode, body.content || "");
+    const deduped = dedupeCands(db, cands);
+    const nuevos = deduped.filter((c) => c.status === "new").length;
+    json(res, 200, {
+      ok: true,
+      stats: { encontrados: cands.length, unicos: deduped.length, nuevos, existentes: deduped.length - nuevos },
+      sample: deduped.slice(0, 40).map((c) => ({ platform: c.platform, itemId: c.itemId, name: c.name, price: c.price, status: c.status })),
+    });
+  } catch (e) { json(res, 200, { ok: false, error: e.message }); }
+}
+
+async function handleAdminApply(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  try {
+    const cands = await gatherCandidates(body.mode, body.content || "");
+    const deduped = dedupeCands(db, cands);
+    const src = `admin:${body.mode}:${(body.content || "").slice(0, 60)}`;
+    const r = applyCands(db, deduped, src);
+    json(res, 200, { ok: true, ...r, total: db.prepare("SELECT COUNT(*) c FROM products").get().c });
+  } catch (e) { json(res, 200, { ok: false, error: e.message }); }
+}
+
 const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
     if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
+    if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);

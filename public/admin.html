@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>CNFinds · Admin — Importador universal</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.1);--brand:#ff4d2e;--ok:#16a34a;
+  --fd:"Bricolage Grotesque",system-ui,sans-serif;--ft:"Geist",system-ui,sans-serif}
+  @media(prefers-color-scheme:dark){:root{--bg:#08080a;--soft:#141417;--surface:#161618;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.13)}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em}
+  .wrap{max-width:920px;margin:0 auto;padding:30px 22px 80px}
+  h1{font-family:var(--fd);font-size:26px;letter-spacing:-.03em;margin:0 0 4px}h1 b{color:var(--brand)}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+  label{font-size:13px;font-weight:600;display:block;margin:16px 0 6px}
+  input,select,textarea{width:100%;font:inherit;font-size:14.5px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--brand)}
+  textarea{min-height:120px;resize:vertical;font-family:ui-monospace,monospace;font-size:12.5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:180px}
+  button{font:inherit;font-weight:600;font-size:14px;border:0;border-radius:12px;padding:12px 20px;cursor:pointer}
+  .primary{background:var(--brand);color:#fff}.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .ok{background:var(--ok);color:#fff}
+  .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:22px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:14px}
+  .stat b{font-family:var(--fd);font-size:24px;display:block}.stat span{font-size:12px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px}
+  .pill.new{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+  .pill.existing{background:var(--soft);color:var(--muted)}
+  .msg{font-size:14px;margin-top:12px}.msg.err{color:var(--brand)}.hint{color:var(--muted);font-size:12px;margin-top:6px}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CN<b>Finds</b> · Importador universal</h1>
+  <p class="sub">Pega un Google Sheet, un CSV o una lista de links (Reddit/Telegram). Extraemos los productos, quitamos los links ajenos y los añadimos con <b>tus IDs de afiliado</b>.</p>
+
+  <label>Token de admin</label>
+  <input id="token" type="password" placeholder="tu ADMIN_TOKEN" />
+  <div class="hint">Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).</div>
+
+  <div class="row" style="margin-top:8px">
+    <div>
+      <label>Fuente</label>
+      <select id="mode">
+        <option value="sheet">Google Sheet (URL)</option>
+        <option value="csv">CSV / TSV pegado</option>
+        <option value="text">Links o texto (Reddit/Telegram)</option>
+      </select>
+    </div>
+  </div>
+
+  <label id="lbl">URL del Google Sheet</label>
+  <input id="url" placeholder="https://docs.google.com/spreadsheets/d/…" />
+  <textarea id="content" placeholder="Pega aquí el CSV o los links…" style="display:none"></textarea>
+
+  <div class="actions">
+    <button class="primary" id="preview">Previsualizar</button>
+    <button class="ok" id="apply" style="display:none">Añadir al catálogo</button>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+const $=(s)=>document.querySelector(s);
+$("#token").value=localStorage.getItem("cnf_admin")||"";
+$("#token").oninput=()=>localStorage.setItem("cnf_admin",$("#token").value);
+function modeUI(){ const m=$("#mode").value; const isSheet=m==="sheet";
+  $("#url").style.display=isSheet?"block":"none"; $("#content").style.display=isSheet?"none":"block";
+  $("#lbl").textContent=isSheet?"URL del Google Sheet":(m==="csv"?"Pega el CSV/TSV":"Pega links o texto"); }
+$("#mode").onchange=()=>{ modeUI(); $("#apply").style.display="none"; $("#out").innerHTML=""; }; modeUI();
+
+function payload(){ const m=$("#mode").value; return { mode:m, content: m==="sheet"?$("#url").value.trim():$("#content").value }; }
+async function call(path){
+  const r=await fetch(path,{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify(payload())});
+  return r.json();
+}
+$("#preview").onclick=async()=>{
+  $("#out").innerHTML=`<p class="msg">Analizando…</p>`; $("#apply").style.display="none";
+  const d=await call("/api/admin/preview");
+  if(!d.ok){ $("#out").innerHTML=`<p class="msg err">${d.error||"Error"}</p>`; return; }
+  const s=d.stats;
+  const rows=d.sample.map(x=>`<tr><td><span class="pill ${x.status}">${x.status==="new"?"nuevo":"existe"}</span></td><td>${x.platform}</td><td>${x.itemId}</td><td>${(x.name||"—")}</td><td>${x.price!=null?"€"+x.price:"—"}</td></tr>`).join("");
+  $("#out").innerHTML=`<div class="card">
+    <div class="stats">
+      <div class="stat"><b>${s.encontrados}</b><span>encontrados</span></div>
+      <div class="stat"><b>${s.unicos}</b><span>únicos</span></div>
+      <div class="stat" style="color:var(--ok)"><b>${s.nuevos}</b><span>nuevos</span></div>
+      <div class="stat"><b>${s.existentes}</b><span>ya en catálogo</span></div>
+    </div>
+    <table><thead><tr><th></th><th>Plataforma</th><th>itemID</th><th>Nombre</th><th>Precio</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="hint">Muestra de ${d.sample.length}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.</p>
+  </div>`;
+  $("#apply").style.display=s.nuevos>0||s.existentes>0?"inline-block":"none";
+};
+$("#apply").onclick=async()=>{
+  $("#apply").disabled=true; $("#apply").textContent="Añadiendo…";
+  const d=await call("/api/admin/apply");
+  $("#apply").disabled=false; $("#apply").textContent="Añadir al catálogo";
+  if(!d.ok){ $("#out").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`); return; }
+  $("#out").insertAdjacentHTML("beforeend",`<p class="msg" style="color:var(--ok)">✓ ${d.added} añadidos · ${d.updated} actualizados · catálogo: ${d.total} productos.</p>`);
+};
+</script>
+</body>
+</html>
