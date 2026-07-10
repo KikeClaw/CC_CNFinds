@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>CNFinds · Admin — Importador universal</title>
+<title>CNFinds · Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.1);--brand:#ff4d2e;--ok:#16a34a;
@@ -12,8 +12,10 @@
   @media(prefers-color-scheme:dark){:root{--bg:#08080a;--soft:#141417;--surface:#161618;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.13)}}
   *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em}
   .wrap{max-width:920px;margin:0 auto;padding:30px 22px 80px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
   h1{font-family:var(--fd);font-size:26px;letter-spacing:-.03em;margin:0 0 4px}h1 b{color:var(--brand)}
   .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+  .lang{font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;background:var(--surface);color:var(--ink);white-space:nowrap}
   label{font-size:13px;font-weight:600;display:block;margin:16px 0 6px}
   input,select,textarea{width:100%;font:inherit;font-size:14.5px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);outline:none}
   input:focus,textarea:focus,select:focus{border-color:var(--brand)}
@@ -37,75 +39,153 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>CN<b>Finds</b> · Importador universal</h1>
-  <p class="sub">Pega un Google Sheet, un CSV o una lista de links (Reddit/Telegram). Extraemos los productos, quitamos los links ajenos y los añadimos con <b>tus IDs de afiliado</b>.</p>
+  <div class="top">
+    <div>
+      <h1>CN<b>Finds</b> · <span data-i18n="title">Importador universal</span></h1>
+      <p class="sub" data-i18n="sub">Pega un Google Sheet, un CSV o una lista de links (Reddit/Telegram). Extraemos los productos, quitamos los links ajenos y los añadimos con tus IDs de afiliado.</p>
+    </div>
+    <span class="lang" id="langBtn" title="Language">ES</span>
+  </div>
 
-  <label>Token de admin</label>
-  <input id="token" type="password" placeholder="tu ADMIN_TOKEN" />
-  <div class="hint">Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).</div>
+  <label data-i18n="token">Token de admin</label>
+  <input id="token" type="password" data-i18n-ph="token_ph" placeholder="tu ADMIN_TOKEN" />
+  <div class="hint" data-i18n="token_hint" data-i18n-html="1">Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).</div>
 
   <div class="row" style="margin-top:8px">
     <div>
-      <label>Fuente</label>
+      <label data-i18n="source">Fuente</label>
       <select id="mode">
-        <option value="sheet">Google Sheet (URL)</option>
-        <option value="csv">CSV / TSV pegado</option>
-        <option value="text">Links o texto (Reddit/Telegram)</option>
+        <option value="sheet" data-i18n="src_sheet">Google Sheet (URL)</option>
+        <option value="csv" data-i18n="src_csv">CSV / TSV pegado</option>
+        <option value="text" data-i18n="src_text">Links o texto (Reddit/Telegram)</option>
       </select>
     </div>
   </div>
 
-  <label id="lbl">URL del Google Sheet</label>
+  <label id="lbl" data-i18n="lbl_sheet">URL del Google Sheet</label>
   <input id="url" placeholder="https://docs.google.com/spreadsheets/d/…" />
-  <textarea id="content" placeholder="Pega aquí el CSV o los links…" style="display:none"></textarea>
+  <textarea id="content" data-i18n-ph="content_ph" placeholder="Pega aquí el CSV o los links…" style="display:none"></textarea>
 
   <div class="actions">
-    <button class="primary" id="preview">Previsualizar</button>
-    <button class="ok" id="apply" style="display:none">Añadir al catálogo</button>
+    <button class="primary" id="preview" data-i18n="preview">Previsualizar</button>
+    <button class="ok" id="apply" data-i18n="apply" style="display:none">Añadir al catálogo</button>
   </div>
 
   <div id="out"></div>
 
   <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Etiquetado con IA</h2>
-    <p class="hint" style="margin-bottom:14px">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
-    <button class="primary" id="tagAll">Etiquetar catálogo con IA</button>
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="tag_h">Etiquetado con IA</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="tag_hint" data-i18n-html="1">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
+    <button class="primary" id="tagAll" data-i18n="tag_btn">Etiquetar catálogo con IA</button>
     <div id="tagOut"></div>
   </div>
 
   <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">QC con IA (visión)</h2>
-    <p class="hint" style="margin-bottom:14px">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.</p>
-    <button class="primary" id="qcAll">Analizar QC del catálogo</button>
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="qc_h">QC con IA (visión)</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="qc_hint" data-i18n-html="1">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.</p>
+    <button class="primary" id="qcAll" data-i18n="qc_btn">Analizar QC del catálogo</button>
     <div id="qcOut"></div>
   </div>
 
   <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Borrar producto</h2>
-    <p class="hint" style="margin-bottom:12px">Elimina un producto por su ID (para curar el catálogo).</p>
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="del_h">Borrar producto</h2>
+    <p class="hint" style="margin-bottom:12px" data-i18n="del_hint">Elimina un producto por su ID (para curar el catálogo).</p>
     <div class="row" style="align-items:flex-end">
-      <div><input id="delId" placeholder="ID del producto"></div>
-      <div style="flex:none"><button class="ghost" id="delBtn" style="border-color:var(--brand);color:var(--brand)">Borrar</button></div>
+      <div><input id="delId" data-i18n-ph="del_ph" placeholder="ID del producto"></div>
+      <div style="flex:none"><button class="ghost" id="delBtn" style="border-color:var(--brand);color:var(--brand)" data-i18n="del_btn">Borrar</button></div>
     </div>
     <div id="delOut"></div>
   </div>
 
   <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Agentes y afiliación</h2>
-    <p class="hint" style="margin-bottom:14px">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
-    <button class="ghost" id="loadAgents">Cargar agentes</button>
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="ag_h">Agentes y afiliación</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="ag_hint" data-i18n-html="1">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
+    <button class="ghost" id="loadAgents" data-i18n="ag_load">Cargar agentes</button>
     <div id="agents"></div>
   </div>
 </div>
 
 <script>
 const $=(s)=>document.querySelector(s);
+let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,2)==="en"?"en":"es");
+const T={
+  es:{
+    title:"Importador universal",
+    sub:"Pega un Google Sheet, un CSV o una lista de links (Reddit/Telegram). Extraemos los productos, quitamos los links ajenos y los añadimos con tus IDs de afiliado.",
+    token:"Token de admin", token_ph:"tu ADMIN_TOKEN",
+    token_hint:'Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).',
+    source:"Fuente", src_sheet:"Google Sheet (URL)", src_csv:"CSV / TSV pegado", src_text:"Links o texto (Reddit/Telegram)",
+    lbl_sheet:"URL del Google Sheet", lbl_csv:"Pega el CSV/TSV", lbl_text:"Pega links o texto",
+    content_ph:"Pega aquí el CSV o los links…",
+    preview:"Previsualizar", apply:"Añadir al catálogo", applying:"Añadiendo…", analyzing:"Analizando…",
+    launching:"Lanzando…",
+    tag_h:"Etiquetado con IA", tag_hint:'Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.', tag_btn:"Etiquetar catálogo con IA",
+    qc_h:"QC con IA (visión)", qc_hint:'Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.', qc_btn:"Analizar QC del catálogo",
+    del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
+    ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
+    st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
+    th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
+    sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
+    added:(a,u,tot)=>`✓ ${a} añadidos · ${u} actualizados · catálogo: ${tot} productos.`,
+    enriching:(n)=>`⏳ Enriqueciendo fotos de ${n} productos nuevos… (en segundo plano)`,
+    job_read_err:"(no pude leer el progreso del enriquecimiento)",
+    ph_qc:"Analizando QC con IA", ph_tag:"Etiquetando con IA", ph_photo:"Enriqueciendo fotos",
+    done_prefix:"✓ Listo: ", nothing:"nada que hacer",
+    d_withImage:(n)=>`${n} con foto`, d_dead:(n)=>`${n} caídos`, d_tagged:(n)=>`${n} etiquetados`, d_scored:(n)=>`${n} con QC`,
+    tag_alldone:"Todo el catálogo ya está etiquetado ✓", tagging:(n)=>`⏳ Etiquetando ${n} productos con IA… (en segundo plano)`,
+    qc_alldone:"No hay productos con foto pendientes de QC ✓", qcing:(n)=>`⏳ Analizando QC de ${n} productos… (en segundo plano)`,
+    deleted:(d,tot)=>`Borrados: ${d} · catálogo: ${tot}`,
+    th_agent:"Agente", th_code:"Código de afiliado", th_active:"Activo", code_ph:"tu código", save:"Guardar",
+    ag_note:'Kakobuy ya tiene tu código. Rellena Mulebuy/OOPBuy cuando te registres y márcalos "Activo".',
+    err:"Error",
+  },
+  en:{
+    title:"Universal importer",
+    sub:"Paste a Google Sheet, a CSV or a list of links (Reddit/Telegram). We extract the products, strip out other people's links and add them with your affiliate IDs.",
+    token:"Admin token", token_ph:"your ADMIN_TOKEN",
+    token_hint:'Saved in your browser. Defaults to <code>cnfinds-admin</code> (change it with the <code>ADMIN_TOKEN</code> env var in production!).',
+    source:"Source", src_sheet:"Google Sheet (URL)", src_csv:"Pasted CSV / TSV", src_text:"Links or text (Reddit/Telegram)",
+    lbl_sheet:"Google Sheet URL", lbl_csv:"Paste the CSV/TSV", lbl_text:"Paste links or text",
+    content_ph:"Paste the CSV or the links here…",
+    preview:"Preview", apply:"Add to catalog", applying:"Adding…", analyzing:"Analyzing…",
+    launching:"Launching…",
+    tag_h:"AI tagging", tag_hint:'Generates <b>clean titles, brand, color and tags</b> for untagged products. Improves search (also in Spanish!) and SEO.', tag_btn:"Tag catalog with AI",
+    qc_h:"AI QC (vision)", qc_hint:'Scores quality (1-10) by analyzing each product\'s real photos. Uses the <b>vision</b> model: slower and pricier than tagging.', qc_btn:"Analyze catalog QC",
+    del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
+    ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
+    st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
+    th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
+    sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
+    added:(a,u,tot)=>`✓ ${a} added · ${u} updated · catalog: ${tot} products.`,
+    enriching:(n)=>`⏳ Enriching photos of ${n} new products… (in the background)`,
+    job_read_err:"(couldn't read the enrichment progress)",
+    ph_qc:"Analyzing QC with AI", ph_tag:"Tagging with AI", ph_photo:"Enriching photos",
+    done_prefix:"✓ Done: ", nothing:"nothing to do",
+    d_withImage:(n)=>`${n} with photo`, d_dead:(n)=>`${n} dead`, d_tagged:(n)=>`${n} tagged`, d_scored:(n)=>`${n} with QC`,
+    tag_alldone:"The whole catalog is already tagged ✓", tagging:(n)=>`⏳ Tagging ${n} products with AI… (in the background)`,
+    qc_alldone:"No products with a photo pending QC ✓", qcing:(n)=>`⏳ Analyzing QC of ${n} products… (in the background)`,
+    deleted:(d,tot)=>`Deleted: ${d} · catalog: ${tot}`,
+    th_agent:"Agent", th_code:"Affiliate code", th_active:"Active", code_ph:"your code", save:"Save",
+    ag_note:'Kakobuy already has your code. Fill in Mulebuy/OOPBuy when you register and mark them "Active".',
+    err:"Error",
+  },
+};
+const t=(k)=>((T[LANG]&&T[LANG][k])!=null?T[LANG][k]:T.es[k]);
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const v=t(el.getAttribute("data-i18n")); if(v==null) return; if(el.getAttribute("data-i18n-html")) el.innerHTML=v; else el.textContent=v; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=t(el.getAttribute("data-i18n-ph")); if(v!=null) el.setAttribute("placeholder",v); });
+  $("#langBtn").textContent=LANG.toUpperCase();
+  modeUI();
+}
+$("#langBtn").onclick=()=>{ LANG=LANG==="es"?"en":"es"; localStorage.setItem("cnf_lang",LANG); document.cookie="cnf_lang="+LANG+";path=/;max-age=31536000;samesite=lax"; applyLang(); };
+
 $("#token").value=localStorage.getItem("cnf_admin")||"";
 $("#token").oninput=()=>localStorage.setItem("cnf_admin",$("#token").value);
 function modeUI(){ const m=$("#mode").value; const isSheet=m==="sheet";
   $("#url").style.display=isSheet?"block":"none"; $("#content").style.display=isSheet?"none":"block";
-  $("#lbl").textContent=isSheet?"URL del Google Sheet":(m==="csv"?"Pega el CSV/TSV":"Pega links o texto"); }
-$("#mode").onchange=()=>{ modeUI(); $("#apply").style.display="none"; $("#out").innerHTML=""; }; modeUI();
+  $("#lbl").textContent=isSheet?t("lbl_sheet"):(m==="csv"?t("lbl_csv"):t("lbl_text")); }
+$("#mode").onchange=()=>{ modeUI(); $("#apply").style.display="none"; $("#out").innerHTML=""; };
 
 function payload(){ const m=$("#mode").value; return { mode:m, content: m==="sheet"?$("#url").value.trim():$("#content").value }; }
 async function call(path){
@@ -113,32 +193,32 @@ async function call(path){
   return r.json();
 }
 $("#preview").onclick=async()=>{
-  $("#out").innerHTML=`<p class="msg">Analizando…</p>`; $("#apply").style.display="none";
+  $("#out").innerHTML=`<p class="msg">${t("analyzing")}</p>`; $("#apply").style.display="none";
   const d=await call("/api/admin/preview");
-  if(!d.ok){ $("#out").innerHTML=`<p class="msg err">${d.error||"Error"}</p>`; return; }
+  if(!d.ok){ $("#out").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
   const s=d.stats;
-  const rows=d.sample.map(x=>`<tr><td><span class="pill ${x.status}">${x.status==="new"?"nuevo":"existe"}</span></td><td>${x.platform}</td><td>${x.itemId}</td><td>${(x.name||"—")}</td><td>${x.price!=null?"€"+x.price:"—"}</td></tr>`).join("");
+  const rows=d.sample.map(x=>`<tr><td><span class="pill ${x.status}">${x.status==="new"?t("new_"):t("existing_")}</span></td><td>${x.platform}</td><td>${x.itemId}</td><td>${(x.name||"—")}</td><td>${x.price!=null?"€"+x.price:"—"}</td></tr>`).join("");
   $("#out").innerHTML=`<div class="card">
     <div class="stats">
-      <div class="stat"><b>${s.encontrados}</b><span>encontrados</span></div>
-      <div class="stat"><b>${s.unicos}</b><span>únicos</span></div>
-      <div class="stat" style="color:var(--ok)"><b>${s.nuevos}</b><span>nuevos</span></div>
-      <div class="stat"><b>${s.existentes}</b><span>ya en catálogo</span></div>
+      <div class="stat"><b>${s.encontrados}</b><span>${t("st_found")}</span></div>
+      <div class="stat"><b>${s.unicos}</b><span>${t("st_unique")}</span></div>
+      <div class="stat" style="color:var(--ok)"><b>${s.nuevos}</b><span>${t("st_new")}</span></div>
+      <div class="stat"><b>${s.existentes}</b><span>${t("st_existing")}</span></div>
     </div>
-    <table><thead><tr><th></th><th>Plataforma</th><th>itemID</th><th>Nombre</th><th>Precio</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="hint">Muestra de ${d.sample.length}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.</p>
+    <table><thead><tr><th></th><th>${t("th_platform")}</th><th>itemID</th><th>${t("th_name")}</th><th>${t("th_price")}</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="hint">${t("sample_of")(d.sample.length)}</p>
   </div>`;
   $("#apply").style.display=s.nuevos>0||s.existentes>0?"inline-block":"none";
 };
 $("#apply").onclick=async()=>{
-  $("#apply").disabled=true; $("#apply").textContent="Añadiendo…";
+  $("#apply").disabled=true; $("#apply").textContent=t("applying");
   const d=await call("/api/admin/apply");
-  $("#apply").disabled=false; $("#apply").textContent="Añadir al catálogo";
+  $("#apply").disabled=false; $("#apply").textContent=t("apply");
   if(!d.ok){ $("#out").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`); return; }
-  $("#out").insertAdjacentHTML("beforeend",`<p class="msg" style="color:var(--ok)">✓ ${d.added} añadidos · ${d.updated} actualizados · catálogo: ${d.total} productos.</p>`);
+  $("#out").insertAdjacentHTML("beforeend",`<p class="msg" style="color:var(--ok)">${t("added")(d.added,d.updated,d.total)}</p>`);
   if(d.jobId){
     const line=document.createElement("p"); line.className="msg";
-    line.textContent=`⏳ Enriqueciendo fotos de ${d.enriching} productos nuevos… (en segundo plano)`;
+    line.textContent=t("enriching")(d.enriching);
     $("#out").appendChild(line);
     pollJob(d.jobId,line);
   }
@@ -147,40 +227,40 @@ async function pollJob(id,line){
   try{
     const r=await fetch("/api/admin/job?id="+encodeURIComponent(id),{headers:{"x-admin-token":$("#token").value}});
     const d=await r.json();
-    if(!d.ok){ line.textContent="(no pude leer el progreso del enriquecimiento)"; return; }
+    if(!d.ok){ line.textContent=t("job_read_err"); return; }
     const j=d.job;
     if(j.status==="running"){
-      const ph=j.phase==="qc"?"Analizando QC con IA":(j.phase==="etiquetado"?"Etiquetando con IA":"Enriqueciendo fotos");
+      const ph=j.phase==="qc"?t("ph_qc"):(j.phase==="etiquetado"?t("ph_tag"):t("ph_photo"));
       line.textContent=`⏳ ${ph} ${j.done}/${j.total}…`;
       setTimeout(()=>pollJob(id,line),2000);
     } else {
       line.style.color="var(--ok)";
-      const parts=[]; if(j.withImage) parts.push(`${j.withImage} con foto`); if(j.dead) parts.push(`${j.dead} caídos`); if(j.tagged) parts.push(`${j.tagged} etiquetados`); if(j.scored) parts.push(`${j.scored} con QC`);
-      line.textContent="✓ Listo: "+(parts.join(" · ")||"nada que hacer");
+      const parts=[]; if(j.withImage) parts.push(t("d_withImage")(j.withImage)); if(j.dead) parts.push(t("d_dead")(j.dead)); if(j.tagged) parts.push(t("d_tagged")(j.tagged)); if(j.scored) parts.push(t("d_scored")(j.scored));
+      line.textContent=t("done_prefix")+(parts.join(" · ")||t("nothing"));
     }
   }catch{ setTimeout(()=>pollJob(id,line),3000); }
 }
 
 /* Etiquetar todo el catálogo con IA */
 $("#tagAll").onclick=async()=>{
-  $("#tagAll").disabled=true; $("#tagAll").textContent="Lanzando…";
+  $("#tagAll").disabled=true; $("#tagAll").textContent=t("launching");
   const r=await fetch("/api/admin/tag-all",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value}});
-  const d=await r.json(); $("#tagAll").disabled=false; $("#tagAll").textContent="Etiquetar catálogo con IA";
+  const d=await r.json(); $("#tagAll").disabled=false; $("#tagAll").textContent=t("tag_btn");
   if(!d.ok){ $("#tagOut").innerHTML=`<p class="msg err">${d.error}</p>`; return; }
-  if(!d.jobId){ $("#tagOut").innerHTML=`<p class="msg" style="color:var(--ok)">Todo el catálogo ya está etiquetado ✓</p>`; return; }
-  const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ Etiquetando ${d.count} productos con IA… (en segundo plano)`;
+  if(!d.jobId){ $("#tagOut").innerHTML=`<p class="msg" style="color:var(--ok)">${t("tag_alldone")}</p>`; return; }
+  const line=document.createElement("p"); line.className="msg"; line.textContent=t("tagging")(d.count);
   $("#tagOut").innerHTML=""; $("#tagOut").appendChild(line);
   pollJob(d.jobId,line);
 };
 
 /* QC del catálogo con IA */
 $("#qcAll").onclick=async()=>{
-  $("#qcAll").disabled=true; $("#qcAll").textContent="Lanzando…";
+  $("#qcAll").disabled=true; $("#qcAll").textContent=t("launching");
   const r=await fetch("/api/admin/qc-all",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value}});
-  const d=await r.json(); $("#qcAll").disabled=false; $("#qcAll").textContent="Analizar QC del catálogo";
+  const d=await r.json(); $("#qcAll").disabled=false; $("#qcAll").textContent=t("qc_btn");
   if(!d.ok){ $("#qcOut").innerHTML=`<p class="msg err">${d.error}</p>`; return; }
-  if(!d.jobId){ $("#qcOut").innerHTML=`<p class="msg" style="color:var(--ok)">No hay productos con foto pendientes de QC ✓</p>`; return; }
-  const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ Analizando QC de ${d.count} productos… (en segundo plano)`;
+  if(!d.jobId){ $("#qcOut").innerHTML=`<p class="msg" style="color:var(--ok)">${t("qc_alldone")}</p>`; return; }
+  const line=document.createElement("p"); line.className="msg"; line.textContent=t("qcing")(d.count);
   $("#qcOut").innerHTML=""; $("#qcOut").appendChild(line); pollJob(d.jobId,line);
 };
 
@@ -189,7 +269,7 @@ $("#delBtn").onclick=async()=>{
   const id=$("#delId").value.trim(); if(!id) return;
   const r=await fetch("/api/admin/product-delete",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id})});
   const d=await r.json();
-  $("#delOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok)">Borrados: ${d.deleted} · catálogo: ${d.total}</p>`:`<p class="msg err">${d.error}</p>`;
+  $("#delOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok)">${t("deleted")(d.deleted,d.total)}</p>`:`<p class="msg err">${d.error}</p>`;
   if(d.ok) $("#delId").value="";
 };
 
@@ -197,28 +277,30 @@ $("#delBtn").onclick=async()=>{
 async function loadAgents(){
   const r=await fetch("/api/admin/agents",{headers:{"x-admin-token":$("#token").value}});
   const d=await r.json();
-  if(!d.ok){ $("#agents").innerHTML=`<p class="msg err">${d.error||"Error"}</p>`; return; }
+  if(!d.ok){ $("#agents").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
   renderAgents(d.agents);
 }
 function renderAgents(agents){
-  $("#agents").innerHTML=`<table style="margin-top:14px"><thead><tr><th>Agente</th><th>Código de afiliado</th><th style="text-align:center">Activo</th><th></th></tr></thead><tbody>${agents.map(a=>`
+  $("#agents").innerHTML=`<table style="margin-top:14px"><thead><tr><th>${t("th_agent")}</th><th>${t("th_code")}</th><th style="text-align:center">${t("th_active")}</th><th></th></tr></thead><tbody>${agents.map(a=>`
     <tr data-id="${a.id}">
       <td><b>${a.name}</b></td>
-      <td><input class="ac-code" value="${a.configured?a.code:''}" placeholder="tu código" style="padding:7px 10px"></td>
+      <td><input class="ac-code" value="${a.configured?a.code:''}" placeholder="${t("code_ph")}" style="padding:7px 10px"></td>
       <td style="text-align:center"><input type="checkbox" class="ac-en" ${a.enabled?'checked':''}></td>
-      <td><button class="primary ac-save" style="padding:7px 14px">Guardar</button></td>
+      <td><button class="primary ac-save" style="padding:7px 14px">${t("save")}</button></td>
     </tr>`).join("")}</tbody></table>
-    <p class="hint">Kakobuy ya tiene tu código. Rellena Mulebuy/OOPBuy cuando te registres y márcalos "Activo".</p>`;
+    <p class="hint">${t("ag_note")}</p>`;
   $("#agents").querySelectorAll(".ac-save").forEach(b=>b.onclick=async()=>{
     const tr=b.closest("tr"), id=tr.dataset.id;
     const code=tr.querySelector(".ac-code").value.trim(), enabled=tr.querySelector(".ac-en").checked;
     b.disabled=true; b.textContent="…";
     const r=await fetch("/api/admin/agents",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id,code,enabled})});
-    const d=await r.json(); b.disabled=false; b.textContent="Guardar";
+    const d=await r.json(); b.disabled=false; b.textContent=t("save");
     if(d.ok) renderAgents(d.agents); else $("#agents").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`);
   });
 }
 $("#loadAgents").onclick=loadAgents;
+
+applyLang();
 </script>
 </body>
 </html>

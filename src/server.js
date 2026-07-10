@@ -18,6 +18,7 @@ import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
 import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage } from "./lib/render.js";
 import { GUIDES, guideBySlug } from "./lib/guides.js";
+import { canonCat, catLabel } from "./lib/categories.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -73,7 +74,10 @@ function handleCategories(res) {
   `).all();
   const total = db.prepare("SELECT COUNT(*) c FROM products").get().c;
   const withImg = db.prepare("SELECT COUNT(*) c FROM products WHERE image_url IS NOT NULL").get().c;
-  json(res, 200, { total, withImage: withImg, categories: rows });
+  const categories = rows.map((r) => ({
+    ...r, label_en: catLabel(r.category, "en"), label_es: catLabel(r.category, "es"),
+  }));
+  json(res, 200, { total, withImage: withImg, categories });
 }
 
 function handleBrands(res, params) {
@@ -91,7 +95,7 @@ function handleBrands(res, params) {
 
 function handleProducts(res, params) {
   const q = (params.get("q") || "").trim();
-  const category = (params.get("category") || "").trim();
+  const category = canonCat((params.get("category") || "").trim());
   const brand = (params.get("brand") || "").trim();
   const gender = (params.get("gender") || "").trim();
   const hot = params.get("hot") === "1";
@@ -314,17 +318,19 @@ function handleProductPage(req, res, id) {
   html(res, productPage(p, relatedProducts(p), baseUrl(req), reqLang(req)));
 }
 function handleListPage(req, res, kind, name) {
+  if (kind === "categoria") name = canonCat(name); // resuelve URLs con categoría cruda/antigua
   const col = kind === "marca" ? "brand" : "category";
   const rows = db.prepare(
     `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${col}=? ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
   ).all(name).map((r) => ({ id: r.id, name: r.clean_title || r.name, brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
   if (!rows.length) return html(res, "<h1>404</h1>", 404);
-  const topLinks = kind === "marca"
-    ? db.prepare("SELECT DISTINCT category c FROM products WHERE brand=? AND category IS NOT NULL").all(name).map((x) => ({ href: `/categoria/${encodeURIComponent(x.c)}`, label: x.c }))
-    : db.prepare("SELECT brand b FROM products WHERE category=? AND brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 10").all(name).map((x) => ({ href: `/marca/${encodeURIComponent(x.b)}`, label: x.b }));
   const lang = reqLang(req);
   const lp = lang === "en" ? "?lang=en" : "";
-  html(res, listPage({ kind, name, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/" + lp, label: lang === "en" ? "Home" : "Inicio" }], lang }));
+  const topLinks = kind === "marca"
+    ? db.prepare("SELECT DISTINCT category c FROM products WHERE brand=? AND category IS NOT NULL").all(name).map((x) => ({ href: `/categoria/${encodeURIComponent(x.c)}`, label: catLabel(x.c, lang) }))
+    : db.prepare("SELECT brand b FROM products WHERE category=? AND brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 10").all(name).map((x) => ({ href: `/marca/${encodeURIComponent(x.b)}`, label: x.b }));
+  const displayLabel = kind === "categoria" ? catLabel(name, lang) : name;
+  html(res, listPage({ kind, name, displayLabel, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/" + lp, label: lang === "en" ? "Home" : "Inicio" }], lang }));
 }
 function handleSitemap(req, res) {
   const ids = db.prepare("SELECT id FROM products").all().map((r) => r.id);
@@ -573,6 +579,20 @@ const server = createServer((req, res) => {
 
 // Auto-siembra: si el catálogo está vacío (primer arranque en un volumen nuevo),
 // importa desde la Sheet y enriquece fotos en segundo plano. No bloquea el listen.
+// Normaliza categorías al conjunto canónico (idempotente). Fusiona duplicados por
+// mayúsculas/idioma. Se ejecuta en cada arranque (local y Railway) y es un no-op
+// una vez normalizado.
+function normalizeCategories() {
+  const rows = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all();
+  const upd = db.prepare("UPDATE products SET category=? WHERE category=?");
+  let changed = 0;
+  for (const { category } of rows) {
+    const canon = canonCat(category);
+    if (canon !== category) { const r = upd.run(canon, category); changed += r.changes; }
+  }
+  if (changed) console.log(`Categorías normalizadas: ${changed} productos reasignados.`);
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -582,6 +602,7 @@ async function bootstrap() {
       const r = applyCands(db, deduped, "seed:boot");
       console.log(`Semilla importada: ${r.added} productos.`);
     }
+    normalizeCategories();
     // Continúa fotos pendientes (self-healing tras reinicios); salta los caídos
     // revisados hace menos de 7 días para no re-machacarlos.
     const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();

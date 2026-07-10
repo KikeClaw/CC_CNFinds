@@ -1,5 +1,6 @@
 // Renderizado server-side de paginas indexables (SEO): ficha de producto,
 // landings de categoria/marca, sitemap. HTML con contenido real + meta + schema.
+import { catLabel } from "./categories.js";
 const AGENT_COLOR = { cnfans: "#ff5a2c", mulebuy: "#2d7ff9", kakobuy: "#18a558", oopbuy: "#8b5cf6" };
 
 export function esc(s) {
@@ -146,7 +147,7 @@ export function productPage(p, related, base, lang = "es") {
   const agents = Object.entries(p.links).map(([k, l]) =>
     `<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</a>`).join("");
   const crumbs = [{ href: "/" + lp, label: tr(lang, "home") }];
-  if (p.category) crumbs.push({ href: `/categoria/${slug(p.category)}${lp}`, label: p.category });
+  if (p.category) crumbs.push({ href: `/categoria/${slug(p.category)}${lp}`, label: catLabel(p.category, lang) });
   if (p.brand) crumbs.push({ href: `/marca/${slug(p.brand)}${lp}`, label: p.brand });
 
   const body = `
@@ -172,10 +173,10 @@ ${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}</h2><div
 }
 
 // --- Landing de listado (categoria / marca) ---
-export function listPage({ kind, name, items, base, crumbs, topLinks, lang = "es" }) {
+export function listPage({ kind, name, displayLabel, items, base, crumbs, topLinks, lang = "es" }) {
   const lp = lang === "en" ? "?lang=en" : "";
   const path = `${base}/${kind}/${slug(name)}`;
-  const label = kind === "marca" ? name : name;
+  const label = displayLabel || name;
   const title = `${label} — ${items.length}+ ${tr(lang, "ld_more")} | CNFinds`;
   const desc = tr(lang, "ld_desc")(label, items.length);
   const jsonld = {

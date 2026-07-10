@@ -492,6 +492,8 @@ const T={
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.raw_name||p.name):p.name;
+const CATMAP={};
+const catDisp=(c)=>{ const e=CATMAP[c]; return e?(LANG==="en"?e.en:e.es):(c||""); };
 const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:48,total:0,loading:false };
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
@@ -590,10 +592,11 @@ $("#fav").onclick=()=>{
 /* categories */
 async function loadCats(){
   const d=await (await fetch("/api/categories")).json();
+  d.categories.forEach(c=>{ CATMAP[c.category]={es:c.label_es||c.category,en:c.label_en||c.category}; });
   $("#strip").innerHTML=d.categories.filter(c=>c.category!=="(otros)").map(c=>`
     <div class="cat" data-cat="${esc(c.category)}" style="--cc:${catColor(c.category)}">
       <div class="ci">${ic(catIcon(c.category),22,1.7)}</div>
-      <div class="cname">${esc(c.category)}</div>
+      <div class="cname">${esc(catDisp(c.category))}</div>
       <div class="ccount">${c.count} ${t("arts")}</div>
     </div>`).join("");
   $("#strip").querySelectorAll(".cat").forEach(el=>el.onclick=()=>{ state.category=state.category===el.dataset.cat?"":el.dataset.cat; state.brand=""; applyAndScroll(); });
@@ -648,7 +651,7 @@ async function load(reset){
 }
 function renderFilters(){
   const chips=[];
-  if(state.category) chips.push(["category",state.category]);
+  if(state.category) chips.push(["category",catDisp(state.category)]);
   if(state.brand) chips.push(["brand",state.brand]);
   if(state.q) chips.push(["q",`“${state.q}”`]);
   $("#activeFilters").innerHTML=chips.map(([k,v])=>`<span class="active-filter">${esc(v)} <button data-clear="${k}">${ic("x",13,2.2)}</button></span>`).join("");
@@ -670,7 +673,7 @@ function openModal(p){
       <button class="close" onclick="closeModal()">${ic("x",17,2)}</button>
       ${p.brand?`<div class="mbrand">${esc(p.brand)}</div>`:""}
       <h3>${esc(pname(p))}</h3>
-      <div class="mcat">${ic("tag",13,1.9)} ${esc(p.category||"")}</div>
+      <div class="mcat">${ic("tag",13,1.9)} ${esc(catDisp(p.category||""))}</div>
       <div class="mprice">${eur(p.price_eur)}</div>
       ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${p.qc_summary?` · ${esc(p.qc_summary)}`:""}</div>`:""}
       <div class="agents-title">${t("elige_agente")}</div>
