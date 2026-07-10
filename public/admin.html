@@ -74,6 +74,23 @@
   </div>
 
   <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">QC con IA (visión)</h2>
+    <p class="hint" style="margin-bottom:14px">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.</p>
+    <button class="primary" id="qcAll">Analizar QC del catálogo</button>
+    <div id="qcOut"></div>
+  </div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Borrar producto</h2>
+    <p class="hint" style="margin-bottom:12px">Elimina un producto por su ID (para curar el catálogo).</p>
+    <div class="row" style="align-items:flex-end">
+      <div><input id="delId" placeholder="ID del producto"></div>
+      <div style="flex:none"><button class="ghost" id="delBtn" style="border-color:var(--brand);color:var(--brand)">Borrar</button></div>
+    </div>
+    <div id="delOut"></div>
+  </div>
+
+  <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px">Agentes y afiliación</h2>
     <p class="hint" style="margin-bottom:14px">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
     <button class="ghost" id="loadAgents">Cargar agentes</button>
@@ -133,12 +150,12 @@ async function pollJob(id,line){
     if(!d.ok){ line.textContent="(no pude leer el progreso del enriquecimiento)"; return; }
     const j=d.job;
     if(j.status==="running"){
-      const ph=j.phase==="etiquetado"?"Etiquetando con IA":"Enriqueciendo fotos";
+      const ph=j.phase==="qc"?"Analizando QC con IA":(j.phase==="etiquetado"?"Etiquetando con IA":"Enriqueciendo fotos");
       line.textContent=`⏳ ${ph} ${j.done}/${j.total}…`;
       setTimeout(()=>pollJob(id,line),2000);
     } else {
       line.style.color="var(--ok)";
-      const parts=[]; if(j.withImage) parts.push(`${j.withImage} con foto`); if(j.dead) parts.push(`${j.dead} caídos`); if(j.tagged) parts.push(`${j.tagged} etiquetados`);
+      const parts=[]; if(j.withImage) parts.push(`${j.withImage} con foto`); if(j.dead) parts.push(`${j.dead} caídos`); if(j.tagged) parts.push(`${j.tagged} etiquetados`); if(j.scored) parts.push(`${j.scored} con QC`);
       line.textContent="✓ Listo: "+(parts.join(" · ")||"nada que hacer");
     }
   }catch{ setTimeout(()=>pollJob(id,line),3000); }
@@ -154,6 +171,26 @@ $("#tagAll").onclick=async()=>{
   const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ Etiquetando ${d.count} productos con IA… (en segundo plano)`;
   $("#tagOut").innerHTML=""; $("#tagOut").appendChild(line);
   pollJob(d.jobId,line);
+};
+
+/* QC del catálogo con IA */
+$("#qcAll").onclick=async()=>{
+  $("#qcAll").disabled=true; $("#qcAll").textContent="Lanzando…";
+  const r=await fetch("/api/admin/qc-all",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value}});
+  const d=await r.json(); $("#qcAll").disabled=false; $("#qcAll").textContent="Analizar QC del catálogo";
+  if(!d.ok){ $("#qcOut").innerHTML=`<p class="msg err">${d.error}</p>`; return; }
+  if(!d.jobId){ $("#qcOut").innerHTML=`<p class="msg" style="color:var(--ok)">No hay productos con foto pendientes de QC ✓</p>`; return; }
+  const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ Analizando QC de ${d.count} productos… (en segundo plano)`;
+  $("#qcOut").innerHTML=""; $("#qcOut").appendChild(line); pollJob(d.jobId,line);
+};
+
+/* borrar producto */
+$("#delBtn").onclick=async()=>{
+  const id=$("#delId").value.trim(); if(!id) return;
+  const r=await fetch("/api/admin/product-delete",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id})});
+  const d=await r.json();
+  $("#delOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok)">Borrados: ${d.deleted} · catálogo: ${d.total}</p>`:`<p class="msg err">${d.error}</p>`;
+  if(d.ok) $("#delId").value="";
 };
 
 /* Gestor de agentes / afiliación */

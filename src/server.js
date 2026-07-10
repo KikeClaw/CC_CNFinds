@@ -25,6 +25,7 @@ import { harvestText } from "./lib/harvest.js";
 import { mapColumnsAI, candidatesFromMap } from "./lib/aimap.js";
 import { enrichProduct } from "./lib/enrich.js";
 import { tagOne } from "./lib/aitag.js";
+import { qcOne } from "./lib/aiqc.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dir, "..");
@@ -108,17 +109,19 @@ function handleProducts(res, params) {
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
   const rows = db.prepare(`
-    SELECT id, platform, item_id, name, brand, category, price_eur, image_url, images, hot
+    SELECT id, platform, item_id, name, clean_title, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
     FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?
   `).all(...args, limit, offset);
 
   const items = rows.map((r) => {
     let gallery = [];
     try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
+    let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.name, brand: r.brand, category: r.category,
+      id: r.id, name: r.clean_title || r.name, brand: r.brand, category: r.category,
       price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
+      qc_score: r.qc_score, qc_summary: qc.summary,
       links: buildLinks(r.platform, r.item_id),
     };
   });
@@ -154,15 +157,17 @@ function selectProducts(f) {
   const sort = SORTS[f.sort] || SORTS.trending;
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...argv).c;
   const rows = db.prepare(`
-    SELECT id, platform, item_id, name, clean_title, brand, category, price_eur, image_url, images, hot
+    SELECT id, platform, item_id, name, clean_title, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
     FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?
   `).all(...argv, Math.min(f.limit || 48, 200), f.offset || 0);
   const items = rows.map((r) => {
     let gallery = []; try { gallery = r.images ? JSON.parse(r.images) : []; } catch {}
+    let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
       id: r.id, name: r.clean_title || r.name, raw_name: r.name, brand: r.brand,
       category: r.category, price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
+      qc_score: r.qc_score, qc_summary: qc.summary,
       links: buildLinks(r.platform, r.item_id),
     };
   });
@@ -435,6 +440,48 @@ async function handleAdminTagAll(req, res) {
   json(res, 200, { ok: true, count: ids.length, jobId });
 }
 
+function startQcJob(ids) {
+  const id = "job_" + (++jobSeq);
+  const job = { id, total: ids.length, done: 0, scored: 0, tagged: 0, withImage: 0, dead: 0, phase: "qc", status: "running" };
+  jobs.set(id, job);
+  if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+  (async () => {
+    for (const pid of ids) {
+      try {
+        const r = db.prepare("SELECT clean_title, name, images FROM products WHERE id=? AND qc_score IS NULL AND images IS NOT NULL").get(pid);
+        if (r) {
+          let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => `${u}.webp?w=700&h=700`); } catch {}
+          if (imgs.length) {
+            const out = await qcOne(imgs, r.clean_title || r.name);
+            db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?").run(out.qc_score, JSON.stringify({ summary: out.qc_summary, flags: out.flags }), pid);
+            job.scored++;
+          }
+        }
+      } catch {}
+      job.done++;
+    }
+    job.phase = "listo"; job.status = "done";
+  })().catch(() => { job.status = "error"; });
+  return id;
+}
+
+async function handleAdminQcAll(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  const ids = db.prepare("SELECT id FROM products WHERE qc_score IS NULL AND images IS NOT NULL").all().map((r) => r.id);
+  const jobId = ids.length ? startQcJob(ids) : null;
+  json(res, 200, { ok: true, count: ids.length, jobId });
+}
+
+async function handleAdminDelete(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const id = parseInt(body.id, 10);
+  if (!id) return json(res, 400, { ok: false, error: "id inválido" });
+  const info = db.prepare("DELETE FROM products WHERE id=?").run(id);
+  json(res, 200, { ok: true, deleted: info.changes, total: db.prepare("SELECT COUNT(*) c FROM products").get().c });
+}
+
 async function handleAdminApply(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
@@ -473,6 +520,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/agents" && req.method === "POST") return void handleAdminAgentsSet(req, res);
     if (u.pathname === "/api/admin/job") return void handleAdminJob(req, res, u.searchParams.get("id"));
     if (req.method === "POST" && u.pathname === "/api/admin/tag-all") return void handleAdminTagAll(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/qc-all") return void handleAdminQcAll(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/product-delete") return void handleAdminDelete(req, res);
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
     if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
@@ -490,8 +539,11 @@ const server = createServer((req, res) => {
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
     if (u.pathname === "/" || u.pathname === "/index.html") {
+      let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
+      // Analítica opcional: define ANALYTICS_SNIPPET (Plausible/GA/Umami…) y se inyecta.
+      if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(readFileSync(join(ROOT, "public", "index.html")));
+      return res.end(page);
     }
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
