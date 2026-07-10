@@ -12,7 +12,7 @@
     --bg:#ffffff; --soft:#f4f4f6; --surface:#ffffff; --surface2:#fafafb;
     --ink:#0a0a0b; --ink2:#3a3a3f; --muted:#77777f; --line:rgba(10,10,15,.08); --line2:rgba(10,10,15,.05);
     --accent:#0a0a0b; --accent-ink:#fff; --hot:#ff2d55; --brandc:#ff5a2c;
-    --grad:linear-gradient(120deg,#ff6a2b 0%,#ff2d8f 52%,#8b5cf6 100%);
+    --brand:#ff4d2e;
     --shadow:0 8px 34px rgba(10,10,20,.07); --shadow-lg:0 30px 80px rgba(10,10,20,.18);
     --radius:22px; --radius-sm:15px;
     --c1:#ff6a2b40; --c2:#2d7ff936; --c3:#ff2d8f3a;
@@ -40,15 +40,15 @@
   .wrap{ max-width:1280px; margin:0 auto; padding:0 24px; }
   .ic{ display:inline-block; vertical-align:middle; flex:none; }
   h1,h2,h3{ font-family:var(--font-d); }
-  .gr{ background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .gr{ color:var(--brand); }
 
   /* logo / wordmark */
   .brand{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-d); font-weight:800; font-size:21px; letter-spacing:-.04em; }
-  .brand .mark{ display:inline-grid; place-items:center; filter:drop-shadow(0 4px 11px rgba(255,45,143,.36)); }
-  .brand .wm b{ font-weight:800; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .brand .mark{ display:inline-grid; place-items:center; filter:drop-shadow(0 4px 10px rgba(0,0,0,.16)); }
+  .brand .wm b{ font-weight:800; color:var(--brand); }
 
   /* announcement */
-  .promo{ background:var(--grad); color:#fff; font-size:12.5px; letter-spacing:.01em; }
+  .promo{ background:var(--brand); color:#fff; font-size:12.5px; letter-spacing:.01em; }
   .promo .wrap{ display:flex; align-items:center; gap:10px; height:38px; }
   .promo b{ font-weight:700; }
   .promo .code{ border:1px dashed rgba(255,255,255,.55); padding:2px 8px; border-radius:7px; font-weight:600; }
@@ -70,11 +70,7 @@
 
   /* hero */
   .hero{ position:relative; overflow:hidden; border-bottom:1px solid var(--line2); }
-  .hero-bg{ position:absolute; inset:-50% -15% auto -15%; height:170%; z-index:0; filter:blur(46px); opacity:.95;
-    background:
-      radial-gradient(38% 55% at 16% 24%, var(--c1), transparent 66%),
-      radial-gradient(44% 54% at 86% 14%, var(--c2), transparent 68%),
-      radial-gradient(46% 50% at 60% 84%, var(--c3), transparent 68%); }
+  .hero-bg{ position:absolute; inset:0; z-index:0; background:color-mix(in srgb, var(--brand) 6%, var(--bg)); }
   .hero-in{ position:relative; z-index:1; padding:76px 0 48px; text-align:center; }
   .eyebrow{ display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--ink2); font-weight:600;
     letter-spacing:.06em; text-transform:uppercase; background:var(--surface); border:1px solid var(--line);
@@ -89,7 +85,7 @@
   .searchrow{ display:flex; gap:8px; padding:4px 4px 4px 14px; align-items:center; }
   .searchrow .sic{ color:var(--muted); }
   .searchrow input{ flex:1; border:0; background:transparent; color:var(--ink); font-size:16.5px; padding:13px 8px; outline:none; font-family:var(--font-t); }
-  .go{ background:var(--grad); color:#fff; border:0; border-radius:16px; padding:0 24px; height:48px; font-weight:600; font-size:14.5px; box-shadow:0 8px 22px rgba(255,45,143,.32); }
+  .go{ background:var(--brand); color:#fff; border:0; border-radius:16px; padding:0 24px; height:48px; font-weight:600; font-size:14.5px; box-shadow:0 6px 18px rgba(0,0,0,.12); }
   .go:hover{ filter:brightness(1.05); }
   .go.ai{ background:var(--surface); color:var(--brandc); border:1px solid var(--line); box-shadow:none; display:inline-flex; align-items:center; gap:6px; }
   .go.ai:hover{ background:var(--soft); filter:none; }
@@ -126,7 +122,7 @@
   .card:hover .ph img{ transform:scale(1.07); }
   .tag{ position:absolute; top:11px; left:11px; display:inline-flex; align-items:center; gap:4px; font-size:11px;
     font-weight:700; padding:5px 9px; border-radius:9px; letter-spacing:.02em; color:#fff;
-    background:linear-gradient(120deg,#ff3b30,#ff2d8f); box-shadow:0 4px 12px rgba(255,45,143,.4); }
+    background:var(--hot); box-shadow:0 4px 12px rgba(0,0,0,.18); }
   .heart{ position:absolute; top:9px; right:9px; width:34px; height:34px; border-radius:999px; border:0;
     background:color-mix(in srgb,var(--surface) 66%,transparent); backdrop-filter:blur(8px); color:var(--ink2); display:grid; place-items:center; transition:.15s; }
   .heart:hover{ color:var(--hot); transform:scale(1.08); }
@@ -231,7 +227,7 @@
   <div class="wrap nav">
     <a class="brand" href="#top">
       <span class="mark"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
-        <rect width="32" height="32" rx="9" fill="url(#cnGrad)"/>
+        <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
         <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
         <line x1="17.8" y1="17.8" x2="22.6" y2="22.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
       </svg></span>
@@ -241,6 +237,7 @@
       <a href="#catalogo">Productos</a>
       <a href="#categorias">Categorías</a>
       <a href="#marcas">Marcas</a>
+      <a href="#fit">Fit IA</a>
       <a href="#convertidor">Conversor</a>
     </div>
     <div class="right">
@@ -295,6 +292,17 @@
     <div class="grid" id="trending"></div>
   </section>
 
+  <section id="fit">
+    <div class="head"><h2><span class="sq" id="hfit"></span>Arma tu fit con IA</h2><span class="muted" style="font-size:13px">Dinos tu presupuesto y montamos un outfit</span></div>
+    <div class="conv">
+      <span class="sic" id="fitIc"></span>
+      <input id="fitBudget" type="number" min="10" placeholder="Presupuesto € (ej. 150)" style="max-width:190px; flex:none" />
+      <input id="fitStyle" placeholder="Estilo (opcional): techwear, minimal, y2k…" />
+      <button class="go" id="fitBtn">Armar</button>
+    </div>
+    <div id="fitResult" class="conv-result"></div>
+  </section>
+
   <section id="marcas">
     <div class="head"><h2><span class="sq" id="htag"></span>Marcas populares</h2><span class="muted" style="font-size:13px">Toca para filtrar</span></div>
     <div class="brands" id="brands"></div>
@@ -323,7 +331,7 @@
     <div>
       <a class="brand" href="#top" style="margin-bottom:14px">
         <span class="mark"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-          <rect width="32" height="32" rx="9" fill="url(#cnGrad)"/>
+          <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
           <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
           <line x1="17.8" y1="17.8" x2="22.6" y2="22.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
         </svg></span>
@@ -547,6 +555,27 @@ async function aiSearch(){
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
 }
 $("#aiBtn").onclick=aiSearch;
+
+/* armador de fit con IA */
+$("#hfit").innerHTML=ic("sparkles",21,1.9); $("#hfit").style.color="#8b5cf6";
+$("#fitIc").innerHTML=ic("sparkles",20);
+async function armarFit(){
+  const budget=parseFloat($("#fitBudget").value)||150;
+  const style=$("#fitStyle").value.trim();
+  $("#fitResult").innerHTML=`<div class="muted" style="padding:22px">${ic("sparkles",16,1.9)} Montando tu fit dentro de €${budget}…</div>`;
+  let d; try{ d=await (await fetch(`/api/ai-fit?budget=${budget}&style=${encodeURIComponent(style)}`)).json(); }catch{ d={ok:false,error:"Error de red"}; }
+  if(!d.ok){ $("#fitResult").innerHTML=`<div class="muted" style="font-size:14px">${esc(d.error||"IA no disponible")}</div>`; return; }
+  d.picks.forEach(p=>CACHE[p.id]=p);
+  const total=d.total_estimate!=null?`~€${Number(d.total_estimate).toFixed(2)}`:"";
+  $("#fitResult").innerHTML=`<div class="conv-card" style="flex-direction:column; align-items:stretch; gap:16px">
+    <div class="conv-meta"><b>${esc(d.summary||"")}</b><br>Total estimado ${total} · Presupuesto €${budget} · ${d.picks.length} piezas</div>
+    <div class="grid" style="gap:14px">${d.picks.map(cardHtml).join("")}</div>
+  </div>`;
+  bindCards($("#fitResult"));
+}
+$("#fitBtn").onclick=armarFit;
+$("#fitBudget").addEventListener("keydown",e=>{ if(e.key==="Enter") armarFit(); });
+$("#fitStyle").addEventListener("keydown",e=>{ if(e.key==="Enter") armarFit(); });
 $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
 $("#more").onclick=()=>load(false);
 document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); tb.classList.add("active"); $("#q").focus(); });
