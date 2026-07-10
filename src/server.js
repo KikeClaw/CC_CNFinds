@@ -16,7 +16,8 @@ import { hasKey } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
-import { productPage, listPage, sitemapXml } from "./lib/render.js";
+import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage } from "./lib/render.js";
+import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -314,7 +315,7 @@ function handleSitemap(req, res) {
   const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
   const brands = db.prepare("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL").all().map((r) => r.brand);
   res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands }));
+  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug) }));
 }
 
 // ---- Admin: importador universal ----
@@ -535,6 +536,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }
     if (u.pathname === "/sitemap.xml") return handleSitemap(req, res);
     const parts = u.pathname.split("/").filter(Boolean);
+    if (u.pathname === "/guias") return html(res, guidesIndexPage(GUIDES, baseUrl(req)));
+    if (parts[0] === "guia" && parts[1]) { const g = guideBySlug(decodeURIComponent(parts[1])); return g ? html(res, articlePage(g, baseUrl(req))) : html(res, "<h1>404</h1>", 404); }
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));

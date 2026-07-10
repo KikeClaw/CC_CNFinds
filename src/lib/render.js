@@ -52,6 +52,14 @@ footer .t{color:var(--muted);font-size:12px;line-height:1.6}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chips a{font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--surface)}
 .chips a:hover{color:var(--ink)}
+.guide{max-width:760px;margin:0 auto;padding-bottom:20px}
+.guide h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.03em;margin:18px 0 14px;line-height:1.1}
+.guide h2{font-size:20px;letter-spacing:-.02em;margin:28px 0 8px}
+.guide p{color:var(--ink);line-height:1.7;margin:10px 0;font-size:15.5px}
+.guide ul{margin:10px 0;padding-left:20px;line-height:1.7;color:var(--ink)}
+.guide li{margin:5px 0}
+.guide a{color:var(--brand);text-decoration:underline}
+.guide .tip{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--muted)}
 `;
 
 function head({ title, desc, canonical, image, jsonld }) {
@@ -147,11 +155,34 @@ ${topLinks && topLinks.length ? `<div class="chips" style="margin-bottom:18px">$
   return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld }, body, crumbs || []);
 }
 
+// --- Guías (contenido / SEO) ---
+export function articlePage(guide, base) {
+  const canonical = `${base}/guia/${guide.slug}`;
+  const jsonld = { "@context": "https://schema.org", "@type": "Article", headline: guide.title, description: guide.desc, mainEntityOfPage: canonical };
+  const body = `
+<div class="crumb"><a href="/">Inicio</a> › <a href="/guias">Guías</a> › ${esc(guide.title)}</div>
+<article class="guide"><h1>${esc(guide.title)}</h1>${guide.body}</article>`;
+  return doc({ title: `${guide.title} | CNFinds`, desc: guide.desc, canonical, jsonld }, body, [{ href: "/guias", label: "Guías" }, { href: "/", label: "Inicio" }]);
+}
+
+export function guidesIndexPage(guides, base) {
+  const canonical = `${base}/guias`;
+  const cards = guides.map((g) => `<a class="card" href="/guia/${g.slug}" style="padding:20px">
+    <div style="color:var(--brand);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em">Guía</div>
+    <div style="font-weight:600;font-size:16px;margin:6px 0;letter-spacing:-.02em">${esc(g.title)}</div>
+    <div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(g.desc)}</div></a>`).join("");
+  const body = `<div class="crumb"><a href="/">Inicio</a> › Guías</div>
+<section><h2 class="h2" style="font-size:28px">Guías W2C</h2><div class="grid">${cards}</div></section>`;
+  return doc({ title: "Guías W2C — cómo comprar, agentes y fotos QC | CNFinds", desc: "Guías para comprar productos W2C con confianza: cómo usar un agente de compras, elegir el mejor y revisar las fotos QC.", canonical }, body, [{ href: "/", label: "Inicio" }]);
+}
+
 // --- Sitemap ---
-export function sitemapXml(base, { productIds, categories, brands }) {
+export function sitemapXml(base, { productIds, categories, brands, guides = [] }) {
   const url = (loc) => `<url><loc>${loc}</loc></url>`;
   const urls = [
     url(base + "/"),
+    url(base + "/guias"),
+    ...guides.map((g) => url(`${base}/guia/${g}`)),
     ...categories.map((c) => url(`${base}/categoria/${slug(c)}`)),
     ...brands.map((b) => url(`${base}/marca/${slug(b)}`)),
     ...productIds.map((id) => url(`${base}/producto/${id}`)),

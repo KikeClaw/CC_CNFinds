@@ -265,9 +265,10 @@
       <a href="#marcas">Marcas</a>
       <a href="#fit">Fit IA</a>
       <a href="#convertidor">Conversor</a>
+      <a href="/guias">Guías</a>
     </div>
     <div class="right">
-      <div class="seg"><span class="on">EUR</span><span>ES</span></div>
+      <div class="seg"><span class="on" id="curBtn" style="cursor:pointer" title="Cambiar divisa">EUR</span><span>ES</span></div>
       <button class="iconbtn" id="fav" title="Favoritos"></button>
       <button class="iconbtn" id="theme" title="Tema"></button>
       <button class="iconbtn burger" id="burger" title="Menú"></button>
@@ -388,7 +389,7 @@
       <p style="margin-top:12px">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
     </div>
     <div><h4>Tienda</h4><a href="#catalogo">Todos los productos</a><a href="#categorias">Categorías</a><a href="#marcas">Marcas</a></div>
-    <div><h4>Recursos</h4><a href="#como">Cómo funciona</a><a href="#marcas">Guía de agentes</a><a href="#tendencias">Comunidad QC</a></div>
+    <div><h4>Guías</h4><a href="/guias">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Cuenta</h4><a href="#">Iniciar sesión</a><a href="#">Favoritos</a><a href="#">Recompensas</a></div>
   </div>
   <div class="wrap disclaimer">
@@ -404,7 +405,12 @@ const state={ q:"",category:"",brand:"",sort:"trending",offset:0,limit:48,total:
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const eur=(p)=>p==null?"—":"€"+Number(p).toFixed(2);
+let CUR={code:"EUR",sym:"€",rate:1};
+const RATES={EUR:1};
+const CURS=[{code:"EUR",sym:"€"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},{code:"CNY",sym:"¥"}];
+const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); return CUR.sym+(CUR.code==="CNY"?v.toFixed(0):v.toFixed(2)); };
+async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
+function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; const b=document.getElementById("curBtn"); if(b) b.textContent=CUR.code; load(true); loadTrending(); }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899"};
 
 const ICONS={
@@ -685,6 +691,7 @@ document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   else if(k==="fit"){ document.getElementById("fit").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#fitBudget").focus(),400); }
 });
 
+document.getElementById("curBtn").onclick=cycleCur; loadRates();
 loadCats(); loadBrands(); loadTrending(); load(true);
 </script>
 </body>
