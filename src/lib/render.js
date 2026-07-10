@@ -92,7 +92,7 @@ export function productPage(p, related, base) {
   const canonical = `${base}/producto/${p.id}`;
   const imgs = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
   const title = `${p.name}${p.brand ? " — " + p.brand : ""} | CNFinds`;
-  const desc = (p.ai_description ? p.ai_description.replace(/\s+/g, " ") : `${p.name}${p.brand ? " de " + p.brand : ""}, ${eur(p.price_eur)}. Compra vía agente (CNFans, Kakobuy, Mulebuy, OOPBuy) con CNFinds.`).slice(0, 160);
+  const desc = (p.ai_description ? p.ai_description.replace(/\s+/g, " ") : `${p.name}${p.brand ? " de " + p.brand : ""}, ${eur(p.price_eur)}. Compra vía agente (Kakobuy, Mulebuy, OOPBuy) con CNFinds.`).slice(0, 160);
   const jsonld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name,
     image: imgs.slice(0, 5).map((u) => th(u, 800, 800)), category: p.category || undefined,
@@ -134,7 +134,7 @@ export function listPage({ kind, name, items, base, crumbs, topLinks }) {
   const path = `${base}/${kind}/${slug(name)}`;
   const label = kind === "marca" ? name : name;
   const title = `${label} — ${items.length}+ productos W2C | CNFinds`;
-  const desc = `Descubre ${label} en CNFinds: ${items.length}+ productos con fotos QC y precios de fábrica, listos para comprar vía agente (CNFans, Kakobuy, Mulebuy, OOPBuy).`;
+  const desc = `Descubre ${label} en CNFinds: ${items.length}+ productos con fotos QC y precios de fábrica, listos para comprar vía agente (Kakobuy, Mulebuy, OOPBuy).`;
   const jsonld = {
     "@context": "https://schema.org", "@type": "ItemList",
     itemListElement: items.slice(0, 20).map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${base}/producto/${p.id}`, name: p.name })),

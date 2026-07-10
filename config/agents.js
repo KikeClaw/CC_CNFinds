@@ -55,16 +55,10 @@ const SHOP_TYPE = {
 
 // --- Generadores de link por agente -----------------------------------------
 // Cada uno recibe (platform, itemId, code) y devuelve la URL de afiliado.
+// NOTA: CNFans se retiró el 22-ene-2026 (dejó de pagar afiliados y de soportar
+// Weidian). Lo quitamos de la GENERACIÓN de links. El parser (parse.js) sí sigue
+// aceptando URLs de CNFans como ENTRADA para convertirlas a nuestros agentes.
 export const AGENTS = [
-  {
-    id: "cnfans",
-    name: "CNFans",
-    // VERIFICAR: https://cnfans.com/product?shop_type=weidian&id=XXXX&ref=CODE
-    buildUrl: (platform, itemId, code) => {
-      const t = SHOP_TYPE.family[platform] || "taobao";
-      return `https://cnfans.com/product?shop_type=${t}&id=${itemId}&ref=${code}`;
-    },
-  },
   {
     id: "mulebuy",
     name: "Mulebuy",
