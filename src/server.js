@@ -93,6 +93,7 @@ function handleProducts(res, params) {
   const q = (params.get("q") || "").trim();
   const category = (params.get("category") || "").trim();
   const brand = (params.get("brand") || "").trim();
+  const gender = (params.get("gender") || "").trim();
   const hot = params.get("hot") === "1";
   const onlyImg = params.get("withImage") !== "0"; // por defecto, solo con foto
   const sort = SORTS[params.get("sort")] || SORTS.trending;
@@ -101,9 +102,11 @@ function handleProducts(res, params) {
 
   const where = [];
   const args = [];
-  if (q) { where.push("(name LIKE ? OR brand LIKE ?)"); args.push(`%${q}%`, `%${q}%`); }
+  if (q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
   if (category) { where.push("category = ?"); args.push(category); }
   if (brand) { where.push("brand = ?"); args.push(brand); }
+  if (gender === "men") where.push("gender IN ('men','unisex')");
+  else if (gender === "women") where.push("gender IN ('women','unisex')");
   if (hot) where.push("hot = 1");
   if (onlyImg) where.push("image_url IS NOT NULL");
   const wsql = where.length ? "WHERE " + where.join(" AND ") : "";

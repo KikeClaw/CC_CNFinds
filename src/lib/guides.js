@@ -58,4 +58,22 @@ export const GUIDES = [
   },
 ];
 
-export const guideBySlug = (slug) => GUIDES.find((g) => g.slug === slug);
+export const LEGAL = {
+  slug: "legal",
+  title: "Aviso legal, privacidad y afiliación",
+  desc: "Información legal de CNFinds: recurso independiente, divulgación de afiliación, marcas, privacidad y contacto.",
+  body: `
+<h2>Recurso informativo independiente</h2>
+<p>CNFinds es un directorio informativo independiente. No vendemos productos ni gestionamos pagos ni envíos. Todas las compras se realizan a través de agentes y plataformas de terceros; tú eres responsable de tus decisiones de compra y del cumplimiento de las leyes aduaneras de tu país.</p>
+<h2>Divulgación de afiliación</h2>
+<p>Algunos enlaces a agentes de compra son de afiliado: podemos recibir una pequeña comisión (normalmente sobre la tarifa de envío del agente) si compras a través de ellos, sin coste adicional para ti. Esto ayuda a mantener el sitio.</p>
+<h2>Marcas y propiedad intelectual</h2>
+<p>Los nombres de marca y logotipos pertenecen a sus respectivos propietarios. CNFinds no está afiliado ni patrocinado por ninguna de las marcas mencionadas, y la aparición de un producto no implica autenticidad ni respaldo de la marca.</p>
+<h2>Privacidad y cookies</h2>
+<p>Guardamos tus favoritos y preferencias localmente en tu navegador (localStorage), no en nuestros servidores. Si usamos analítica, es de forma agregada y respetuosa con la privacidad. No vendemos tus datos.</p>
+<h2>Contacto</h2>
+<p>Para cualquier consulta, escríbenos.</p>
+<p class="tip">Este texto es una plantilla informativa y no constituye asesoramiento legal. Adáptalo con un profesional según tu jurisdicción.</p>`,
+};
+
+export const guideBySlug = (slug) => [...GUIDES, LEGAL].find((g) => g.slug === slug);
