@@ -1,0 +1,7 @@
+.git
+node_modules
+*.log
+*.db-wal
+*.db-shm
+scratchpad
+.env

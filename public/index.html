@@ -484,17 +484,18 @@ async function loadTrending(){
 
 /* card */
 function cardHtml(p){
-  const img=p.thumb?`<img loading="lazy" src="${p.thumb}" alt="" onerror="this.style.visibility='hidden'">`:"";
-  return `<div class="card" data-id="${p.id}">
-    <div class="ph">${img}${p.hot?`<span class="tag">${ic("flame",13,2)} HOT</span>`:""}<button class="heart" onclick="event.stopPropagation()">${ic("heart",18,1.8)}</button></div>
+  const img=p.thumb?`<img loading="lazy" src="${p.thumb}" alt="${esc(p.name)}" onerror="this.style.visibility='hidden'">`:"";
+  return `<a class="card" href="/producto/${p.id}" data-id="${p.id}">
+    <div class="ph">${img}${p.hot?`<span class="tag">${ic("flame",13,2)} HOT</span>`:""}<button class="heart" onclick="event.stopPropagation();event.preventDefault()" aria-label="Favorito">${ic("heart",18,1.8)}</button></div>
     <div class="cbody">
       <div class="cbrand">${p.brand?esc(p.brand):"&nbsp;"}</div>
       <div class="cname">${esc(p.name)}</div>
       <div class="cfoot"><span class="price">${eur(p.price_eur)}</span><span class="cta">Ver agentes ${ic("arrow",13,2)}</span></div>
-    </div></div>`;
+    </div></a>`;
 }
 const CACHE={};
-function bindCards(root){ root.querySelectorAll(".card").forEach(el=>el.onclick=()=>openModal(CACHE[el.dataset.id])); }
+// Click normal -> modal rápido; cmd/ctrl/medio -> abre la ficha (SEO/compartir).
+function bindCards(root){ root.querySelectorAll(".card").forEach(el=>el.onclick=(e)=>{ if(e.metaKey||e.ctrlKey||e.shiftKey||e.button===1) return; e.preventDefault(); openModal(CACHE[el.dataset.id]); }); }
 
 /* grid */
 async function load(reset){

@@ -105,6 +105,37 @@ Requieren `ANTHROPIC_API_KEY` en el entorno. Modelos configurables:
 - **QC con visión** — `npm run ai:qc -- --limit 10` → `qc_score` (1-10) + notas
   analizando las fotos reales del producto.
 
+## SEO / páginas server-side
+
+Además de la SPA, el servidor renderiza **páginas indexables** con meta tags,
+OpenGraph y JSON-LD:
+
+- `/producto/:id` — ficha con schema `Product` (marca, precio, QC).
+- `/categoria/:nombre` y `/marca/:nombre` — landings con schema `ItemList`.
+- `/sitemap.xml` y `/robots.txt`.
+
+Las URLs canónicas usan `SITE_URL` (configúralo al desplegar; en local usa el host).
+
+## Deploy
+
+Sin dependencias externas — solo necesita **Node ≥ 22.5** (por el SQLite integrado).
+
+1. Copia `.env.example` a `.env` y rellena `ANTHROPIC_API_KEY`, `SITE_URL`,
+   tus códigos de afiliado, etc.
+2. Genera la base de datos: `npm run import` (y `npm run enrich` para las fotos).
+3. Arranca: `npm start` (respeta `PORT`).
+
+**Docker:**
+```bash
+npm run import && npm run enrich   # genera data/catalog.db
+docker build -t cnfinds .
+docker run -p 8080:8080 --env-file .env cnfinds
+```
+
+**Hosts (Render/Railway/Fly/VPS):** build sin `npm install` (no hay deps),
+comando de arranque `npm start`, y **disco persistente** para `data/` (o
+regenera la DB en el arranque). Define `SITE_URL` con tu dominio real.
+
 ## Estructura
 
 ```

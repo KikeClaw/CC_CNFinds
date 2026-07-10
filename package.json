@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Importador de catalogo W2C: Google Sheet -> normaliza -> dedup -> genera links de afiliado propios -> SQLite",
   "scripts": {
+    "start": "node --no-warnings src/server.js",
     "import": "node --no-warnings src/importer.js",
     "enrich": "node --no-warnings src/enrich.js",
     "serve": "node --no-warnings src/server.js",
