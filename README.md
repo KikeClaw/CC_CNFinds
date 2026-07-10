@@ -149,8 +149,27 @@ docker run -p 8080:8080 --env-file .env cnfinds
 ```
 
 **Hosts (Render/Railway/Fly/VPS):** build sin `npm install` (no hay deps),
-comando de arranque `npm start`, y **disco persistente** para `data/` (o
-regenera la DB en el arranque). Define `SITE_URL` con tu dominio real.
+comando de arranque `npm start`, y **disco persistente** para `data/`. Define
+`SITE_URL` con tu dominio real.
+
+### Railway (paso a paso)
+
+1. **New Project → Deploy from GitHub repo** → elige `KikeClaw/CC_CNFinds`.
+   Railway detecta el `Dockerfile` y construye solo.
+2. **Volumen persistente** (imprescindible para el SQLite): en el servicio →
+   *Settings → Volumes → New Volume*, **Mount path `/data`**.
+3. **Variables** (*Variables*):
+   - `DB_PATH=/data/catalog.db`  ← dentro del volumen
+   - `ANTHROPIC_API_KEY=…`  (funciones IA)
+   - `ADMIN_TOKEN=…`  (contraseña del panel `/admin`)
+   - `SITE_URL=https://tu-dominio`  (o la URL de Railway al principio)
+   - `KAKOBUY_REF=4mqkq` (y demás códigos según los actives)
+   - `PORT` lo inyecta Railway solo.
+4. **Deploy.** En el primer arranque, si el volumen está vacío, la app
+   **se auto-siembra** (importa el catálogo) y **enriquece las fotos en segundo
+   plano** — sin tocar la terminal. Míralo en los *Logs*.
+5. **Dominio:** *Settings → Networking → Generate Domain* (o añade el tuyo) y
+   actualiza `SITE_URL`.
 
 ## Estructura
 

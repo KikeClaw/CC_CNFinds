@@ -31,6 +31,10 @@ const ROOT = join(__dir, "..");
 const PORT = parseInt(process.env.PORT || "5178", 10);
 const DB_PATH = process.env.DB_PATH || "data/catalog.db";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "cnfinds-admin"; // ⚠️ cámbialo en producción
+// Si la DB arranca vacía (primer deploy), se auto-siembra desde esta Sheet.
+// Pon SEED_SHEET_URL="" para desactivarlo.
+const SEED_SHEET_URL = process.env.SEED_SHEET_URL ??
+  "https://docs.google.com/spreadsheets/d/1tE8qFAUBzayN20TTW5iH_GWP20h8VJGiHDvN-iIZrWk/edit";
 
 const db = openDb(DB_PATH);
 
@@ -348,7 +352,7 @@ const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 const jobs = new Map();
 let jobSeq = 0;
 
-function startEnrichTagJob(items) {
+function startEnrichTagJob(items, opts = {}) {
   const id = "job_" + (++jobSeq);
   const job = { id, total: items.length, done: 0, withImage: 0, dead: 0, failed: 0, tagged: 0, phase: "fotos", status: "running" };
   jobs.set(id, job);
@@ -369,7 +373,7 @@ function startEnrichTagJob(items) {
       job.done++;
       await sleepMs(1200);
     }
-    if (hasKey()) { // Fase 2: etiquetado IA
+    if (opts.tag !== false && hasKey()) { // Fase 2: etiquetado IA
       job.phase = "etiquetado"; job.done = 0;
       for (const it of items) {
         try {
@@ -451,4 +455,23 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`Catalogo en http://localhost:${PORT}`));
+// Auto-siembra: si el catálogo está vacío (primer arranque en un volumen nuevo),
+// importa desde la Sheet y enriquece fotos en segundo plano. No bloquea el listen.
+async function seedIfEmpty() {
+  if (!SEED_SHEET_URL) return;
+  if (db.prepare("SELECT COUNT(*) c FROM products").get().c > 0) return;
+  console.log("Catálogo vacío — importando semilla...");
+  try {
+    const deduped = dedupeCands(db, await gatherCandidates("sheet", SEED_SHEET_URL));
+    const r = applyCands(db, deduped, "seed:boot");
+    console.log(`Semilla importada: ${r.added} productos.`);
+    const items = db.prepare("SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL")
+      .all().map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
+    if (items.length) { startEnrichTagJob(items, { tag: false }); console.log(`Enriqueciendo ${items.length} fotos en segundo plano...`); }
+  } catch (e) { console.error("Seed falló:", e.message); }
+}
+
+server.listen(PORT, () => {
+  console.log(`CNFinds en http://localhost:${PORT}`);
+  seedIfEmpty();
+});
