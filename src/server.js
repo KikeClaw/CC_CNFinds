@@ -256,7 +256,11 @@ async function handleAdminAgentsSet(req, res) {
 
 // ---- Paginas SSR indexables (SEO) ----
 function html(res, body, code = 200) { res.writeHead(code, { "Content-Type": "text/html; charset=utf-8" }); res.end(body); }
-function baseUrl(req) { return process.env.SITE_URL || `http://${req.headers.host || "localhost:" + PORT}`; }
+function baseUrl(req) {
+  if (process.env.SITE_URL) return process.env.SITE_URL;
+  const proto = String(req.headers["x-forwarded-proto"] || "http").split(",")[0].trim();
+  return `${proto}://${req.headers.host || "localhost:" + PORT}`;
+}
 
 function getProductById(id) {
   const r = db.prepare("SELECT * FROM products WHERE id=?").get(id);
