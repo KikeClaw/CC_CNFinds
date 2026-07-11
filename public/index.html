@@ -576,7 +576,7 @@ const T={
     news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
     share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
     pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓",
-    es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_agents:"Búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara" },
+    es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -624,7 +624,7 @@ const T={
     news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
     share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
     pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓",
-    es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_agents:"Search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera" },
+    es_similar:"You might like these from our catalog",es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_help:"You can still get it:",es_agents:"Or search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -1081,7 +1081,8 @@ async function runVisualSearch(f){
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#count").textContent=`${d.total} ${t("p_count")}`;
   const det=d.detected||{}; const label=[det.brand,det.item_type||det.category,det.colorway].filter(Boolean).join(" · ")||det.description||"imagen";
-  if(!d.items.length){ $("#grid").innerHTML=""; renderEmptyState(label); }
+  const searchQ=[det.brand,det.item_type||det.category].filter(Boolean).join(" ")||label;
+  if(!d.items.length){ $("#grid").innerHTML=""; renderEmptyState(searchQ); }
   else { $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid")); $("#empty").style.display="none"; }
   $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("image",13,1.8)} ${t("detected")}: ${esc(label)} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
@@ -1092,12 +1093,16 @@ async function runVisualSearch(f){
    (buscar en agentes, conversor, y pedir que lo añadamos) */
 async function renderEmptyState(query){
   const q=(query||state.q||"").trim();
+  const cq=q.replace(/[·|/]+/g," ").replace(/\s+/g," ").trim(); // query limpia para buscar
   $("#grid").innerHTML=""; $("#more").style.display="none";
   const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign="left";
-  emp.innerHTML=`<div class="emptybox">
+  emp.innerHTML=`<div id="esSuggestWrap" style="display:none;margin-bottom:26px">
+      <h2 class="h2" style="font-size:20px;margin:0 0 14px">${t("es_similar")}</h2>
+      <div class="grid" id="esSuggest"></div>
+    </div>
+    <div class="emptybox">
     <div class="eh">${ic("search",20,1.8)} <b>${t("es_title")}</b></div>
-    <p class="muted" style="margin:6px 0 14px">${t("es_sub")}${q?` <b>“${esc(q)}”</b>`:""}.</p>
-    <div id="esAgents" class="es-actions"></div>
+    <p class="muted" style="margin:6px 0 14px">${t("es_sub")}${q?` <b>“${esc(q)}”</b>`:""}. ${t("es_help")}</p>
     <a class="es-conv" href="#convertidor">${ic("link",14,1.9)} ${t("es_convert")}</a>
     <form id="esReq" class="es-req" onsubmit="return submitRequest(event)">
       <input type="text" id="esQ" value="${esc(q)}" placeholder="${t("es_qph")}" aria-label="${t("es_qph")}" />
@@ -1106,13 +1111,10 @@ async function renderEmptyState(query){
     </form>
     <div id="esMsg" style="font-size:13px;margin-top:8px"></div>
   </div>`;
-  try{
-    const d=await (await fetch("/api/search-fallback?q="+encodeURIComponent(q))).json();
-    if(d.agents&&d.agents.length){
-      $("#esAgents").innerHTML=`<div class="muted" style="width:100%;font-size:13px;margin-bottom:2px">${t("es_agents")}</div>`+
-        d.agents.map(a=>`<a class="agent" href="${a.url}" target="_blank" rel="nofollow noopener" data-agent="${a.id}"><span class="adot" style="background:${AGENT_COLOR[a.id]||'#888'}"></span><span class="an">${a.name}</span><span class="ag">${ic("arrow",15,2)}</span></a>`).join("");
-    }
-  }catch(e){}
+  // productos parecidos de NUESTRO catálogo (lo principal)
+  fetch("/api/suggest?q="+encodeURIComponent(cq)).then(r=>r.json()).then(d=>{
+    if(d.items&&d.items.length){ d.items.forEach(it=>CACHE[it.id]=it); $("#esSuggest").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#esSuggest")); $("#esSuggestWrap").style.display="block"; }
+  }).catch(()=>{});
 }
 function submitRequest(e){
   e.preventDefault();

@@ -258,6 +258,35 @@ function handleAdminRequests(req, res) {
   json(res, 200, { ok: true, total, top, withEmail });
 }
 
+// Sugerencias: productos PARECIDOS de nuestro catálogo (match por tokens contra
+// nombre/título/marca/tags/categoría, ordenado por nº de coincidencias). Se usa en
+// el estado vacío cuando no hay match exacto.
+const SUGGEST_STOP = new Set(["con", "the", "and", "for", "por", "del", "los", "las", "una", "uno", "new", "style", "styles", "color", "colors", "colour", "size", "sizes"]);
+function handleSuggest(res, params) {
+  const raw = (params.get("q") || "").trim();
+  const tokens = [...new Set(raw.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").split(/\s+/).filter((w) => w.length >= 3 && !SUGGEST_STOP.has(w)))].slice(0, 8);
+  if (!tokens.length) return json(res, 200, { ok: true, items: [] });
+  const scoreExpr = tokens.map(() => "(CASE WHEN (' '||name||' '||COALESCE(clean_title,'')||' '||COALESCE(brand,'')||' '||COALESCE(tags,'')||' '||COALESCE(category,'')) LIKE ? THEN 1 ELSE 0 END)").join("+");
+  const likeArgs = tokens.map((t) => `%${t}%`);
+  const rows = db.prepare(`
+    SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes, (${scoreExpr}) AS sc
+    FROM products WHERE image_url IS NOT NULL AND (${scoreExpr}) > 0
+    ORDER BY sc DESC, hot DESC, price_eur DESC LIMIT 12
+  `).all(...likeArgs, ...likeArgs);
+  const items = rows.map((r) => {
+    let gallery = []; try { gallery = r.images ? JSON.parse(r.images) : []; } catch {}
+    let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
+    return {
+      id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en, raw_name: r.name, brand: r.brand,
+      category: r.category, price_eur: r.price_eur, hot: !!r.hot,
+      thumb: thumb(r.image_url), image: r.image_url, images: gallery,
+      qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
+      links: enrichLinks(buildLinks(r.platform, r.item_id)),
+    };
+  });
+  json(res, 200, { ok: true, tokens, items });
+}
+
 // Conversor: cualquier URL (tienda o agente) -> tus links de afiliado.
 function handleConvert(res, params) {
   const url = (params.get("url") || "").trim();
@@ -740,6 +769,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/analytics") return void handleAdminAnalytics(req, res);
     if (u.pathname === "/api/admin/alerts") return void handleAdminAlerts(req, res);
     if (u.pathname === "/api/search-fallback") return void handleSearchFallback(res, u.searchParams);
+    if (u.pathname === "/api/suggest") return void handleSuggest(res, u.searchParams);
     if (req.method === "POST" && u.pathname === "/api/request") return void handleRequest(req, res);
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
