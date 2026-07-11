@@ -61,6 +61,9 @@ export function openDb(path) {
   // Historial de precios (se registra al importar cuando el precio cambia).
   db.exec("CREATE TABLE IF NOT EXISTS price_history (product_id INTEGER, price_eur REAL, ts TEXT)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_ph_pid ON price_history(product_id)");
+  // Peticiones: qué buscan los usuarios que NO está en el catálogo (señal de
+  // demanda para saber qué añadir). Email opcional para avisar cuando lo añadas.
+  db.exec("CREATE TABLE IF NOT EXISTS requests (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, email TEXT, created_at TEXT, lang TEXT)");
   return db;
 }
 

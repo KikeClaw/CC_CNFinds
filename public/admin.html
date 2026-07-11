@@ -134,6 +134,13 @@
     </div>
     <div id="alOut"></div>
   </div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="rq_h">Demanda (peticiones)</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="rq_hint">Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.</p>
+    <button class="ghost" id="loadRq" data-i18n="rq_load">Ver demanda</button>
+    <div id="rqOut"></div>
+  </div>
 </div>
 
 <script>
@@ -158,6 +165,7 @@ const T={
     subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
     an_h:"Analítica de agentes", an_hint:"Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.", an_load:"Ver analítica", an_total:"clics totales", an_7:"últimos 7 días", an_30:"últimos 30 días", an_byagent:"Por agente", an_top:"Top productos", an_byday:"Por día (14 días)", an_none:"Aún no hay clics.",
     al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
+    rq_h:"Demanda (peticiones)", rq_hint:"Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.", rq_load:"Ver demanda", rq_count:"peticiones", rq_q:"Búsqueda", rq_c:"Veces", rq_none:"Aún no hay peticiones.",
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
     th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
     sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
@@ -192,6 +200,7 @@ const T={
     subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
     an_h:"Agent analytics", an_hint:"Clicks on agent links = purchase intent (= your commission). See which agents and products convert.", an_load:"View analytics", an_total:"total clicks", an_7:"last 7 days", an_30:"last 30 days", an_byagent:"By agent", an_top:"Top products", an_byday:"By day (14 days)", an_none:"No clicks yet.",
     al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
+    rq_h:"Demand (requests)", rq_hint:"What users search for that is NOT in the catalog. Use it to prioritize what to add.", rq_load:"View demand", rq_count:"requests", rq_q:"Search", rq_c:"Times", rq_none:"No requests yet.",
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
     th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
     sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
@@ -423,6 +432,16 @@ function exportAlerts(){
 }
 $("#loadAl").onclick=loadAlerts;
 $("#expAl").onclick=exportAlerts;
+
+/* Demanda (peticiones) */
+async function loadRequests(){
+  const r=await fetch("/api/admin/requests",{headers:{"x-admin-token":$("#token").value}});
+  const d=await r.json();
+  if(!d.ok){ $("#rqOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  const rows=(d.top||[]).slice(0,40).map(x=>`<tr><td>${x.q}</td><td style="text-align:right">${x.c}</td><td style="color:var(--muted)">${(x.last||"").slice(0,10)}</td></tr>`).join("")||`<tr><td colspan="3" class="hint">${t("rq_none")}</td></tr>`;
+  $("#rqOut").innerHTML=`<p class="msg" style="color:var(--ok)">${d.total} ${t("rq_count")}</p><table style="margin-top:8px"><thead><tr><th>${t("rq_q")}</th><th style="text-align:right">${t("rq_c")}</th><th>${t("th_date")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+$("#loadRq").onclick=loadRequests;
 
 applyLang();
 </script>

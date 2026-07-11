@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { openDb } from "./lib/db.js";
-import { buildLinks, originalUrl, getAgentState, setAgentState } from "../config/agents.js";
+import { buildLinks, originalUrl, getAgentState, setAgentState, buildSearchLinks } from "../config/agents.js";
 import { parseAnyUrl } from "./lib/parse.js";
 import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
@@ -230,6 +230,32 @@ function handleAdminAlerts(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
   const rows = db.prepare("SELECT email, product_id, target_eur, created_at FROM price_alerts ORDER BY created_at DESC LIMIT 500").all();
   json(res, 200, { ok: true, count: rows.length, alerts: rows });
+}
+
+// Fallback: si algo no está en nuestro catálogo, enlaces de búsqueda en los agentes
+// activos (con tu código). El usuario sigue el funnel y tú conservas la comisión.
+function handleSearchFallback(res, params) {
+  const q = (params.get("q") || "").trim().slice(0, 120);
+  json(res, 200, { ok: true, q, agents: buildSearchLinks(q) });
+}
+// Captura de demanda: qué busca la gente que no tenemos.
+async function handleRequest(req, res) {
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const query = String(body.query || "").trim().slice(0, 160);
+  const email = String(body.email || "").trim().toLowerCase().slice(0, 120);
+  if (!query) return json(res, 400, { ok: false, error: "Falta la búsqueda" });
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { ok: false, error: "Email no válido" });
+  try { db.prepare("INSERT INTO requests (query, email, created_at, lang) VALUES (?, ?, ?, ?)").run(query, email || null, new Date().toISOString(), reqLang(req)); }
+  catch { return json(res, 500, { ok: false, error: "Error" }); }
+  json(res, 200, { ok: true });
+}
+// Admin: demanda agregada (qué añadir al catálogo).
+function handleAdminRequests(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const top = db.prepare("SELECT lower(query) q, COUNT(*) c, MAX(created_at) last FROM requests GROUP BY lower(query) ORDER BY c DESC, last DESC LIMIT 100").all();
+  const total = db.prepare("SELECT COUNT(*) c FROM requests").get().c;
+  const withEmail = db.prepare("SELECT query, email, created_at FROM requests WHERE email IS NOT NULL ORDER BY created_at DESC LIMIT 200").all();
+  json(res, 200, { ok: true, total, top, withEmail });
 }
 
 // Conversor: cualquier URL (tienda o agente) -> tus links de afiliado.
@@ -713,6 +739,9 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/subscribers") return void handleAdminSubscribers(req, res);
     if (u.pathname === "/api/admin/analytics") return void handleAdminAnalytics(req, res);
     if (u.pathname === "/api/admin/alerts") return void handleAdminAlerts(req, res);
+    if (u.pathname === "/api/search-fallback") return void handleSearchFallback(res, u.searchParams);
+    if (req.method === "POST" && u.pathname === "/api/request") return void handleRequest(req, res);
+    if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);

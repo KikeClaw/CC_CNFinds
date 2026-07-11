@@ -227,3 +227,37 @@ export function buildLinks(platform, itemId) {
   }
   return out;
 }
+
+// URLs de BÚSQUEDA por palabra clave en cada agente (con tu código). Se usan como
+// fallback cuando un producto no está en nuestro catálogo: el usuario busca en el
+// agente y tú conservas la comisión. VERIFICAR el formato al activar cada agente.
+const SEARCH = {
+  kakobuy: (q, c) => `https://www.kakobuy.com/search?searchText=${q}&affcode=${c}`,
+  mulebuy: (q, c) => `https://mulebuy.com/search?text=${q}&ref=${c}`,
+  oopbuy: (q, c) => `https://oopbuy.com/search?keyword=${q}&inviteCode=${c}`,
+  hoobuy: (q, c) => `https://hoobuy.com/search?keyword=${q}&inviteCode=${c}`,
+  acbuy: (q, c) => `https://www.acbuy.com/search?keyword=${q}&u=${c}`,
+  cssbuy: (q, c) => `https://www.cssbuy.com/search?keyword=${q}&promotionCode=${c}`,
+  superbuy: (q, c) => `https://www.superbuy.com/en/goods/search/?keyword=${q}&partnercode=${c}`,
+  sugargoo: (q, c) => `https://www.sugargoo.com/#/home/search?keyword=${q}&memberId=${c}`,
+  lovegobuy: (q, c) => `https://www.lovegobuy.com/search?keyword=${q}&invite_code=${c}`,
+  joyagoo: (q, c) => `https://www.joyagoo.com/search?keyword=${q}&ref=${c}`,
+  allchinabuy: (q, c) => `https://www.allchinabuy.com/en/goods/search/?keyword=${q}&partnercode=${c}`,
+  orientdig: (q, c) => `https://orientdig.com/search?keyword=${q}&ref=${c}`,
+  hipobuy: (q, c) => `https://hipobuy.com/search?keyword=${q}&ref=${c}`,
+};
+
+// Enlaces de búsqueda por palabra clave, solo para agentes activados.
+export function buildSearchLinks(q) {
+  const eq = encodeURIComponent(String(q || "").trim());
+  if (!eq) return [];
+  const out = [];
+  for (const agent of AGENTS) {
+    const st = STATE[agent.id];
+    if (!st.enabled) continue;
+    const fn = SEARCH[agent.id];
+    if (!fn) continue;
+    out.push({ id: agent.id, name: agent.name, url: fn(eq, st.code || "") });
+  }
+  return out;
+}

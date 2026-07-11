@@ -187,6 +187,14 @@
   .more button{ padding:13px 28px; border-radius:15px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:14px; font-weight:500; transition:.15s; }
   .more button:hover{ background:var(--soft); }
   .empty{ text-align:center; color:var(--muted); padding:80px 0; }
+  .emptybox{ max-width:640px; margin:20px auto; color:var(--ink); }
+  .emptybox .eh{ display:flex; align-items:center; gap:8px; font-size:19px; }
+  .es-actions{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0; align-items:center; }
+  .es-conv{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--brandc); border:1px dashed var(--line); border-radius:10px; padding:9px 13px; margin:8px 0; }
+  .es-conv:hover{ border-color:var(--brand); }
+  .es-req{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .es-req input{ flex:1; min-width:150px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; }
+  .es-req button{ background:var(--brand); color:#fff; font-weight:700; border:0; border-radius:10px; padding:10px 18px; cursor:pointer; font:inherit; }
 
   /* modal */
   .overlay{ position:fixed; inset:0; z-index:60; background:rgba(5,5,10,.55); backdrop-filter:blur(8px);
@@ -345,7 +353,9 @@
       <div class="searchrow">
         <span class="sic" id="searchIc"></span>
         <input id="q" type="search" data-i18n-ph="search_ph" placeholder="Busca, pega una URL, o pregunta a la IA…" />
-        <button class="go ai" id="visBtn" title="Buscar por imagen"><span id="visIc"></span></button>
+        <button class="go ai" id="camBtn" title="Buscar con la cámara" aria-label="Buscar con la cámara"><span id="camIc"></span></button>
+        <input type="file" id="visCam" accept="image/*" capture="environment" style="display:none" />
+        <button class="go ai" id="visBtn" title="Buscar por imagen (galería)" aria-label="Buscar por imagen"><span id="visIc"></span></button>
         <input type="file" id="visFile" accept="image/*" style="display:none" />
         <button class="go ai" id="aiBtn" title="Buscar con IA"><span id="aiIc"></span> IA</button>
         <button class="go" id="goBtn" data-i18n="buscar">Buscar</button>
@@ -565,7 +575,8 @@ const T={
     promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →",
     news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
     share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
-    pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓" },
+    pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓",
+    es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_agents:"Búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -612,7 +623,8 @@ const T={
     promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →",
     news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
     share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
-    pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓" },
+    pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓",
+    es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_agents:"Search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -664,6 +676,7 @@ const ICONS={
   link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   sparkles:'<path d="M9.94 14.5 12 20l2.06-5.5L20 12l-5.94-2.5L12 4 9.94 9.5 4 12z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>',
   image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
 };
 function ic(name,size=20,sw=1.7){ return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||""}</svg>`; }
@@ -802,7 +815,10 @@ async function load(reset){
   $("#grid").insertAdjacentHTML("beforeend",d.items.map(cardHtml).join("")); bindCards($("#grid"));
   state.offset+=d.items.length;
   $("#count").textContent=`${state.total} ${t("p_count")}`;
-  $("#empty").style.display=state.total===0?"block":"none";
+  if(state.total===0){
+    if(state.q) renderEmptyState(state.q);
+    else { const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign=""; emp.textContent=t("noresults"); }
+  } else { $("#empty").style.display="none"; }
   $("#more").style.display=state.offset<state.total?"inline-block":"none";
   renderFilters(); state.loading=false;
 }
@@ -931,9 +947,9 @@ async function aiSearch(){
   let d; try{ d=await (await fetch("/api/ai-search?q="+encodeURIComponent(q))).json(); }catch{ d={ok:false,error:t("net_err")}; }
   if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||t("ai_na"); return; }
   d.items.forEach(it=>CACHE[it.id]=it);
-  $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid"));
   $("#count").textContent=`${d.total} ${t("p_count")}`;
-  $("#empty").style.display=d.items.length?"none":"block";
+  if(!d.items.length){ $("#grid").innerHTML=""; renderEmptyState(q); }
+  else { $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid")); $("#empty").style.display="none"; }
   $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("sparkles",13,1.9)} ${esc(d.explanation||t("ai_search_tag"))} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
 }
@@ -1049,26 +1065,64 @@ if($("#newsEmail")) $("#newsEmail").addEventListener("keydown",e=>{ if(e.key==="
 /* PWA: registra el service worker */
 if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{})); }
 
-/* búsqueda visual (subir foto -> encontrar equivalentes) */
+/* búsqueda visual (galería o CÁMARA -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
+if($("#camIc")) $("#camIc").innerHTML=ic("camera",18,1.8);
 $("#visBtn").onclick=()=>$("#visFile").click();
-$("#visFile").addEventListener("change",async(e)=>{
-  const f=e.target.files[0]; if(!f) return;
+if($("#camBtn")) $("#camBtn").onclick=()=>$("#visCam").click();
+async function runVisualSearch(f){
+  if(!f) return;
   const dataUrl=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f); });
-  e.target.value="";
   document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
   $("#grid").innerHTML=`<div class="muted" style="padding:40px;grid-column:1/-1">${ic("image",16,1.8)} ${t("ai_analyzing")}</div>`;
   $("#empty").style.display="none"; $("#more").style.display="none";
   let d; try{ d=await (await fetch("/api/visual-search",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:dataUrl})})).json(); }catch{ d={ok:false,error:t("net_err")}; }
   if(!d.ok){ $("#grid").innerHTML=""; $("#empty").style.display="block"; $("#empty").textContent=d.error||t("ai_na"); return; }
   d.items.forEach(it=>CACHE[it.id]=it);
-  $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid"));
   $("#count").textContent=`${d.total} ${t("p_count")}`;
-  $("#empty").style.display=d.items.length?"none":"block";
   const det=d.detected||{}; const label=[det.brand,det.item_type||det.category,det.colorway].filter(Boolean).join(" · ")||det.description||"imagen";
+  if(!d.items.length){ $("#grid").innerHTML=""; renderEmptyState(label); }
+  else { $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid")); $("#empty").style.display="none"; }
   $("#activeFilters").innerHTML=`<span class="active-filter" style="max-width:none">${ic("image",13,1.8)} ${t("detected")}: ${esc(label)} <button data-clear="ai">${ic("x",13,2.2)}</button></span>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; $("#q").value=""; load(true); };
-});
+}
+["visFile","visCam"].forEach(id=>{ const el=$("#"+id); if(el) el.addEventListener("change",e=>{ const f=e.target.files[0]; e.target.value=""; runVisualSearch(f); }); });
+
+/* estado vacío enriquecido: si no está en nuestro catálogo, ofrecemos valor
+   (buscar en agentes, conversor, y pedir que lo añadamos) */
+async function renderEmptyState(query){
+  const q=(query||state.q||"").trim();
+  $("#grid").innerHTML=""; $("#more").style.display="none";
+  const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign="left";
+  emp.innerHTML=`<div class="emptybox">
+    <div class="eh">${ic("search",20,1.8)} <b>${t("es_title")}</b></div>
+    <p class="muted" style="margin:6px 0 14px">${t("es_sub")}${q?` <b>“${esc(q)}”</b>`:""}.</p>
+    <div id="esAgents" class="es-actions"></div>
+    <a class="es-conv" href="#convertidor">${ic("link",14,1.9)} ${t("es_convert")}</a>
+    <form id="esReq" class="es-req" onsubmit="return submitRequest(event)">
+      <input type="text" id="esQ" value="${esc(q)}" placeholder="${t("es_qph")}" aria-label="${t("es_qph")}" />
+      <input type="email" id="esEmail" placeholder="${t("es_email")}" aria-label="Email" />
+      <button type="submit">${t("es_req_btn")}</button>
+    </form>
+    <div id="esMsg" style="font-size:13px;margin-top:8px"></div>
+  </div>`;
+  try{
+    const d=await (await fetch("/api/search-fallback?q="+encodeURIComponent(q))).json();
+    if(d.agents&&d.agents.length){
+      $("#esAgents").innerHTML=`<div class="muted" style="width:100%;font-size:13px;margin-bottom:2px">${t("es_agents")}</div>`+
+        d.agents.map(a=>`<a class="agent" href="${a.url}" target="_blank" rel="nofollow noopener" data-agent="${a.id}"><span class="adot" style="background:${AGENT_COLOR[a.id]||'#888'}"></span><span class="an">${a.name}</span><span class="ag">${ic("arrow",15,2)}</span></a>`).join("");
+    }
+  }catch(e){}
+}
+function submitRequest(e){
+  e.preventDefault();
+  const query=$("#esQ").value.trim(), email=$("#esEmail").value.trim(), msg=$("#esMsg");
+  if(!query) return false;
+  fetch("/api/request",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({query,email})})
+    .then(r=>r.json()).then(d=>{ msg.style.color=d.ok?"#16a34a":"var(--brand)"; msg.textContent=d.ok?t("es_req_ok"):(d.error||t("news_err")); if(d.ok){ $("#esEmail").value=""; } })
+    .catch(()=>{ msg.style.color="var(--brand)"; msg.textContent=t("news_err"); });
+  return false;
+}
 $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
 $("#more").onclick=()=>load(false);
 document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); tb.classList.add("active"); $("#q").focus(); });
