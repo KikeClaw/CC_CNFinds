@@ -675,11 +675,15 @@ function startEnrichTagJob(items, opts = {}) {
           const res = await enrichProduct(it.platform, it.item_id, {});
           const now = new Date().toISOString();
           if (res.ok && res.images.length) {
-            db.prepare("UPDATE products SET image_url=?, images=?, last_checked=? WHERE id=?")
+            db.prepare("UPDATE products SET image_url=?, images=?, last_checked=?, enrich_tries=COALESCE(enrich_tries,0)+1 WHERE id=?")
               .run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, it.id);
             job.withImage++;
-          } else if (res.ok) { db.prepare("UPDATE products SET last_checked=? WHERE id=?").run(now, it.id); job.dead++; }
-          else job.failed++;
+          } else {
+            // marca el intento (fallo o 200 sin fotos). El contador evita clavarse:
+            // se reintenta luego y solo se abandona tras varios intentos.
+            db.prepare("UPDATE products SET last_checked=?, enrich_tries=COALESCE(enrich_tries,0)+1 WHERE id=?").run(now, it.id);
+            res.ok ? job.dead++ : job.failed++;
+          }
         } catch { job.failed++; }
         job.done++;
       }));
@@ -949,9 +953,11 @@ async function autoIngestSources({ force = false } = {}) {
 let photoJobRunning = false;
 function resumePhotos() {
   if (photoJobRunning) return;
-  const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();
+  // Reintenta los que siguen sin foto: ventana corta (30 min entre intentos) y
+  // tope de 6 intentos. Recupera los throttled sin re-machacar los sin-foto-real.
+  const cutoff = new Date(Date.now() - 30 * 60e3).toISOString();
   const items = db.prepare(
-    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND (last_checked IS NULL OR last_checked < ?) ORDER BY last_checked IS NOT NULL, id LIMIT 300"
+    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND COALESCE(enrich_tries,0) < 6 AND (last_checked IS NULL OR last_checked < ?) ORDER BY COALESCE(enrich_tries,0), id LIMIT 300"
   ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
   if (!items.length) return;
   photoJobRunning = true;

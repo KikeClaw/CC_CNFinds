@@ -42,6 +42,7 @@ export function openDb(path) {
   const aiCols = {
     clean_title: "TEXT", clean_title_en: "TEXT", model_name: "TEXT", colorway: "TEXT", gender: "TEXT",
     tags: "TEXT", ai_description: "TEXT", ai_description_en: "TEXT", qc_score: "INTEGER", qc_notes: "TEXT",
+    enrich_tries: "INTEGER", // intentos de enriquecer foto (para reintentar sin quedarse clavado)
   };
   for (const [name, type] of Object.entries(aiCols)) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);
