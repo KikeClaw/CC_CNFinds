@@ -333,13 +333,31 @@ export function helpPage({ guides, base, lang = "es" }) {
   const stepCards = stepsHow.map((s) => `<div class="card" style="padding:20px"><div style="font-family:var(--fd);font-weight:800;font-size:22px;color:var(--brand)">${s[0]}</div><div style="font-weight:600;margin:6px 0 4px">${esc(s[1])}</div><div style="color:var(--muted);font-size:13.5px;line-height:1.5">${esc(s[2])}</div></div>`).join("");
   const toolCards = tools.map((tl) => `<a class="card" href="${tl[3]}" style="padding:20px;display:block"><div style="font-size:26px">${tl[0]}</div><div style="font-weight:600;margin:6px 0 4px">${esc(tl[1])}</div><div style="color:var(--muted);font-size:13.5px;line-height:1.5">${esc(tl[2])}</div></a>`).join("");
   const guideCards = (guides || []).map((g) => `<a class="card" href="/guia/${g.slug}${lp}" style="padding:18px"><div style="color:var(--brand);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em">${esc(tr(lang, "guide"))}</div><div style="font-weight:600;font-size:15px;margin:6px 0">${esc(gTitle(g, lang))}</div><div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(gDesc(g, lang))}</div></a>`).join("");
+  const faq = en
+    ? [
+        ["Is CNFinds a shop?", "No. CNFinds is an independent directory. You buy through third-party shopping agents; we don't sell or process payments."],
+        ["What is a shopping agent (W2C)?", "A middleman that buys a product in China (Taobao/Weidian/1688) and forwards it to your country. They mainly charge for international shipping."],
+        ["What are QC photos?", "Quality-control photos the agent takes of your item before shipping. You review them and can request changes. Our AI QC Checker gives a quick indicative score."],
+        ["Is it free?", "Yes, using CNFinds is free. Some agent links are affiliate links; we may earn a small commission at no extra cost to you."],
+        ["Which agents do you support?", "Kakobuy, Mulebuy, OOPBuy, ACBuy, CSSBuy, Superbuy, Sugargoo and more. See the coupons page for welcome bonuses."],
+      ]
+    : [
+        ["¿CNFinds es una tienda?", "No. CNFinds es un directorio independiente. Compras a través de agentes de terceros; no vendemos ni procesamos pagos."],
+        ["¿Qué es un agente de compras (W2C)?", "Un intermediario que compra el producto en China (Taobao/Weidian/1688) y te lo reenvía. Cobran sobre todo por el envío internacional."],
+        ["¿Qué son las fotos QC?", "Fotos de control de calidad que el agente hace de tu artículo antes de enviarlo. Las revisas y puedes pedir cambios. Nuestro QC Checker con IA da una puntuación orientativa rápida."],
+        ["¿Es gratis?", "Sí, usar CNFinds es gratis. Algunos enlaces a agentes son de afiliado; podemos recibir una pequeña comisión sin coste adicional para ti."],
+        ["¿Qué agentes soportáis?", "Kakobuy, Mulebuy, OOPBuy, ACBuy, CSSBuy, Superbuy, Sugargoo y más. Mira la página de cupones para los bonos de bienvenida."],
+      ];
+  const faqHtml = faq.map((f) => `<details style="border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:8px 0"><summary style="font-weight:600;cursor:pointer">${esc(f[0])}</summary><p style="color:var(--muted);line-height:1.6;margin:8px 0 0">${esc(f[1])}</p></details>`).join("");
+  const jsonld = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f[0], acceptedAnswer: { "@type": "Answer", text: f[1] } })) };
   const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(t2.h)}</div>
 <section><h2 class="h2" style="font-size:30px">${esc(t2.h)}</h2><p style="color:var(--muted);max-width:720px;line-height:1.6;margin:-6px 0 20px">${esc(t2.sub)}</p>
 <h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.how)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-bottom:26px">${stepCards}</div>
 <h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.tools)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-bottom:26px">${toolCards}</div>
-<h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.guidesH)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${guideCards}</div>
+<h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.guidesH)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-bottom:26px">${guideCards}</div>
+<h3 style="font-size:17px;margin:8px 0 12px">FAQ</h3><div style="max-width:760px">${faqHtml}</div>
 </section>`;
-  return doc({ title: t2.title, desc: t2.sub, canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
+  return doc({ title: t2.title, desc: t2.sub, canonical, jsonld, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
 }
 
 // --- Sitemap ---

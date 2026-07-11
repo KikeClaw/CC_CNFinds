@@ -103,6 +103,35 @@ export const GUIDES = [
 <h2>AI QC on CNFinds</h2>
 <p>At CNFinds we analyze photos with artificial intelligence to give you an indicative <b>quality score (1–10)</b> and flag possible defects. It's an extra aid; the final decision is always yours, based on your real QC photos.</p>`,
   },
+  {
+    slug: "mejor-batch",
+    title: "Cómo elegir el mejor batch (lote) de un producto",
+    desc: "Un mismo producto suele tener varios lotes (batches) de fábricas distintas. Aprende a identificar el mejor por calidad, precio y reputación.",
+    body: `
+<p>Un <b>batch</b> (lote) es una versión de un producto hecha por una fábrica concreta. Del mismo modelo puede haber varios batches con <b>calidad y precio distintos</b>. Elegir bien el batch es la diferencia entre un buen find y una decepción.</p>
+<h2>1. Compara fotos QC de cada batch</h2>
+<p>Busca fotos QC reales de cada versión y compáralas: logos, costuras, materiales y color. Usa nuestro <a href="/#qccheck">QC Checker con IA</a> para una puntuación orientativa rápida.</p>
+<h2>2. Mira la reputación en la comunidad</h2>
+<p>Reddit, Discord y grupos de Telegram suelen tener hilos de comparación de batches por producto. Un batch muy recomendado y con muchas reseñas positivas es apuesta segura.</p>
+<h2>3. Relación calidad/precio</h2>
+<p>El batch más caro no siempre es el mejor. A veces un batch intermedio ("budget batch") ofrece el 90% de la calidad por bastante menos. Define tu prioridad: máxima fidelidad o mejor precio.</p>
+<h2>4. Disponibilidad y stock</h2>
+<p>Los mejores batches se agotan. Si un vendedor tiene stock y buenas QC recientes, es buena señal. Revisa la fecha de las fotos.</p>
+<p class="tip">Consejo: guarda tus candidatos con el corazón (♡) en CNFinds y compara sus fotos y precios antes de decidir.</p>`,
+    title_en: "How to choose the best batch of a product",
+    desc_en: "The same product often has several batches from different factories. Learn to pick the best one by quality, price and reputation.",
+    body_en: `
+<p>A <b>batch</b> is a version of a product made by a specific factory. The same model can have several batches with <b>different quality and price</b>. Choosing the right batch is the difference between a great find and a letdown.</p>
+<h2>1. Compare each batch's QC photos</h2>
+<p>Look for real QC photos of each version and compare them: logos, stitching, materials and color. Use our <a href="/#qccheck?lang=en">AI QC Checker</a> for a quick indicative score.</p>
+<h2>2. Check the community's reputation</h2>
+<p>Reddit, Discord and Telegram groups usually have batch-comparison threads per product. A widely recommended batch with many positive reviews is a safe bet.</p>
+<h2>3. Value for money</h2>
+<p>The most expensive batch isn't always the best. Sometimes a mid-tier "budget batch" delivers 90% of the quality for far less. Decide your priority: maximum accuracy or best price.</p>
+<h2>4. Availability and stock</h2>
+<p>The best batches sell out. If a seller has stock and recent good QC, that's a good sign. Check the photo dates.</p>
+<p class="tip">Tip: save your candidates with the heart (♡) on CNFinds and compare their photos and prices before deciding.</p>`,
+  },
 ];
 
 export const LEGAL = {

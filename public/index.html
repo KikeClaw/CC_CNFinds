@@ -12,6 +12,11 @@
 <meta property="og:url" content="https://cnfinds.online/" />
 <meta property="og:image" content="https://cnfinds.online/og.svg" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="canonical" href="https://cnfinds.online/" />
+<link rel="alternate" hreflang="es" href="https://cnfinds.online/" />
+<link rel="alternate" hreflang="en" href="https://cnfinds.online/?lang=en" />
+<link rel="alternate" hreflang="x-default" href="https://cnfinds.online/" />
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://cnfinds.online/#org","name":"CNFinds","url":"https://cnfinds.online/","logo":"https://cnfinds.online/favicon.svg"},{"@type":"WebSite","@id":"https://cnfinds.online/#website","name":"CNFinds","url":"https://cnfinds.online/","publisher":{"@id":"https://cnfinds.online/#org"},"inLanguage":["es","en"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://cnfinds.online/?q={search_term_string}"},"query-input":"required name=search_term_string"}}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
@@ -982,6 +987,7 @@ function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 applyLang();
 renderSocial();
+{ const uq=new URLSearchParams(location.search).get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; } }
 loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true);
 </script>
 </body>
