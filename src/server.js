@@ -251,6 +251,32 @@ async function handleRequest(req, res) {
   catch { return json(res, 500, { ok: false, error: "Error" }); }
   json(res, 200, { ok: true });
 }
+// Admin: estado del catálogo (números en vivo para la guía de pasos).
+function handleAdminStatus(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const one = (sql) => { try { return db.prepare(sql).get().c; } catch { return 0; } };
+  const agents = getAgentState();
+  json(res, 200, {
+    ok: true,
+    products: one("SELECT COUNT(*) c FROM products"),
+    withImage: one("SELECT COUNT(*) c FROM products WHERE image_url IS NOT NULL"),
+    noImage: one("SELECT COUNT(*) c FROM products WHERE image_url IS NULL"),
+    tagged: one("SELECT COUNT(*) c FROM products WHERE clean_title IS NOT NULL"),
+    untagged: one("SELECT COUNT(*) c FROM products WHERE clean_title IS NULL"),
+    withQc: one("SELECT COUNT(*) c FROM products WHERE qc_score IS NOT NULL"),
+    agentsActive: agents.filter((a) => a.enabled).length,
+    agentsTotal: agents.length,
+    subscribers: one("SELECT COUNT(*) c FROM subscribers"),
+    alerts: one("SELECT COUNT(*) c FROM price_alerts"),
+    requests: one("SELECT COUNT(*) c FROM requests"),
+    clicks: one("SELECT COUNT(*) c FROM clicks"),
+    lastIngest: metaGet("last_auto_ingest"),
+    autoIngest: AUTO_INGEST,
+    hasGoogleKey: !!process.env.GOOGLE_API_KEY,
+    hasAiKey: hasKey(),
+  });
+}
+
 // Admin: lanzar el importador automático ahora (opcional; también corre solo).
 function handleAdminAutoIngest(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
@@ -788,6 +814,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/suggest") return void handleSuggest(res, u.searchParams);
     if (req.method === "POST" && u.pathname === "/api/request") return void handleRequest(req, res);
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
+    if (u.pathname === "/api/admin/status") return void handleAdminStatus(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);

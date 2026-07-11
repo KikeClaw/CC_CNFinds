@@ -35,6 +35,15 @@
   .pill.existing{background:var(--soft);color:var(--muted)}
   .msg{font-size:14px;margin-top:12px}.msg.err{color:var(--brand)}.hint{color:var(--muted);font-size:12px;margin-top:6px}
   code{background:var(--soft);padding:1px 6px;border-radius:6px}
+  ol.guide{margin:6px 0 0;padding:0;list-style:none;counter-reset:g;display:flex;flex-direction:column;gap:10px}
+  ol.guide li{counter-increment:g;position:relative;padding:12px 14px 12px 46px;border:1px solid var(--line);border-radius:12px;background:var(--soft);font-size:13.5px;line-height:1.5}
+  ol.guide li::before{content:counter(g);position:absolute;left:12px;top:11px;width:24px;height:24px;border-radius:8px;background:var(--brand);color:#fff;font-family:var(--fd);font-weight:800;font-size:13px;display:grid;place-items:center}
+  ol.guide li b{color:var(--ink)}
+  .st-grid{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px}
+  .st-grid .stat b{font-size:22px}
+  .st-tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;margin-left:6px}
+  .st-ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+  .st-no{background:color-mix(in srgb,var(--brand) 14%,transparent);color:var(--brand)}
 </style>
 </head>
 <body>
@@ -50,6 +59,20 @@
   <label data-i18n="token">Token de admin</label>
   <input id="token" type="password" data-i18n-ph="token_ph" placeholder="tu ADMIN_TOKEN" />
   <div class="hint" data-i18n="token_hint" data-i18n-html="1">Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).</div>
+
+  <div class="card" style="margin-top:22px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="st_h">Estado del catálogo</h2>
+      <button class="ghost" id="loadStatus" data-i18n="st_load" style="padding:8px 14px;font-size:13px">Actualizar</button>
+    </div>
+    <div id="statusOut"></div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="gd_h">Guía rápida (orden recomendado)</h2>
+    <p class="hint" style="margin-bottom:8px" data-i18n="gd_sub">Todo el proceso, paso a paso. Cada bloque de abajo corresponde a un paso.</p>
+    <ol id="guide" class="guide"></ol>
+  </div>
 
   <div class="row" style="margin-top:8px">
     <div>
@@ -174,6 +197,19 @@ const T={
     al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
     rq_h:"Demanda (peticiones)", rq_hint:"Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.", rq_load:"Ver demanda", rq_count:"peticiones", rq_q:"Búsqueda", rq_c:"Veces", rq_none:"Aún no hay peticiones.",
     auto_h:"Importador automático", auto_hint:'Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.', auto_btn:"Ejecutar importador ahora", auto_started:"Importador lanzado en segundo plano ✓ (mira los logs de Railway)", auto_running:"Ya se está ejecutando ✓",
+    st_h:"Estado del catálogo", st_load:"Actualizar", st_hint:"Mete tu token y pulsa Actualizar.",
+    st_products:"productos", st_photos:"con foto", st_tagged:"etiquetados", st_qc:"con QC", st_agents:"agentes activos", st_subs:"suscriptores", st_alerts:"alertas de precio", st_demand:"peticiones", st_clicks:"clics de agente", st_lastingest:"Última ingesta automática", st_never:"nunca", st_keys:"Claves", st_gkey:"Google Sheets", st_aikey:"IA (Claude)", st_on:"activa", st_off:"falta",
+    gd_h:"Guía rápida (orden recomendado)", gd_sub:"Todo el proceso, paso a paso. Cada bloque de abajo es un paso.",
+    gd_steps:[
+      ["Token de admin","Mete tu ADMIN_TOKEN aquí arriba (se guarda en tu navegador). Es la llave de este panel."],
+      ["Importar productos","Pega un Google Sheet o pulsa una <b>fuente de la comunidad</b> → <b>Previsualizar</b> → <b>Añadir al catálogo</b>. O deja el <b>Importador automático</b>, que crece solo cada semana. Guardamos el itemID y regeneramos los links con TUS códigos."],
+      ["Fotos (automático)","Las fotos se enriquecen solas en segundo plano (Weidian). Con muchos ítems tarda horas y se reanuda tras reinicios. No tienes que hacer nada; puedes cerrar la pestaña."],
+      ["Etiquetar con IA","Pulsa <b>Etiquetar catálogo con IA</b>: limpia nombres, marca, color, <b>género</b> y tags (ES/EN). Mejora la búsqueda y los filtros. Barato (Haiku)."],
+      ["QC con IA (opcional)","Pulsa <b>Analizar QC del catálogo</b>: puntúa la calidad por visión (1-10). Más lento y caro; hazlo cuando ya haya fotos."],
+      ["Agentes y comisión","Pulsa <b>Cargar agentes</b>, rellena tu código por agente y actívalo. Solo los <b>activos con código real</b> salen en la web y te dan comisión — aparecen al instante en TODAS las fichas, sin reimportar."],
+      ["Crecer con la demanda","Mira <b>Ver demanda</b>: lo que buscan los usuarios y no tienes. Te dice exactamente qué añadir al catálogo."],
+      ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
+    ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
     th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
     sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
@@ -210,6 +246,19 @@ const T={
     al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
     rq_h:"Demand (requests)", rq_hint:"What users search for that is NOT in the catalog. Use it to prioritize what to add.", rq_load:"View demand", rq_count:"requests", rq_q:"Search", rq_c:"Times", rq_none:"No requests yet.",
     auto_h:"Automatic importer", auto_hint:'Ingests the curated community-sheet list on its own (dedup + your codes), periodically, with no action from you. Enable/tune it with the <code>AUTO_INGEST</code> env var on Railway. This button runs it <b>now</b>.', auto_btn:"Run importer now", auto_started:"Importer started in the background ✓ (check Railway logs)", auto_running:"Already running ✓",
+    st_h:"Catalog status", st_load:"Refresh", st_hint:"Enter your token and hit Refresh.",
+    st_products:"products", st_photos:"with photo", st_tagged:"tagged", st_qc:"with QC", st_agents:"active agents", st_subs:"subscribers", st_alerts:"price alerts", st_demand:"requests", st_clicks:"agent clicks", st_lastingest:"Last auto-ingest", st_never:"never", st_keys:"Keys", st_gkey:"Google Sheets", st_aikey:"AI (Claude)", st_on:"active", st_off:"missing",
+    gd_h:"Quick guide (recommended order)", gd_sub:"The whole process, step by step. Each block below is a step.",
+    gd_steps:[
+      ["Admin token","Enter your ADMIN_TOKEN above (saved in your browser). It's the key to this panel."],
+      ["Import products","Paste a Google Sheet or click a <b>community source</b> → <b>Preview</b> → <b>Add to catalog</b>. Or let the <b>Automatic importer</b> grow it weekly. We store the itemID and regenerate links with YOUR codes."],
+      ["Photos (automatic)","Photos are enriched in the background (Weidian). With many items it takes hours and resumes after restarts. Nothing to do; you can close the tab."],
+      ["Tag with AI","Click <b>Tag catalog with AI</b>: cleans titles, brand, color, <b>gender</b> and tags (ES/EN). Improves search and filters. Cheap (Haiku)."],
+      ["AI QC (optional)","Click <b>Analyze catalog QC</b>: scores quality by vision (1-10). Slower and pricier; do it once photos exist."],
+      ["Agents & commission","Click <b>Load agents</b>, fill your code per agent and enable it. Only <b>active agents with a real code</b> show on the site and earn you commission — they appear instantly on ALL products, no re-import."],
+      ["Grow with demand","Check <b>View demand</b>: what users search for that you don't have. It tells you exactly what to add."],
+      ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
+    ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
     th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
     sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
@@ -233,12 +282,14 @@ function applyLang(){
   document.querySelectorAll("[data-i18n]").forEach(el=>{ const v=t(el.getAttribute("data-i18n")); if(v==null) return; if(el.getAttribute("data-i18n-html")) el.innerHTML=v; else el.textContent=v; });
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=t(el.getAttribute("data-i18n-ph")); if(v!=null) el.setAttribute("placeholder",v); });
   $("#langBtn").textContent=LANG.toUpperCase();
+  if(typeof renderGuide==="function") renderGuide();
   modeUI();
 }
 $("#langBtn").onclick=()=>{ LANG=LANG==="es"?"en":"es"; localStorage.setItem("cnf_lang",LANG); document.cookie="cnf_lang="+LANG+";path=/;max-age=31536000;samesite=lax"; applyLang(); };
 
 $("#token").value=localStorage.getItem("cnf_admin")||"";
 $("#token").oninput=()=>localStorage.setItem("cnf_admin",$("#token").value);
+$("#token").addEventListener("change",()=>{ if(typeof loadStatus==="function") loadStatus(); });
 function modeUI(){ const m=$("#mode").value; const isSheet=m==="sheet";
   $("#url").style.display=isSheet?"block":"none"; $("#content").style.display=isSheet?"none":"block";
   $("#lbl").textContent=isSheet?t("lbl_sheet"):(m==="csv"?t("lbl_csv"):t("lbl_text")); }
@@ -461,7 +512,39 @@ $("#autoIng").onclick=async()=>{
   $("#autoIngOut").innerHTML=`<p class="msg" style="color:var(--ok)">${d.running?t("auto_running"):t("auto_started")}</p>`;
 };
 
-applyLang();
+/* Guía + estado del catálogo */
+function renderGuide(){
+  const el=$("#guide"); if(!el) return;
+  const steps=(T[LANG]&&T[LANG].gd_steps)||T.es.gd_steps;
+  el.innerHTML=steps.map(s=>`<li><b>${s[0]}</b> — ${s[1]}</li>`).join("");
+}
+async function loadStatus(){
+  const el=$("#statusOut");
+  if(!$("#token").value){ el.innerHTML=`<p class="hint" style="margin-top:12px">${t("st_hint")}</p>`; return; }
+  el.innerHTML=`<p class="hint" style="margin-top:12px">…</p>`;
+  let d; try{ d=await (await fetch("/api/admin/status",{headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false}; }
+  if(!d.ok){ el.innerHTML=`<p class="hint" style="margin-top:12px">${t("st_hint")}</p>`; return; }
+  const pct=(a,b)=> b? Math.round(a/b*100)+"%":"0%";
+  const stat=(n,l)=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`;
+  const last=d.lastIngest?new Date(d.lastIngest).toLocaleString():t("st_never");
+  const tag=(ok)=>`<span class="st-tag ${ok?'st-ok':'st-no'}">${ok?t("st_on"):t("st_off")}</span>`;
+  el.innerHTML=`<div class="st-grid">
+    ${stat(d.products,t("st_products"))}
+    ${stat(`${d.withImage} · ${pct(d.withImage,d.products)}`,t("st_photos"))}
+    ${stat(`${d.tagged} · ${pct(d.tagged,d.products)}`,t("st_tagged"))}
+    ${stat(`${d.withQc} · ${pct(d.withQc,d.products)}`,t("st_qc"))}
+    ${stat(`${d.agentsActive}/${d.agentsTotal}`,t("st_agents"))}
+    ${stat(d.subscribers,t("st_subs"))}
+    ${stat(d.alerts,t("st_alerts"))}
+    ${stat(d.requests,t("st_demand"))}
+    ${stat(d.clicks,t("st_clicks"))}
+  </div>
+  <p class="hint" style="margin-top:12px">${t("st_lastingest")}: <b>${last}</b> · ${t("st_keys")}: ${t("st_gkey")} ${tag(d.hasGoogleKey)} · ${t("st_aikey")} ${tag(d.hasAiKey)}</p>`;
+}
+$("#loadStatus").onclick=loadStatus;
+
+applyLang(); renderGuide();
+if($("#token").value) loadStatus();
 </script>
 </body>
 </html>
