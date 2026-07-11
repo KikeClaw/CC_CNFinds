@@ -211,6 +211,8 @@
   .conv{ display:flex; gap:8px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:6px 6px 6px 16px; max-width:840px; }
   .conv .sic{ color:var(--muted); }
   .conv input{ flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-size:15.5px; padding:13px 8px; outline:none; font-family:var(--font-t); }
+  .conv select{ flex:1; min-width:120px; border:0; background:transparent; color:var(--ink); font-size:15px; padding:12px 8px; outline:none; font-family:var(--font-t); cursor:pointer; }
+  .conv select:focus{ outline:none; }
   .conv-result{ margin-top:18px; }
   .conv-card{ display:flex; gap:20px; align-items:center; flex-wrap:wrap; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
   .conv-meta{ font-size:13px; color:var(--muted); line-height:1.7; }
@@ -370,6 +372,18 @@
     <div id="fitResult" class="conv-result"></div>
   </section>
 
+  <section id="envio">
+    <div class="head"><h2><span class="sq" id="hship"></span><span data-i18n="ship_title">Calculadora de envío</span></h2><span class="muted" style="font-size:13px" data-i18n="ship_sub">Estima el peso y el coste del envío internacional</span></div>
+    <div class="conv" style="flex-wrap:wrap; max-width:840px">
+      <span class="sic" id="shipIc"></span>
+      <select id="shipItem"></select>
+      <input id="shipQty" type="number" min="1" value="1" title="Cantidad" style="max-width:82px; flex:none" />
+      <select id="shipDest"></select>
+      <button class="go" id="shipBtn" data-i18n="ship_btn">Estimar</button>
+    </div>
+    <div id="shipResult" class="conv-result"></div>
+  </section>
+
   <section id="marcas">
     <div class="head"><h2><span class="sq" id="htag"></span><span data-i18n="brands">Marcas populares</span></h2><span class="muted" style="font-size:13px" data-i18n="brands_sub">Toca para filtrar</span></div>
     <div class="brands" id="brands"></div>
@@ -464,7 +478,9 @@ const T={
     conv_placeholder:'Ej: techwear negro por menos de 50€ con buena calidad',ai_search_tag:"Búsqueda IA",
     conv_none:"No pude reconocer un producto en ese enlace.",view_original:"Ver producto original",copiar:"Copiar",copiado:"¡Copiado!",
     converting:"Convirtiendo…",platform:"plataforma",interpreting:"La IA está interpretando tu búsqueda…",
-    building_fit:"Montando tu fit dentro de",total_est:"Total estimado",budget_w:"Presupuesto",pieces:"piezas" },
+    building_fit:"Montando tu fit dentro de",total_est:"Total estimado",budget_w:"Presupuesto",pieces:"piezas",
+    ship_title:"Calculadora de envío",ship_sub:"Estima el peso y el coste del envío internacional",ship_btn:"Estimar",
+    ship_weight:"Peso estimado",ship_days:"días",ship_note:"Estimación orientativa. El coste real depende del agente, la línea, el volumen y el destino. El agente cobra el envío; el producto se paga aparte." },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -500,7 +516,9 @@ const T={
     conv_placeholder:'e.g. black techwear under €50 with good quality',ai_search_tag:"AI search",
     conv_none:"Couldn't recognize a product in that link.",view_original:"View original product",copiar:"Copy",copiado:"Copied!",
     converting:"Converting…",platform:"platform",interpreting:"The AI is interpreting your search…",
-    building_fit:"Building your fit under",total_est:"Estimated total",budget_w:"Budget",pieces:"pieces" },
+    building_fit:"Building your fit under",total_est:"Estimated total",budget_w:"Budget",pieces:"pieces",
+    ship_title:"Shipping calculator",ship_sub:"Estimate the weight and cost of international shipping",ship_btn:"Estimate",
+    ship_weight:"Estimated weight",ship_days:"days",ship_note:"Rough estimate. The real cost depends on the agent, line, volume and destination. The agent charges shipping; the product is paid separately." },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -739,6 +757,8 @@ $("#aiBtn").onclick=aiSearch;
 /* armador de fit con IA */
 $("#hfit").innerHTML=ic("sparkles",21,1.9); $("#hfit").style.color="#8b5cf6";
 $("#fitIc").innerHTML=ic("sparkles",20);
+if($("#hship")){ $("#hship").innerHTML=ic("box",21,1.9); $("#hship").style.color="#16a34a"; }
+if($("#shipIc")) $("#shipIc").innerHTML=ic("box",20,1.8);
 async function armarFit(){
   const budget=parseFloat($("#fitBudget").value)||150;
   const style=$("#fitStyle").value.trim();
@@ -756,6 +776,55 @@ async function armarFit(){
 $("#fitBtn").onclick=armarFit;
 $("#fitBudget").addEventListener("keydown",e=>{ if(e.key==="Enter") armarFit(); });
 $("#fitStyle").addEventListener("keydown",e=>{ if(e.key==="Enter") armarFit(); });
+
+/* calculadora de envío (client-side, orientativa) */
+const SHIP_ITEMS=[
+  {k:"sneakers",kg:1.1,es:"Zapatillas",en:"Sneakers"},
+  {k:"boots",kg:1.5,es:"Botas",en:"Boots"},
+  {k:"tshirt",kg:0.3,es:"Camiseta",en:"T-shirt"},
+  {k:"hoodie",kg:0.75,es:"Sudadera",en:"Hoodie"},
+  {k:"pants",kg:0.6,es:"Pantalón",en:"Pants"},
+  {k:"jacket",kg:1.2,es:"Chaqueta / Abrigo",en:"Jacket / Coat"},
+  {k:"accessory",kg:0.25,es:"Accesorio",en:"Accessory"},
+  {k:"bag",kg:0.9,es:"Bolso / Mochila",en:"Bag / Backpack"},
+  {k:"watch",kg:0.4,es:"Reloj",en:"Watch"},
+];
+const SHIP_DEST=[
+  {k:"eu",m:1.0,es:"España / UE",en:"Spain / EU"},
+  {k:"uk",m:1.05,es:"Reino Unido",en:"United Kingdom"},
+  {k:"us",m:1.15,es:"EE. UU. / Canadá",en:"USA / Canada"},
+  {k:"latam",m:1.35,es:"Latinoamérica",en:"Latin America"},
+  {k:"other",m:1.4,es:"Resto del mundo",en:"Rest of world"},
+];
+const SHIP_LINES=[
+  {es:"Económica",en:"Economy",perKg:9,base:4,d:"12-20"},
+  {es:"Estándar",en:"Standard",perKg:14,base:5,d:"8-14"},
+  {es:"Exprés (DHL/FedEx)",en:"Express (DHL/FedEx)",perKg:26,base:8,d:"4-8"},
+];
+function populateShip(){
+  const it=$("#shipItem"), de=$("#shipDest"); if(!it||!de) return;
+  const iv=it.value, dv=de.value;
+  it.innerHTML=SHIP_ITEMS.map(x=>`<option value="${x.k}">${LANG==="en"?x.en:x.es}</option>`).join("");
+  de.innerHTML=SHIP_DEST.map(x=>`<option value="${x.k}">${LANG==="en"?x.en:x.es}</option>`).join("");
+  if(iv) it.value=iv; if(dv) de.value=dv;
+}
+function estimateShip(){
+  const item=SHIP_ITEMS.find(x=>x.k===$("#shipItem").value)||SHIP_ITEMS[0];
+  const dest=SHIP_DEST.find(x=>x.k===$("#shipDest").value)||SHIP_DEST[0];
+  const qty=Math.max(1,parseInt($("#shipQty").value)||1);
+  const kg=Math.max(0.2, item.kg*qty);
+  const rows=SHIP_LINES.map(l=>{
+    const c=(l.base+l.perKg*kg)*dest.m;
+    const lo=eur(c*0.85), hi=eur(c*1.15);
+    return `<tr><td style="font-weight:600">${LANG==="en"?l.en:l.es}</td><td style="color:var(--muted)">${l.d} ${t("ship_days")}</td><td style="text-align:right;font-family:var(--font-d);font-weight:700">${lo} – ${hi}</td></tr>`;
+  }).join("");
+  $("#shipResult").innerHTML=`<div class="conv-card" style="flex-direction:column;align-items:stretch;gap:12px">
+    <div class="conv-meta"><b>${t("ship_weight")}: ~${kg.toFixed(2)} kg</b> · ${qty}× ${LANG==="en"?item.en:item.es} · ${LANG==="en"?dest.en:dest.es}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">${rows}</table>
+    <div class="note" style="margin:0">${t("ship_note")}</div>
+  </div>`;
+}
+$("#shipBtn").onclick=estimateShip;
 
 /* búsqueda visual (subir foto -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
@@ -805,6 +874,7 @@ function applyLang(){
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
   const tr=$("#trust"); if(tr) tr.innerHTML=[["shield",t("trust1")],["layers",t("trust2")],["grid",t("trust3")]].map(([i,x])=>`<span>${ic(i,16,1.8)} ${x}</span>`).join("");
   const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
+  populateShip();
 }
 function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); load(true); }
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
