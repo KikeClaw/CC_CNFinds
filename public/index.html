@@ -108,13 +108,21 @@
   .tabs{ display:flex; gap:4px; padding:3px; }
   .tab{ flex:1; padding:9px; border-radius:15px; border:0; background:transparent; color:var(--muted); font-size:13.5px; font-weight:500; display:flex; align-items:center; justify-content:center; gap:7px; }
   .tab.active{ background:var(--soft); color:var(--ink); }
-  .searchrow{ display:flex; gap:8px; padding:4px 4px 4px 14px; align-items:center; }
-  .searchrow .sic{ color:var(--muted); }
-  .searchrow input{ flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-size:16.5px; padding:13px 8px; outline:none; font-family:var(--font-t); }
-  .go{ background:var(--brand); color:#fff; border:0; border-radius:16px; padding:0 24px; height:48px; font-weight:600; font-size:14.5px; box-shadow:0 6px 18px rgba(0,0,0,.12); }
+  /* buscador: input a todo el ancho arriba, botones debajo */
+  .searchrow{ display:flex; flex-direction:column; gap:10px; padding:6px 8px 8px; }
+  .searchinput{ display:flex; align-items:center; gap:9px; padding:4px 8px; }
+  .searchinput .sic{ color:var(--muted); flex:none; }
+  .searchinput input{ flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-size:16.5px; padding:8px 2px; outline:none; font-family:var(--font-t); }
+  .searchactions{ display:flex; gap:8px; align-items:center; }
+  .searchactions #goBtn{ margin-left:auto; }
+  .go{ background:var(--brand); color:#fff; border:0; border-radius:14px; padding:0 24px; height:46px; font-weight:600; font-size:14.5px; box-shadow:0 6px 18px rgba(255,77,46,.24); cursor:pointer; }
   .go:hover{ filter:brightness(1.05); }
-  .go.ai{ background:var(--surface); color:var(--brandc); border:1px solid var(--line); box-shadow:none; display:inline-flex; align-items:center; gap:6px; }
-  .go.ai:hover{ background:var(--soft); filter:none; }
+  .go.ai{ background:var(--soft); color:var(--brandc); border:1px solid var(--line); box-shadow:none; padding:0 16px; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+  .go.ai:hover{ background:color-mix(in srgb,var(--brand) 10%,var(--soft)); border-color:var(--brand); filter:none; }
+  /* tooltips */
+  [data-tip]{ position:relative; }
+  [data-tip]:hover::after{ content:attr(data-tip); position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); font-size:12px; font-weight:600; white-space:nowrap; padding:6px 10px; border-radius:8px; pointer-events:none; z-index:60; box-shadow:var(--shadow-lg); }
+  [data-tip]:hover::before{ content:""; position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--ink); z-index:60; }
   .trust{ display:flex; gap:26px; justify-content:center; flex-wrap:wrap; margin-top:26px; color:var(--muted); font-size:13px; }
   .trust span{ display:inline-flex; align-items:center; gap:8px; }
 
@@ -212,9 +220,9 @@
   @media(max-width:640px){
     .modal{ grid-template-columns:1fr; grid-template-rows:38vh 1fr; width:94vw; height:auto; max-height:92vh; }
     .modal .mimg{ min-height:0; }
-    .searchrow{ padding-left:12px; gap:6px; }
-    .searchrow .go{ padding:0 14px; }
-    .searchrow .go.ai{ padding:0 12px; }
+    .searchactions{ gap:6px; }
+    .searchactions .go{ padding:0 16px; }
+    .searchactions .go.ai{ padding:0 13px; }
     .head{ flex-wrap:wrap; align-items:baseline; gap:6px 12px; }
     .conv{ flex-wrap:wrap; }
     #fitBudget{ max-width:none !important; flex:1 1 140px !important; }
@@ -351,14 +359,18 @@
         <button class="tab" data-tab="brand"><span class="ti"></span><span data-i18n="tab_brand">Marcas</span></button>
       </div>
       <div class="searchrow">
-        <span class="sic" id="searchIc"></span>
-        <input id="q" type="search" data-i18n-ph="search_ph" placeholder="Busca, pega una URL, o pregunta a la IA…" />
-        <button class="go ai" id="camBtn" title="Buscar con la cámara" aria-label="Buscar con la cámara"><span id="camIc"></span></button>
+        <div class="searchinput">
+          <span class="sic" id="searchIc"></span>
+          <input id="q" type="search" data-i18n-ph="search_ph" placeholder="Busca, pega una URL, o pregunta a la IA…" />
+        </div>
         <input type="file" id="visCam" accept="image/*" capture="environment" style="display:none" />
-        <button class="go ai" id="visBtn" title="Buscar por imagen (galería)" aria-label="Buscar por imagen"><span id="visIc"></span></button>
         <input type="file" id="visFile" accept="image/*" style="display:none" />
-        <button class="go ai" id="aiBtn" title="Buscar con IA"><span id="aiIc"></span> IA</button>
-        <button class="go" id="goBtn" data-i18n="buscar">Buscar</button>
+        <div class="searchactions">
+          <button class="go ai" id="camBtn" data-tipkey="tip_cam" aria-label="Buscar con la cámara"><span id="camIc"></span></button>
+          <button class="go ai" id="visBtn" data-tipkey="tip_gallery" aria-label="Buscar por imagen"><span id="visIc"></span></button>
+          <button class="go ai" id="aiBtn" data-tipkey="tip_ai" aria-label="Buscar con IA"><span id="aiIc"></span> IA</button>
+          <button class="go" id="goBtn" data-tipkey="tip_search" data-i18n="buscar">Buscar</button>
+        </div>
       </div>
     </div>
     <div class="trust" id="trust"></div>
@@ -576,7 +588,8 @@ const T={
     news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
     share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
     pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓",
-    es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara" },
+    es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
+    tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -624,7 +637,8 @@ const T={
     news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
     share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
     pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓",
-    es_similar:"You might like these from our catalog",es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_help:"You can still get it:",es_agents:"Or search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera" },
+    es_similar:"You might like these from our catalog",es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_help:"You can still get it:",es_agents:"Or search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera",
+    tip_cam:"Search with camera",tip_gallery:"Search by image (gallery)",tip_ai:"AI search (natural language)",tip_search:"Search" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -1156,6 +1170,7 @@ function applyLang(){
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
   const tr=$("#trust"); if(tr) tr.innerHTML=[["shield",t("trust1")],["layers",t("trust2")],["grid",t("trust3")]].map(([i,x])=>`<span>${ic(i,16,1.8)} ${x}</span>`).join("");
   const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
+  document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();
 }
 function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); }
