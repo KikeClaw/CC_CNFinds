@@ -495,7 +495,7 @@ function startEnrichTagJob(items, opts = {}) {
           if (r) {
             const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
             db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-              .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender, canonCat(out.category), JSON.stringify(out.tags || []), it.id);
+              .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), it.id);
             job.tagged++;
           }
         } catch {}
@@ -519,7 +519,7 @@ function startTagJob(ids) {
         if (r) {
           const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
           db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-            .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
+            .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
           job.tagged++;
         }
       } catch {}
@@ -672,6 +672,26 @@ function normalizeCategories() {
   if (changed) console.log(`Categorías normalizadas: ${changed} productos reasignados.`);
 }
 
+// Rellena el género de los productos sin etiquetar (para que el filtro Hombre/Mujer
+// funcione ya, antes del etiquetado con IA). Heurística por nombre/tags; por defecto
+// "unisex" (la mayoría del streetwear reps lo es), así aparece en ambos filtros.
+// El etiquetado con IA lo refina después. Idempotente: solo toca los vacíos.
+const RE_WOMEN = /\b(women'?s?|woman|female|ladies|mujer|chica|femenin\w*|dress|vestido|skirt|falda|heels|tacones|bikini|blouse|blusa|leggings)\b/i;
+const RE_MEN = /\b(men'?s?|male|hombre|masculin\w*|boxers|calzoncillo)\b/i;
+function inferGenders() {
+  const rows = db.prepare("SELECT id, name, clean_title, tags FROM products WHERE gender IS NULL OR gender='' OR gender='unknown'").all();
+  const upd = db.prepare("UPDATE products SET gender=? WHERE id=?");
+  let n = 0;
+  for (const r of rows) {
+    const s = `${r.name || ""} ${r.clean_title || ""} ${r.tags || ""}`;
+    let g = "unisex";
+    if (RE_WOMEN.test(s)) g = "women";
+    else if (RE_MEN.test(s)) g = "men";
+    upd.run(g, r.id); n++;
+  }
+  if (n) console.log(`Género inferido para ${n} productos (por defecto: unisex).`);
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -682,6 +702,7 @@ async function bootstrap() {
       console.log(`Semilla importada: ${r.added} productos.`);
     }
     normalizeCategories();
+    inferGenders();
     // Continúa fotos pendientes (self-healing tras reinicios); salta los caídos
     // revisados hace menos de 7 días para no re-machacarlos.
     const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();
