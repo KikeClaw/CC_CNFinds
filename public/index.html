@@ -13,6 +13,9 @@
 <meta property="og:url" content="https://cnfinds.online/" />
 <meta property="og:image" content="https://cnfinds.online/og.svg" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#ff4d2e" />
+<link rel="apple-touch-icon" href="/favicon.svg" />
 <link rel="canonical" href="https://cnfinds.online/" />
 <link rel="alternate" hreflang="es" href="https://cnfinds.online/" />
 <link rel="alternate" hreflang="en" href="https://cnfinds.online/?lang=en" />
@@ -215,6 +218,10 @@
   .modal .mthumbs img.on{ border-color:var(--ink); }
   /* conversor */
   .conv{ display:flex; gap:8px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:6px 6px 6px 16px; max-width:840px; }
+  .newsband{ display:flex; align-items:center; justify-content:space-between; gap:22px; flex-wrap:wrap; background:var(--soft); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--card-shadow); padding:26px 28px; }
+  .newsband h2{ margin:0; font-size:22px; letter-spacing:-.02em; }
+  .newsband .newsform{ flex:1; min-width:280px; max-width:460px; margin:0; box-shadow:var(--card-shadow); }
+  @media(max-width:640px){ .newsband{ padding:20px; } .newsband .newsform{ max-width:none; } }
   .conv .sic{ color:var(--muted); }
   .conv input{ flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-size:15.5px; padding:13px 8px; outline:none; font-family:var(--font-t); }
   .conv select{ flex:1; min-width:120px; border:0; background:transparent; color:var(--ink); font-size:15px; padding:12px 8px; outline:none; font-family:var(--font-t); cursor:pointer; }
@@ -454,6 +461,21 @@
     <div class="empty" id="empty" style="display:none" data-i18n="noresults">Sin resultados para tu búsqueda.</div>
     <div class="more"><button id="more" style="display:none" data-i18n="loadmore">Cargar más</button></div>
   </section>
+
+  <section id="news">
+    <div class="newsband">
+      <div class="newstxt">
+        <h2 data-i18n="news_title">Nuevos finds en tu email</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:14px" data-i18n="news_sub">Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.</p>
+      </div>
+      <div class="conv newsform">
+        <span class="sic" id="newsIc"></span>
+        <input id="newsEmail" type="email" autocomplete="email" data-i18n-ph="news_ph" placeholder="tu@email.com" aria-label="Email" />
+        <button class="go" id="newsBtn" data-i18n="news_btn">Suscribirme</button>
+      </div>
+    </div>
+    <div id="newsResult" class="conv-result"></div>
+  </section>
 </main>
 
 <footer>
@@ -532,7 +554,9 @@ const T={
     qc_nophotos:"No pude obtener fotos de este producto (plataforma no soportada aún o item caído).",qc_disc:"Puntuación orientativa por IA sobre las fotos disponibles. No sustituye a las fotos QC reales del agente tras comprar.",
     track_title:"Rastreador de paquetes",track_sub:"Sigue tu envío en más de 1.000 transportistas",track_ph:"Nº de seguimiento…",track_btn:"Rastrear",track_note:"Abrimos el seguimiento en 17TRACK en una pestaña nueva.",new_title:"Nuevos finds",
     nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad",
-    promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →" },
+    promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →",
+    news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
+    share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo." },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -576,7 +600,9 @@ const T={
     qc_nophotos:"Couldn't get photos for this product (platform not supported yet or dead item).",qc_disc:"Rough AI score on the available photos. It doesn't replace the agent's real QC photos after you buy.",
     track_title:"Package tracker",track_sub:"Track your parcel across 1,000+ carriers",track_ph:"Tracking number…",track_btn:"Track",track_note:"We open tracking on 17TRACK in a new tab.",new_title:"New finds",
     nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community",
-    promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →" },
+    promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →",
+    news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
+    share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you." },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -684,9 +710,28 @@ $("#fav").onclick=()=>{
   if(!items.length){ $("#grid").innerHTML=`<div class="empty" style="grid-column:1/-1">${t("fav_empty")}</div>`; $("#count").textContent=`0 ${t("favs")}`; $("#activeFilters").innerHTML=""; return; }
   $("#grid").innerHTML=items.map(cardHtml).join(""); bindCards($("#grid"));
   $("#count").textContent=`${items.length} ${t("favs")}`; $("#empty").style.display="none";
-  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("heart",13,1.9)} ${t("favs_f")} <button data-clear="fav">${ic("x",13,2.2)}</button></span>`;
+  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("heart",13,1.9)} ${t("favs_f")} <button data-clear="fav">${ic("x",13,2.2)}</button></span> <button class="active-filter" id="shareFavs" style="cursor:pointer">${ic("link",13,1.9)} ${t("share_favs")}</button>`;
   const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; load(true); };
+  const sf=$("#shareFavs"); if(sf) sf.onclick=shareFavs;
 };
+function shareFavs(){
+  const ids=[...FAVS]; if(!ids.length) return;
+  const url=location.origin+"/?favs="+ids.join(",");
+  const done=()=>{ const b=$("#shareFavs"); if(b) b.innerHTML=`${ic("heart",13,1.9)} ${t("share_copied")}`; };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(()=>prompt(t("share_favs"),url));
+  else prompt(t("share_favs"),url);
+}
+async function showSharedList(ids){
+  const d=await (await fetch("/api/products?ids="+ids.join(",")+"&limit=100")).json();
+  d.items.forEach(it=>CACHE[it.id]=it);
+  document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
+  $("#more").style.display="none";
+  if(!d.items.length){ $("#grid").innerHTML=`<div class="empty" style="grid-column:1/-1">${t("noresults")}</div>`; return; }
+  $("#grid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#grid"));
+  $("#count").textContent=`${d.items.length} ${t("favs")}`; $("#empty").style.display="none";
+  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("link",13,1.9)} ${t("shared_title")} <button data-clear="q">${ic("x",13,2.2)}</button></span>`;
+  const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; load(true); };
+}
 
 /* categories */
 async function loadCats(){
@@ -953,6 +998,22 @@ async function loadNewFinds(){
   $("#newfinds").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#newfinds"));
 }
 
+/* newsletter */
+if($("#newsIc")) $("#newsIc").innerHTML=ic("sparkles",18,1.8);
+async function subscribe(){
+  const email=$("#newsEmail").value.trim(); if(!email) return;
+  const btn=$("#newsBtn"); const orig=btn.textContent; btn.disabled=true; btn.textContent=t("news_sending");
+  let d; try{ d=await (await fetch("/api/subscribe",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email})})).json(); }catch{ d={ok:false,error:t("news_err")}; }
+  btn.disabled=false; btn.textContent=orig;
+  if(d.ok){ $("#newsResult").innerHTML=`<p class="msg" style="color:#16a34a;font-weight:600;margin-top:10px">${t("news_ok")}</p>`; $("#newsEmail").value=""; }
+  else { $("#newsResult").innerHTML=`<p class="msg" style="color:var(--brand);margin-top:10px">${esc(d.error||t("news_err"))}</p>`; }
+}
+if($("#newsBtn")) $("#newsBtn").onclick=subscribe;
+if($("#newsEmail")) $("#newsEmail").addEventListener("keydown",e=>{ if(e.key==="Enter") subscribe(); });
+
+/* PWA: registra el service worker */
+if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{})); }
+
 /* búsqueda visual (subir foto -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
 $("#visBtn").onclick=()=>$("#visFile").click();
@@ -1010,8 +1071,12 @@ function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 applyLang();
 renderSocial();
-{ const uq=new URLSearchParams(location.search).get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; } }
-loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true);
+loadCats(); loadBrands(); loadTrending(); loadNewFinds();
+{ const sp=new URLSearchParams(location.search);
+  const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }
+  const ids=(sp.get("favs")||"").split(",").map(x=>parseInt(x,10)).filter(Boolean);
+  if(ids.length) showSharedList(ids); else load(true);
+}
 </script>
 </body>
 </html>

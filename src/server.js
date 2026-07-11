@@ -129,15 +129,19 @@ function handleProducts(res, params) {
   const limit = Math.min(parseInt(params.get("limit") || "48", 10), 200);
   const offset = Math.max(parseInt(params.get("offset") || "0", 10), 0);
 
+  // Lista explícita de IDs (favoritos compartidos por URL). Máx 100.
+  const ids = (params.get("ids") || "").split(",").map((x) => parseInt(x, 10)).filter(Boolean).slice(0, 100);
+
   const where = [];
   const args = [];
+  if (ids.length) { where.push(`id IN (${ids.map(() => "?").join(",")})`); args.push(...ids); }
   if (q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
   if (category) { where.push("category = ?"); args.push(category); }
   if (brand) { where.push("brand = ?"); args.push(brand); }
   if (gender === "men") where.push("gender IN ('men','unisex')");
   else if (gender === "women") where.push("gender IN ('women','unisex')");
   if (hot) where.push("hot = 1");
-  if (onlyImg) where.push("image_url IS NOT NULL");
+  if (onlyImg && !ids.length) where.push("image_url IS NOT NULL");
   const wsql = where.length ? "WHERE " + where.join(" AND ") : "";
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
@@ -160,6 +164,23 @@ function handleProducts(res, params) {
   });
 
   json(res, 200, { total, limit, offset, items });
+}
+
+// Boletín: guarda el email del suscriptor (el envío lo conectas tú aparte).
+async function handleSubscribe(req, res) {
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 120) return json(res, 400, { ok: false, error: "Email no válido" });
+  try {
+    db.prepare("INSERT OR IGNORE INTO subscribers (email, created_at, lang) VALUES (?, ?, ?)").run(email, new Date().toISOString(), reqLang(req));
+  } catch { return json(res, 500, { ok: false, error: "Error" }); }
+  json(res, 200, { ok: true });
+}
+// Admin: ver/exportar suscriptores.
+function handleAdminSubscribers(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const rows = db.prepare("SELECT email, created_at, lang FROM subscribers ORDER BY created_at DESC").all();
+  json(res, 200, { ok: true, count: rows.length, subscribers: rows });
 }
 
 // Conversor: cualquier URL (tienda o agente) -> tus links de afiliado.
@@ -637,6 +658,8 @@ const server = createServer((req, res) => {
     const u = new URL(req.url, `http://localhost:${PORT}`);
     if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
     if (req.method === "POST" && u.pathname === "/api/qc-check") return void handleQcCheck(req, res);
+    if (req.method === "POST" && u.pathname === "/api/subscribe") return void handleSubscribe(req, res);
+    if (u.pathname === "/api/admin/subscribers") return void handleAdminSubscribers(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
@@ -648,6 +671,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
     if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
+    if (u.pathname === "/manifest.webmanifest") return void serveStatic(res, "manifest.webmanifest", "application/manifest+json");
+    if (u.pathname === "/sw.js") return void serveStatic(res, "sw.js", "application/javascript; charset=utf-8");
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);

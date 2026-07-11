@@ -107,6 +107,16 @@
     <button class="ghost" id="loadAgents" data-i18n="ag_load">Cargar agentes</button>
     <div id="agents"></div>
   </div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="subs_h">Suscriptores del boletín</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="subs_hint">Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.</p>
+    <div class="actions" style="margin-top:0">
+      <button class="ghost" id="loadSubs" data-i18n="subs_load">Ver suscriptores</button>
+      <button class="ghost" id="expSubs" style="display:none" data-i18n="subs_export">Descargar CSV</button>
+    </div>
+    <div id="subsOut"></div>
+  </div>
 </div>
 
 <script>
@@ -128,6 +138,7 @@ const T={
     qc_h:"QC con IA (visión)", qc_hint:'Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.', qc_btn:"Analizar QC del catálogo",
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
+    subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
     th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
     sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
@@ -159,6 +170,7 @@ const T={
     qc_h:"AI QC (vision)", qc_hint:'Scores quality (1-10) by analyzing each product\'s real photos. Uses the <b>vision</b> model: slower and pricier than tagging.', qc_btn:"Analyze catalog QC",
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
+    subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
     th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
     sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
@@ -333,6 +345,25 @@ function renderAgents(agents){
   });
 }
 $("#loadAgents").onclick=loadAgents;
+
+/* Suscriptores del boletín */
+let SUBS=[];
+async function loadSubs(){
+  const r=await fetch("/api/admin/subscribers",{headers:{"x-admin-token":$("#token").value}});
+  const d=await r.json();
+  if(!d.ok){ $("#subsOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  SUBS=d.subscribers||[];
+  $("#expSubs").style.display=SUBS.length?"inline-block":"none";
+  const rows=SUBS.slice(0,50).map(s=>`<tr><td>${s.email}</td><td>${(s.created_at||"").slice(0,10)}</td><td>${s.lang||""}</td></tr>`).join("");
+  $("#subsOut").innerHTML=`<p class="msg" style="color:var(--ok)">${d.count} ${t("subs_count")}</p>`+(SUBS.length?`<table style="margin-top:8px"><thead><tr><th>Email</th><th>${t("th_date")||"Fecha"}</th><th>Idioma</th></tr></thead><tbody>${rows}</tbody></table>`:"");
+}
+function exportSubs(){
+  if(!SUBS.length) return;
+  const csv="email,created_at,lang\n"+SUBS.map(s=>`${s.email},${s.created_at||""},${s.lang||""}`).join("\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="cnfinds-subscribers.csv"; a.click(); URL.revokeObjectURL(a.href);
+}
+$("#loadSubs").onclick=loadSubs;
+$("#expSubs").onclick=exportSubs;
 
 applyLang();
 </script>

@@ -1,0 +1,16 @@
+{
+  "name": "CNFinds — Catálogo W2C con IA",
+  "short_name": "CNFinds",
+  "description": "Descubre productos W2C con fotos QC, precios de fábrica y herramientas con IA (búsqueda natural/visual, QC Checker, comparador de agentes).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff4d2e",
+  "lang": "es",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
