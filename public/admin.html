@@ -65,6 +65,10 @@
   <label id="lbl" data-i18n="lbl_sheet">URL del Google Sheet</label>
   <input id="url" placeholder="https://docs.google.com/spreadsheets/d/…" />
   <textarea id="content" data-i18n-ph="content_ph" placeholder="Pega aquí el CSV o los links…" style="display:none"></textarea>
+  <div id="srcRow" style="margin-top:10px">
+    <div class="hint" data-i18n="src_community" style="margin-bottom:6px">Fuentes de la comunidad (rellenan la URL; luego Previsualiza y Añade). Se importan con TUS códigos de afiliado.</div>
+    <div id="srcPicks" style="display:flex;gap:7px;flex-wrap:wrap"></div>
+  </div>
 
   <div class="actions">
     <button class="primary" id="preview" data-i18n="preview">Previsualizar</button>
@@ -115,6 +119,7 @@ const T={
     token:"Token de admin", token_ph:"tu ADMIN_TOKEN",
     token_hint:'Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).',
     source:"Fuente", src_sheet:"Google Sheet (URL)", src_csv:"CSV / TSV pegado", src_text:"Links o texto (Reddit/Telegram)",
+    src_community:"Fuentes de la comunidad (rellenan la URL; luego Previsualiza y Añade). Se importan con TUS códigos de afiliado.",
     lbl_sheet:"URL del Google Sheet", lbl_csv:"Pega el CSV/TSV", lbl_text:"Pega links o texto",
     content_ph:"Pega aquí el CSV o los links…",
     preview:"Previsualizar", apply:"Añadir al catálogo", applying:"Añadiendo…", analyzing:"Analizando…",
@@ -145,6 +150,7 @@ const T={
     token:"Admin token", token_ph:"your ADMIN_TOKEN",
     token_hint:'Saved in your browser. Defaults to <code>cnfinds-admin</code> (change it with the <code>ADMIN_TOKEN</code> env var in production!).',
     source:"Source", src_sheet:"Google Sheet (URL)", src_csv:"Pasted CSV / TSV", src_text:"Links or text (Reddit/Telegram)",
+    src_community:"Community sources (fill the URL; then Preview and Add). Imported with YOUR affiliate codes.",
     lbl_sheet:"Google Sheet URL", lbl_csv:"Paste the CSV/TSV", lbl_text:"Paste links or text",
     content_ph:"Paste the CSV or the links here…",
     preview:"Preview", apply:"Add to catalog", applying:"Adding…", analyzing:"Analyzing…",
@@ -186,6 +192,34 @@ function modeUI(){ const m=$("#mode").value; const isSheet=m==="sheet";
   $("#url").style.display=isSheet?"block":"none"; $("#content").style.display=isSheet?"none":"block";
   $("#lbl").textContent=isSheet?t("lbl_sheet"):(m==="csv"?t("lbl_csv"):t("lbl_text")); }
 $("#mode").onchange=()=>{ modeUI(); $("#apply").style.display="none"; $("#out").innerHTML=""; };
+
+/* Fuentes curadas de la comunidad (hojas por agente). Rellenan la URL y ponen modo sheet.
+   Se importan con TUS códigos de afiliado (el importador regenera los links). */
+const COMMUNITY_SOURCES=[
+  ["Kakobuy","1ys61I-4I8SyTYxv-YTUQ0TyR--7TTf9y3EGB3r2BYtU"],
+  ["Mulebuy","1LjwXEnzeimRvS2wa5UQz8aRQ72kbHKTy-WbjTFu39TQ"],
+  ["OOPBuy","1e2cDOttuZtU5N9o695y-LtyXX_b8-tHUirUryX_dXhE"],
+  ["ACBuy","1TI_9eQ6zw5swLlGlzxU3lrJvU5VYWHPTSXrnnmPFElg"],
+  ["CSSBuy","1-v4PYXpvKExd_ZEdOeGwH7qEt0U3sbxlv_4TDgpMgqg"],
+  ["Sugargoo","1nIl_UCHzW6eYA3AsECU6-8xyeIq7pf8zA3OAnoOzVk8"],
+  ["Hoobuy","1Fwquacwj5DASwes6WmMDVaKG_FWdl0kuqblu8eygIGs"],
+  ["AllChinaBuy","1B3DnUCfkPqtV4kEdtIe2BSZNRJcY1wHpuH37bJnQEE8"],
+  ["JoyaGoo","127FZPFQZXHGkx6rBZ3VR5oRrKu5PFJHiwu5xWNCj7MI"],
+  ["Superbuy","1saVAWI_QD_wW-tzEgSSKfl3sx0Gr58XO4QRvECegeL8"],
+  ["LoveGoBuy","1sF-W6XFnqkitRpYEITRbrWl45xG9Q-efcbracSFMkNM"],
+  ["OrientDig","1qEPT0WVlhYKrJeUGyvZrImC3JSl224TitllH3l1lKZM"],
+  ["Hipobuy","1WQ6Dj_-XkChcMqXxGYT2eQmVCY8YHOmNGzUy-1O1X_E"],
+];
+function renderSrcPicks(){
+  $("#srcPicks").innerHTML=COMMUNITY_SOURCES.map(([n,id])=>`<button type="button" class="ghost srcpick" data-id="${id}" style="padding:6px 12px;font-size:12.5px;border-radius:999px">${n}</button>`).join("");
+  $("#srcPicks").querySelectorAll(".srcpick").forEach(b=>b.onclick=()=>{
+    $("#mode").value="sheet"; modeUI();
+    $("#url").value=`https://docs.google.com/spreadsheets/d/${b.dataset.id}/htmlview`;
+    $("#apply").style.display="none"; $("#out").innerHTML="";
+    $("#url").scrollIntoView({behavior:"smooth",block:"center"});
+  });
+}
+renderSrcPicks();
 
 function payload(){ const m=$("#mode").value; return { mode:m, content: m==="sheet"?$("#url").value.trim():$("#content").value }; }
 async function call(path){
