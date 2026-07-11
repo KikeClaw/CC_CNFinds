@@ -132,6 +132,35 @@ export const GUIDES = [
 <p>The best batches sell out. If a seller has stock and recent good QC, that's a good sign. Check the photo dates.</p>
 <p class="tip">Tip: save your candidates with the heart (♡) on CNFinds and compare their photos and prices before deciding.</p>`,
   },
+  {
+    slug: "ahorrar-comprando",
+    title: "Cómo ahorrar comprando reps: precio, cupones y envío",
+    desc: "Trucos para pagar menos: alertas de bajada de precio, cupones de agente, comparar cashback y optimizar el envío internacional.",
+    body: `
+<p>El precio que ves es el de fábrica; el coste final incluye el envío del agente. Estas son las palancas para pagar menos:</p>
+<h2>1. Activa una alerta de precio</h2>
+<p>Abre cualquier producto en CNFinds y pulsa <b>«Avísame si baja de precio»</b>. Pon tu precio objetivo y te avisamos cuando el producto lo alcance. Ideal para no comprar impulsivo.</p>
+<h2>2. Usa cupones y bonos de bienvenida</h2>
+<p>Casi todos los agentes dan cupones al registrarte (Kakobuy hasta $500). Revisa nuestra <a href="/cupones">página de cupones</a> antes de tu primer pedido.</p>
+<h2>3. Compara el cashback entre agentes</h2>
+<p>En cada ficha verás una <b>comparativa de agentes</b> con su cashback y bono. A igual producto, elige el agente con mejores condiciones.</p>
+<h2>4. Optimiza el envío</h2>
+<p>Junta varios productos en un mismo envío para repartir el coste, elige bien la línea (usa nuestra <a href="/#envio">calculadora de envío</a>) y aprovecha cupones de envío.</p>
+<p class="tip">Consejo: guarda tus finds con el corazón (♡) y compártelos; así comparas precios con calma antes de decidir.</p>`,
+    title_en: "How to save money buying reps: price, coupons and shipping",
+    desc_en: "Tricks to pay less: price-drop alerts, agent coupons, comparing cashback and optimizing international shipping.",
+    body_en: `
+<p>The price you see is the factory price; the final cost includes the agent's shipping. These are the levers to pay less:</p>
+<h2>1. Set a price alert</h2>
+<p>Open any product on CNFinds and hit <b>"Alert me on price drop"</b>. Set your target price and we'll ping you when the product hits it. Great to avoid impulse buys.</p>
+<h2>2. Use coupons and welcome bonuses</h2>
+<p>Almost every agent gives coupons on sign-up (Kakobuy up to $500). Check our <a href="/cupones?lang=en">coupons page</a> before your first order.</p>
+<h2>3. Compare cashback across agents</h2>
+<p>On every product you'll see an <b>agent comparison</b> with cashback and bonus. For the same product, pick the agent with the best terms.</p>
+<h2>4. Optimize shipping</h2>
+<p>Combine several products in one shipment to split the cost, pick the right line (use our <a href="/#envio?lang=en">shipping calculator</a>) and use shipping coupons.</p>
+<p class="tip">Tip: save your finds with the heart (♡) and share them; that way you compare prices calmly before deciding.</p>`,
+  },
 ];
 
 export const LEGAL = {

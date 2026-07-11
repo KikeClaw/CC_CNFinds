@@ -251,6 +251,14 @@
   .acmp .ag{ color:var(--muted); flex:none; margin-left:6px; }
   .acmp .bn ~ .ag{ margin-left:6px; }
   .acmp .row:not(:has(.bn)) .ag{ margin-left:auto; }
+  /* alerta de precio */
+  .paband{ margin-top:16px; }
+  .pa-open{ display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:13px; font-weight:600; color:var(--brandc); background:none; border:1px dashed var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; }
+  .pa-open:hover{ border-color:var(--brand); }
+  .pa-form{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .pa-form input{ flex:1; min-width:120px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; }
+  .pa-form input.pa-target{ flex:none; width:120px; }
+  .pa-form button{ background:var(--brand); color:#fff; font-weight:700; border:0; border-radius:10px; padding:10px 16px; cursor:pointer; font:inherit; }
   .agents{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .agent{ display:flex; align-items:center; gap:11px; padding:14px; border:1px solid var(--line); border-radius:15px; background:var(--surface2); transition:.16s; }
   .agent:hover{ border-color:var(--ink); transform:translateY(-2px); }
@@ -556,7 +564,8 @@ const T={
     nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad",
     promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →",
     news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
-    share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo." },
+    share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
+    pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -602,7 +611,8 @@ const T={
     nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community",
     promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →",
     news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
-    share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you." },
+    share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
+    pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -628,6 +638,9 @@ const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); retu
 async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
 function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; const b=document.getElementById("curBtn"); if(b) b.textContent=CUR.code; load(true); loadTrending(); }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899",acbuy:"#0ea5e9",cssbuy:"#14b8a6",lovegobuy:"#f43f5e",joyagoo:"#a855f7",allchinabuy:"#eab308",orientdig:"#22c55e",hipobuy:"#6366f1"};
+/* analítica: registra clic en un agente (intención de compra) */
+function track(pid,agent){ try{ navigator.sendBeacon("/api/track", new Blob([JSON.stringify({product_id:pid,agent})],{type:"application/json"})); }catch(e){} }
+document.addEventListener("click",e=>{ const a=e.target.closest("a[data-agent]"); if(a) track(a.dataset.pid?+a.dataset.pid:null, a.dataset.agent); }, true);
 
 const ICONS={
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
@@ -805,12 +818,33 @@ function applyAndScroll(){ load(true); document.getElementById("catalogo").scrol
 
 /* modal */
 function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=u+'.webp?w=820&h=820&cp=1'; document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
+/* alerta de bajada de precio (captura) */
+function priceAlertHtml(p){
+  return `<div class="paband">
+    <button class="pa-open" type="button" onclick="this.nextElementSibling.style.display='flex';this.style.display='none'">${ic("flame",14,2)} ${t("pa_btn")}</button>
+    <form class="pa-form" style="display:none" onsubmit="return submitPriceAlert(event,${p.id})">
+      <input type="email" required placeholder="${t("news_ph")}" class="pa-email" aria-label="Email">
+      <input type="number" min="1" step="0.01" required placeholder="€ ${t("pa_target")}" class="pa-target" aria-label="${t("pa_target")}">
+      <button type="submit">${t("pa_send")}</button>
+    </form>
+    <div class="pa-msg" style="font-size:13px;margin-top:8px"></div>
+  </div>`;
+}
+function submitPriceAlert(e,pid){
+  e.preventDefault();
+  const f=e.target, email=f.querySelector(".pa-email").value.trim(), target=parseFloat(f.querySelector(".pa-target").value);
+  const msg=f.parentElement.querySelector(".pa-msg");
+  fetch("/api/price-alert",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,product_id:pid,target_eur:target})})
+    .then(r=>r.json()).then(d=>{ msg.style.color=d.ok?"#16a34a":"var(--brand)"; msg.textContent=d.ok?t("pa_ok"):(d.error||t("news_err")); if(d.ok) f.reset(); })
+    .catch(()=>{ msg.style.color="var(--brand)"; msg.textContent=t("news_err"); });
+  return false;
+}
 function openModal(p){
   if(!p) return;
   const agents=Object.entries(p.links).map(([k,l])=>{
     const cb=l.cashback?`<span class="cb" title="${t("cashback")}">${esc(l.cashback)}</span>`:"";
     const bn=l.bonus?`<span class="bn">${esc(LANG==="en"?(l.bonus.en||l.bonus.es):l.bonus.es)}</span>`:"";
-    return `<a class="row" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span>${cb}${bn}<span class="ag">${ic("arrow",16,2)}</span></a>`;
+    return `<a class="row" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${k}" data-pid="${p.id}"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span>${cb}${bn}<span class="ag">${ic("arrow",16,2)}</span></a>`;
   }).join("");
   const imgs=(p.images&&p.images.length)?p.images:(p.image?[p.image]:[]);
   const main=imgs[0];
@@ -826,6 +860,7 @@ function openModal(p){
       ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)?` · ${esc(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)}`:""}</div>`:""}
       <div class="agents-title">${t("elige_agente")}</div>
       <div class="acmp">${agents}</div>
+      ${priceAlertHtml(p)}
       <div class="note">${t("note")}</div>
     </div>`;
   $("#overlay").classList.add("open");
@@ -852,7 +887,7 @@ $("#convUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") convert(); });
 /* QC Checker con IA: pega un link -> fotos + puntuación de calidad por visión */
 function renderAgentLinks(links){
   if(!links||!Object.keys(links).length) return "";
-  const a=Object.entries(links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",15,2)}</span></a>`).join("");
+  const a=Object.entries(links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${k}"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",15,2)}</span></a>`).join("");
   return `<div class="conv-agents" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">${a}</div>`;
 }
 async function qcCheck(){

@@ -183,6 +183,55 @@ function handleAdminSubscribers(req, res) {
   json(res, 200, { ok: true, count: rows.length, subscribers: rows });
 }
 
+// Analítica: registra un clic en un agente (intención de compra).
+async function handleTrack(req, res) {
+  let body; try { body = await readBody(req); } catch { body = {}; }
+  const pid = parseInt(body.product_id, 10) || null;
+  const agent = String(body.agent || "").slice(0, 40).toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  if (agent) {
+    try { db.prepare("INSERT INTO clicks (product_id, agent, ts) VALUES (?, ?, ?)").run(pid, agent, new Date().toISOString()); } catch {}
+  }
+  res.writeHead(204); res.end();
+}
+
+// Alerta de precio: avísame si un producto baja de X (captura).
+async function handlePriceAlert(req, res) {
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const email = String(body.email || "").trim().toLowerCase();
+  const pid = parseInt(body.product_id, 10);
+  const target = parseFloat(body.target_eur);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(res, 400, { ok: false, error: "Email no válido" });
+  if (!pid || !(target > 0)) return json(res, 400, { ok: false, error: "Datos no válidos" });
+  try { db.prepare("INSERT INTO price_alerts (email, product_id, target_eur, created_at) VALUES (?, ?, ?, ?)").run(email, pid, target, new Date().toISOString()); }
+  catch { return json(res, 500, { ok: false, error: "Error" }); }
+  json(res, 200, { ok: true });
+}
+
+// Admin: analítica de clics (por agente, por día, top productos).
+function handleAdminAnalytics(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const total = db.prepare("SELECT COUNT(*) c FROM clicks").get().c;
+  const d7 = new Date(Date.now() - 7 * 864e5).toISOString();
+  const d30 = new Date(Date.now() - 30 * 864e5).toISOString();
+  const last7 = db.prepare("SELECT COUNT(*) c FROM clicks WHERE ts >= ?").get(d7).c;
+  const last30 = db.prepare("SELECT COUNT(*) c FROM clicks WHERE ts >= ?").get(d30).c;
+  const byAgent = db.prepare("SELECT agent, COUNT(*) c FROM clicks GROUP BY agent ORDER BY c DESC").all();
+  const byDay = db.prepare("SELECT substr(ts,1,10) d, COUNT(*) c FROM clicks WHERE ts >= ? GROUP BY d ORDER BY d").all(new Date(Date.now() - 14 * 864e5).toISOString());
+  const topRows = db.prepare("SELECT product_id, COUNT(*) c FROM clicks WHERE product_id IS NOT NULL GROUP BY product_id ORDER BY c DESC LIMIT 10").all();
+  const top = topRows.map((r) => {
+    const p = db.prepare("SELECT clean_title, name FROM products WHERE id=?").get(r.product_id);
+    return { product_id: r.product_id, name: p ? tidyName(p.clean_title || p.name) : `#${r.product_id}`, clicks: r.c };
+  });
+  json(res, 200, { ok: true, total, last7, last30, byAgent, byDay, top });
+}
+
+// Admin: alertas de precio capturadas.
+function handleAdminAlerts(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const rows = db.prepare("SELECT email, product_id, target_eur, created_at FROM price_alerts ORDER BY created_at DESC LIMIT 500").all();
+  json(res, 200, { ok: true, count: rows.length, alerts: rows });
+}
+
 // Conversor: cualquier URL (tienda o agente) -> tus links de afiliado.
 function handleConvert(res, params) {
   const url = (params.get("url") || "").trim();
@@ -659,7 +708,11 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
     if (req.method === "POST" && u.pathname === "/api/qc-check") return void handleQcCheck(req, res);
     if (req.method === "POST" && u.pathname === "/api/subscribe") return void handleSubscribe(req, res);
+    if (req.method === "POST" && u.pathname === "/api/track") return void handleTrack(req, res);
+    if (req.method === "POST" && u.pathname === "/api/price-alert") return void handlePriceAlert(req, res);
     if (u.pathname === "/api/admin/subscribers") return void handleAdminSubscribers(req, res);
+    if (u.pathname === "/api/admin/analytics") return void handleAdminAnalytics(req, res);
+    if (u.pathname === "/api/admin/alerts") return void handleAdminAlerts(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);

@@ -169,7 +169,7 @@ export function productPage(p, related, base, lang = "es") {
   const en = lang === "en";
   const bonusTxt = (l) => (l.bonus ? (en ? l.bonus.en || l.bonus.es : l.bonus.es) : "");
   const rows = Object.entries(p.links).map(([k, l]) =>
-    `<tr><td><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</td><td>${l.cashback ? esc(l.cashback) : "—"}</td><td class="bn">${esc(bonusTxt(l)) || "—"}</td><td><a class="buy" href="${l.url}" target="_blank" rel="nofollow noopener">${en ? "Buy" : "Comprar"} →</a></td></tr>`).join("");
+    `<tr><td><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</td><td>${l.cashback ? esc(l.cashback) : "—"}</td><td class="bn">${esc(bonusTxt(l)) || "—"}</td><td><a class="buy" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${esc(k)}" data-pid="${p.id}">${en ? "Buy" : "Comprar"} →</a></td></tr>`).join("");
   const agents = Object.keys(p.links).length
     ? `<table class="acmp-t"><thead><tr><th>${en ? "Agent" : "Agente"}</th><th>Cashback</th><th>${en ? "Welcome bonus" : "Bono de bienvenida"}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
     : `<p class="note">${en ? "No agents enabled yet." : "Aún no hay agentes activos."}</p>`;
@@ -195,7 +195,25 @@ export function productPage(p, related, base, lang = "es") {
     <p class="note">${esc(tr(lang, "note"))}</p>
   </div>
 </div>
-${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}</h2><div class="grid">${related.map((r) => cardHtml(r, lp)).join("")}</div></section>` : ""}`;
+${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}${en ? " — compare versions" : " — compara versiones"}</h2><div class="grid">${related.map((r) => cardHtml(r, lp)).join("")}</div></section>` : ""}
+<section style="max-width:540px">
+  <h2 class="h2" style="font-size:19px">🔔 ${en ? "Price drop alert" : "Alerta de bajada de precio"}</h2>
+  <p style="color:var(--muted);font-size:14px;margin:-8px 0 12px">${en ? "We'll notify you if this drops below your target price." : "Te avisamos si baja de tu precio objetivo."}</p>
+  <form id="pa" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input id="paEmail" type="email" required placeholder="${en ? "you@email.com" : "tu@email.com"}" style="flex:1;min-width:180px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)">
+    <input id="paTarget" type="number" min="1" step="0.01" required placeholder="€ ${en ? "target" : "objetivo"}" style="width:130px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)">
+    <button type="submit" style="background:var(--brand);color:#fff;font-weight:700;border:0;border-radius:12px;padding:11px 20px;cursor:pointer">${en ? "Alert me" : "Avísame"}</button>
+  </form>
+  <div id="paMsg" style="font-size:14px;margin-top:10px"></div>
+</section>
+<script>
+(function(){
+  var PID=${p.id};
+  document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[data-agent]");if(a){try{navigator.sendBeacon("/api/track",new Blob([JSON.stringify({product_id:a.getAttribute("data-pid")?+a.getAttribute("data-pid"):null,agent:a.getAttribute("data-agent")})],{type:"application/json"}))}catch(_){}}},true);
+  var f=document.getElementById("pa");
+  if(f)f.addEventListener("submit",function(e){e.preventDefault();var m=document.getElementById("paMsg");var email=document.getElementById("paEmail").value.trim();var target=parseFloat(document.getElementById("paTarget").value);fetch("/api/price-alert",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,product_id:PID,target_eur:target})}).then(function(r){return r.json()}).then(function(d){m.style.color=d.ok?"#16a34a":"#ff4d2e";m.textContent=d.ok?(${en ? '"Done! We\'ll alert you ✓"' : '"¡Listo! Te avisaremos ✓"'}):(d.error||"Error");if(d.ok)f.reset();}).catch(function(){m.style.color="#ff4d2e";m.textContent="Error";});});
+})();
+</script>`;
   const bc = breadcrumbLd(base, [...crumbs.map((c) => ({ name: c.label, href: c.href })), { name: pName }]);
   return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld: [jsonld, bc], lang }, body, crumbs);
 }
@@ -353,6 +371,7 @@ export function helpPage({ guides, base, lang = "es" }) {
         ["🚚", "Package tracker", "Track your parcel across 1,000+ carriers.", `/#tracker${lp}`],
         ["🧩", "AI outfit builder", "Give a budget and get a full coherent outfit.", `/#fit${lp}`],
         ["🎁", "Agent coupons", "Welcome bonuses and shipping coupons per agent.", `/cupones${lp}`],
+        ["🔔", "Price drop alerts", "Open any product and set a target — we'll ping you if it drops.", `/${lp}`],
         ["❤️", "Favorites", "Save products with the heart; they stay in your browser.", `/${lp}`],
       ]
     : [
@@ -363,6 +382,7 @@ export function helpPage({ guides, base, lang = "es" }) {
         ["🚚", "Rastreador de paquetes", "Sigue tu paquete en más de 1.000 transportistas.", `/#tracker${lp}`],
         ["🧩", "Armador de fits con IA", "Da un presupuesto y monta un outfit completo y coherente.", `/#fit${lp}`],
         ["🎁", "Cupones de agentes", "Bonos de bienvenida y cupones de envío por agente.", `/cupones${lp}`],
+        ["🔔", "Alertas de precio", "Abre un producto y fija tu objetivo — te avisamos si baja.", `/${lp}`],
         ["❤️", "Favoritos", "Guarda productos con el corazón; se quedan en tu navegador.", `/${lp}`],
       ];
   const stepCards = stepsHow.map((s) => `<div class="card" style="padding:20px"><div style="font-family:var(--fd);font-weight:800;font-size:22px;color:var(--brand)">${s[0]}</div><div style="font-weight:600;margin:6px 0 4px">${esc(s[1])}</div><div style="color:var(--muted);font-size:13.5px;line-height:1.5">${esc(s[2])}</div></div>`).join("");

@@ -51,6 +51,16 @@ export function openDb(path) {
   // Suscriptores al boletín de "nuevos finds" (captura de email; el envío lo
   // conectas tú con tu proveedor). Solo se guarda el email + fecha + idioma.
   db.exec("CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT, lang TEXT)");
+  // Analítica: clic en un link de agente = intención de compra (= tu ingreso).
+  db.exec("CREATE TABLE IF NOT EXISTS clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER, agent TEXT, ts TEXT)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_clicks_agent ON clicks(agent)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_clicks_ts ON clicks(ts)");
+  // Alertas de precio: avísame si un producto baja de X (captura; el aviso lo
+  // conectas tú con tu email/proveedor).
+  db.exec("CREATE TABLE IF NOT EXISTS price_alerts (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, product_id INTEGER, target_eur REAL, created_at TEXT, notified INTEGER DEFAULT 0)");
+  // Historial de precios (se registra al importar cuando el precio cambia).
+  db.exec("CREATE TABLE IF NOT EXISTS price_history (product_id INTEGER, price_eur REAL, ts TEXT)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_ph_pid ON price_history(product_id)");
   return db;
 }
 
@@ -75,10 +85,20 @@ export function upsertProduct(db, p, source, now) {
       status     = 'active',
       last_seen  = excluded.last_seen
   `);
+  // Historial de precios: precio anterior antes del upsert (si existía).
+  let prevPrice = null;
+  try { const r = db.prepare("SELECT price_eur FROM products WHERE platform=? AND item_id=?").get(p.platform, p.item_id); if (r) prevPrice = r.price_eur; } catch {}
   const info = stmt.run(
     p.platform, p.item_id, p.name, p.brand, p.category,
     p.price_eur, p.image_url, p.hot ? 1 : 0, source, now, now
   );
+  // Registra un punto de historial si es nuevo o si el precio cambió.
+  try {
+    if (p.price_eur != null && p.price_eur !== prevPrice) {
+      const row = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=?").get(p.platform, p.item_id);
+      if (row) db.prepare("INSERT INTO price_history (product_id, price_eur, ts) VALUES (?, ?, ?)").run(row.id, p.price_eur, now);
+    }
+  } catch {}
   return info.changes;
 }
 

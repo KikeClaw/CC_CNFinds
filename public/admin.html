@@ -117,6 +117,23 @@
     </div>
     <div id="subsOut"></div>
   </div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="an_h">Analítica de agentes</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="an_hint">Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.</p>
+    <button class="ghost" id="loadAn" data-i18n="an_load">Ver analítica</button>
+    <div id="anOut"></div>
+  </div>
+
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="al_h">Alertas de precio</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="al_hint">Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.</p>
+    <div class="actions" style="margin-top:0">
+      <button class="ghost" id="loadAl" data-i18n="al_load">Ver alertas</button>
+      <button class="ghost" id="expAl" style="display:none" data-i18n="subs_export">Descargar CSV</button>
+    </div>
+    <div id="alOut"></div>
+  </div>
 </div>
 
 <script>
@@ -139,6 +156,8 @@ const T={
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
     subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
+    an_h:"Analítica de agentes", an_hint:"Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.", an_load:"Ver analítica", an_total:"clics totales", an_7:"últimos 7 días", an_30:"últimos 30 días", an_byagent:"Por agente", an_top:"Top productos", an_byday:"Por día (14 días)", an_none:"Aún no hay clics.",
+    al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
     th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
     sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
@@ -171,6 +190,8 @@ const T={
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
     subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
+    an_h:"Agent analytics", an_hint:"Clicks on agent links = purchase intent (= your commission). See which agents and products convert.", an_load:"View analytics", an_total:"total clicks", an_7:"last 7 days", an_30:"last 30 days", an_byagent:"By agent", an_top:"Top products", an_byday:"By day (14 days)", an_none:"No clicks yet.",
+    al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
     th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
     sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
@@ -364,6 +385,44 @@ function exportSubs(){
 }
 $("#loadSubs").onclick=loadSubs;
 $("#expSubs").onclick=exportSubs;
+
+/* Analítica de agentes */
+async function loadAnalytics(){
+  const r=await fetch("/api/admin/analytics",{headers:{"x-admin-token":$("#token").value}});
+  const d=await r.json();
+  if(!d.ok){ $("#anOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  const stat=(n,l)=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`;
+  const agents=d.byAgent.map(a=>`<tr><td><b>${a.agent}</b></td><td style="text-align:right">${a.c}</td></tr>`).join("")||`<tr><td colspan="2" class="hint">${t("an_none")}</td></tr>`;
+  const top=d.top.map(x=>`<tr><td>${x.name}</td><td style="text-align:right">${x.clicks}</td></tr>`).join("")||`<tr><td colspan="2" class="hint">—</td></tr>`;
+  const maxD=Math.max(1,...d.byDay.map(x=>x.c));
+  const days=d.byDay.map(x=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:80px;color:var(--muted)">${x.d}</span><span style="height:9px;border-radius:5px;background:var(--brand);width:${Math.round(x.c/maxD*180)}px;min-width:3px"></span><span>${x.c}</span></div>`).join("");
+  $("#anOut").innerHTML=`<div class="stats" style="margin-top:12px">${stat(d.total,t("an_total"))}${stat(d.last7,t("an_7"))}${stat(d.last30,t("an_30"))}</div>
+    <div class="row" style="gap:22px;align-items:flex-start">
+      <div style="flex:1;min-width:200px"><h3 style="font-size:14px;margin:8px 0">${t("an_byagent")}</h3><table><tbody>${agents}</tbody></table></div>
+      <div style="flex:1;min-width:200px"><h3 style="font-size:14px;margin:8px 0">${t("an_top")}</h3><table><tbody>${top}</tbody></table></div>
+    </div>
+    ${d.byDay.length?`<h3 style="font-size:14px;margin:16px 0 8px">${t("an_byday")}</h3><div style="display:flex;flex-direction:column;gap:5px">${days}</div>`:""}`;
+}
+$("#loadAn").onclick=loadAnalytics;
+
+/* Alertas de precio */
+let ALERTS=[];
+async function loadAlerts(){
+  const r=await fetch("/api/admin/alerts",{headers:{"x-admin-token":$("#token").value}});
+  const d=await r.json();
+  if(!d.ok){ $("#alOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  ALERTS=d.alerts||[];
+  $("#expAl").style.display=ALERTS.length?"inline-block":"none";
+  const rows=ALERTS.slice(0,50).map(a=>`<tr><td>${a.email}</td><td>#${a.product_id}</td><td>€${a.target_eur}</td><td>${(a.created_at||"").slice(0,10)}</td></tr>`).join("");
+  $("#alOut").innerHTML=`<p class="msg" style="color:var(--ok)">${d.count} ${t("al_count")}</p>`+(ALERTS.length?`<table style="margin-top:8px"><thead><tr><th>Email</th><th>ID</th><th>${t("al_target")}</th><th>${t("th_date")}</th></tr></thead><tbody>${rows}</tbody></table>`:"");
+}
+function exportAlerts(){
+  if(!ALERTS.length) return;
+  const csv="email,product_id,target_eur,created_at\n"+ALERTS.map(a=>`${a.email},${a.product_id},${a.target_eur},${a.created_at||""}`).join("\n");
+  const el=document.createElement("a"); el.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); el.download="cnfinds-price-alerts.csv"; el.click(); URL.revokeObjectURL(el.href);
+}
+$("#loadAl").onclick=loadAlerts;
+$("#expAl").onclick=exportAlerts;
 
 applyLang();
 </script>
