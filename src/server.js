@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { openDb } from "./lib/db.js";
 import { buildLinks, originalUrl, getAgentState, setAgentState } from "../config/agents.js";
 import { parseAnyUrl } from "./lib/parse.js";
-import { hasKey } from "./lib/ai.js";
+import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
@@ -149,6 +149,48 @@ function handleConvert(res, params) {
     original: originalUrl(platform, itemId),
     links: buildLinks(platform, itemId),
   });
+}
+
+// QC Checker con IA: pega un link -> fotos reales + puntuacion de calidad por vision.
+// Cachea por (plataforma,item) para no repetir coste de IA. Usa el modelo rapido.
+const qcCheckCache = new Map();
+async function handleQcCheck(req, res) {
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const url = (body.url || "").trim();
+  if (!url) return json(res, 400, { ok: false, error: "Falta 'url'." });
+  const parsed = parseAnyUrl(url);
+  if (!parsed) return json(res, 200, { ok: false, error: "No pude reconocer un producto en ese enlace." });
+  const { platform, itemId } = parsed;
+  const key = `${platform}:${itemId}`;
+  if (qcCheckCache.has(key)) return json(res, 200, qcCheckCache.get(key));
+  try {
+    // 1) Fotos: primero desde nuestro catalogo (gratis); si no, se scrapean.
+    let images = [], name = "";
+    const row = db.prepare("SELECT clean_title, name, images, image_url FROM products WHERE platform=? AND item_id=?").get(platform, itemId);
+    if (row) {
+      name = row.clean_title || row.name || "";
+      try { images = row.images ? JSON.parse(row.images) : []; } catch {}
+      if (!images.length && row.image_url) images = [row.image_url];
+    }
+    if (!images.length) {
+      const en = await enrichProduct(platform, itemId, {});
+      if (en.ok && en.images && en.images.length) images = en.images;
+    }
+    if (!images.length) {
+      return json(res, 200, { ok: false, platform, itemId, error: "No pude obtener fotos de este producto (plataforma no soportada aun, o item caido).", links: buildLinks(platform, itemId) });
+    }
+    // 2) Puntuacion QC por vision (modelo rapido para controlar coste). Max 4 fotos.
+    //    El CDN de Weidian redimensiona con el sufijo .webp: fotos ligeras y rapidas.
+    const wp = (u, w) => (/geilicdn|weidian/.test(u) ? `${u}.webp?w=${w}&h=${w}` : u);
+    const qc = await qcOne(images.slice(0, 4).map((u) => wp(u, 700)), name, { model: MODELS.fast });
+    const result = { ok: true, platform, itemId, name, images: images.slice(0, 8).map((u) => wp(u, 300)), qc, links: buildLinks(platform, itemId) };
+    qcCheckCache.set(key, result);
+    if (qcCheckCache.size > 300) qcCheckCache.delete(qcCheckCache.keys().next().value);
+    json(res, 200, result);
+  } catch (e) {
+    json(res, 200, { ok: false, error: e.message });
+  }
 }
 
 // Consulta reutilizable de productos (usada por /api/products y por la IA).
@@ -538,6 +580,7 @@ const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
     if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
+    if (req.method === "POST" && u.pathname === "/api/qc-check") return void handleQcCheck(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);

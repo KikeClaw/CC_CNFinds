@@ -20,9 +20,9 @@ const SYSTEM =
   "y 'qc_summary_en' la misma valoracion en ingles. 'flags' = posibles defectos o senales " +
   "de baja calidad (lista corta, vacia si todo ok).";
 
-export async function qcOne(images, name = "") {
+export async function qcOne(images, name = "", { model = MODELS.smart } = {}) {
   return structured({
-    system: SYSTEM, model: MODELS.smart, schema: QC_SCHEMA, images, maxTokens: 400,
+    system: SYSTEM, model, schema: QC_SCHEMA, images, maxTokens: 400,
     prompt: `Producto: ${name}. Evalua la calidad segun estas fotos.`,
   });
 }

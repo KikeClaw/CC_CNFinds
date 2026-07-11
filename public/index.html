@@ -351,6 +351,16 @@
     <div id="convResult" class="conv-result"></div>
   </section>
 
+  <section id="qccheck">
+    <div class="head"><h2><span class="sq" id="hqc"></span><span data-i18n="qc_title">QC Checker con IA</span></h2><span class="muted" style="font-size:13px" data-i18n="qc_sub">Pega un link y la IA puntúa la calidad de las fotos</span></div>
+    <div class="conv">
+      <span class="sic" id="qcIc"></span>
+      <input id="qcUrl" placeholder="https://weidian.com/item.html?itemID=…" />
+      <button class="go" id="qcBtn" data-i18n="qc_check_btn">Analizar QC</button>
+    </div>
+    <div id="qcResult" class="conv-result"></div>
+  </section>
+
   <section id="categorias">
     <div class="head"><h2><span class="sq" id="hgrid"></span><span data-i18n="cat">Explorar por categoría</span></h2><a class="link" href="#catalogo"><span data-i18n="vertodo">Ver todo</span> <span id="l1"></span></a></div>
     <div class="strip" id="strip"></div>
@@ -480,7 +490,10 @@ const T={
     converting:"Convirtiendo…",platform:"plataforma",interpreting:"La IA está interpretando tu búsqueda…",
     building_fit:"Montando tu fit dentro de",total_est:"Total estimado",budget_w:"Presupuesto",pieces:"piezas",
     ship_title:"Calculadora de envío",ship_sub:"Estima el peso y el coste del envío internacional",ship_btn:"Estimar",
-    ship_weight:"Peso estimado",ship_days:"días",ship_note:"Estimación orientativa. El coste real depende del agente, la línea, el volumen y el destino. El agente cobra el envío; el producto se paga aparte." },
+    ship_weight:"Peso estimado",ship_days:"días",ship_note:"Estimación orientativa. El coste real depende del agente, la línea, el volumen y el destino. El agente cobra el envío; el producto se paga aparte.",
+    qc_title:"QC Checker con IA",qc_sub:"Pega un link y la IA puntúa la calidad de las fotos",qc_check_btn:"Analizar QC",
+    qc_analyzing:"Analizando fotos con IA…",qc_score_lbl:"Calidad",qc_flags_lbl:"Posibles defectos",qc_buy:"Comprar con",
+    qc_nophotos:"No pude obtener fotos de este producto (plataforma no soportada aún o item caído).",qc_disc:"Puntuación orientativa por IA sobre las fotos disponibles. No sustituye a las fotos QC reales del agente tras comprar." },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -518,7 +531,10 @@ const T={
     converting:"Converting…",platform:"platform",interpreting:"The AI is interpreting your search…",
     building_fit:"Building your fit under",total_est:"Estimated total",budget_w:"Budget",pieces:"pieces",
     ship_title:"Shipping calculator",ship_sub:"Estimate the weight and cost of international shipping",ship_btn:"Estimate",
-    ship_weight:"Estimated weight",ship_days:"days",ship_note:"Rough estimate. The real cost depends on the agent, line, volume and destination. The agent charges shipping; the product is paid separately." },
+    ship_weight:"Estimated weight",ship_days:"days",ship_note:"Rough estimate. The real cost depends on the agent, line, volume and destination. The agent charges shipping; the product is paid separately.",
+    qc_title:"AI QC Checker",qc_sub:"Paste a link and the AI scores the photo quality",qc_check_btn:"Check QC",
+    qc_analyzing:"Analyzing photos with AI…",qc_score_lbl:"Quality",qc_flags_lbl:"Possible defects",qc_buy:"Buy with",
+    qc_nophotos:"Couldn't get photos for this product (platform not supported yet or dead item).",qc_disc:"Rough AI score on the available photos. It doesn't replace the agent's real QC photos after you buy." },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -731,6 +747,38 @@ async function convert(){
 $("#convBtn").onclick=convert;
 $("#convUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") convert(); });
 
+/* QC Checker con IA: pega un link -> fotos + puntuación de calidad por visión */
+function renderAgentLinks(links){
+  if(!links||!Object.keys(links).length) return "";
+  const a=Object.entries(links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",15,2)}</span></a>`).join("");
+  return `<div class="conv-agents" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">${a}</div>`;
+}
+async function qcCheck(){
+  const url=$("#qcUrl").value.trim(); if(!url) return;
+  $("#qcBtn").disabled=true;
+  $("#qcResult").innerHTML=`<div class="muted" style="font-size:14px">${ic("sparkles",15,1.8)} ${t("qc_analyzing")}</div>`;
+  let d; try{ d=await (await fetch("/api/qc-check",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({url})})).json(); }catch{ d={ok:false,error:t("net_err")}; }
+  $("#qcBtn").disabled=false;
+  if(!d.ok){ $("#qcResult").innerHTML=`<div class="conv-card" style="flex-direction:column;align-items:stretch;gap:10px"><div class="muted" style="font-size:14px">${esc(d.error||t("qc_nophotos"))}</div>${renderAgentLinks(d.links)}</div>`; return; }
+  const sum=LANG==="en"?(d.qc.qc_summary_en||d.qc.qc_summary):d.qc.qc_summary;
+  const score=d.qc.qc_score;
+  const color=score>=8?"#16a34a":score>=6?"#f59e0b":"#ef4444";
+  const thumbs=(d.images||[]).slice(0,6).map(u=>`<img src="${u}" loading="lazy" style="width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">`).join("");
+  const flags=(d.qc.flags||[]).length?`<div><b style="font-size:13px">${t("qc_flags_lbl")}:</b> <span style="color:var(--muted);font-size:13px">${d.qc.flags.map(esc).join(" · ")}</span></div>`:"";
+  $("#qcResult").innerHTML=`<div class="conv-card" style="flex-direction:column;align-items:stretch;gap:14px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-family:var(--font-d);font-weight:800;font-size:36px;color:${color};line-height:1">${score}/10</div>
+      <div style="flex:1;min-width:200px"><div style="font-weight:700;font-size:14px">${t("qc_score_lbl")}</div><div style="color:var(--muted);font-size:14px;line-height:1.5">${esc(sum||"")}</div></div>
+    </div>
+    ${flags}
+    ${thumbs?`<div style="display:flex;gap:8px;flex-wrap:wrap">${thumbs}</div>`:""}
+    ${renderAgentLinks(d.links)}
+    <div class="note" style="margin:0">${t("qc_disc")}</div>
+  </div>`;
+}
+$("#qcBtn").onclick=qcCheck;
+$("#qcUrl").addEventListener("keydown",e=>{ if(e.key==="Enter") qcCheck(); });
+
 /* search + sort + scroll */
 const looksUrl=(v)=>/^https?:|weidian|taobao|tmall|1688|^\d{9,}$/i.test(v);
 let debT; $("#q").addEventListener("input",e=>{ clearTimeout(debT); const v=e.target.value.trim(); if(looksUrl(v)) return; debT=setTimeout(()=>{ state.q=v; load(true); },250); });
@@ -759,6 +807,8 @@ $("#hfit").innerHTML=ic("sparkles",21,1.9); $("#hfit").style.color="#8b5cf6";
 $("#fitIc").innerHTML=ic("sparkles",20);
 if($("#hship")){ $("#hship").innerHTML=ic("box",21,1.9); $("#hship").style.color="#16a34a"; }
 if($("#shipIc")) $("#shipIc").innerHTML=ic("box",20,1.8);
+if($("#hqc")){ $("#hqc").innerHTML=ic("shield",21,1.9); $("#hqc").style.color="#f59e0b"; }
+if($("#qcIc")) $("#qcIc").innerHTML=ic("shield",20,1.8);
 async function armarFit(){
   const budget=parseFloat($("#fitBudget").value)||150;
   const style=$("#fitStyle").value.trim();
