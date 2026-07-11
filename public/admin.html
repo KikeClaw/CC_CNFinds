@@ -63,9 +63,13 @@
   <div class="card" style="margin-top:22px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="st_h">Estado del catálogo</h2>
-      <button class="ghost" id="loadStatus" data-i18n="st_load" style="padding:8px 14px;font-size:13px">Actualizar</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ghost" id="retryPhotos" data-i18n="st_retry" style="padding:8px 14px;font-size:13px">Reintentar fotos</button>
+        <button class="ghost" id="loadStatus" data-i18n="st_load" style="padding:8px 14px;font-size:13px">Actualizar</button>
+      </div>
     </div>
     <div id="statusOut"></div>
+    <div id="retryOut"></div>
   </div>
 
   <div class="card" style="margin-top:22px">
@@ -197,7 +201,7 @@ const T={
     al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
     rq_h:"Demanda (peticiones)", rq_hint:"Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.", rq_load:"Ver demanda", rq_count:"peticiones", rq_q:"Búsqueda", rq_c:"Veces", rq_none:"Aún no hay peticiones.",
     auto_h:"Importador automático", auto_hint:'Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.', auto_btn:"Ejecutar importador ahora", auto_started:"Importador lanzado en segundo plano ✓ (mira los logs de Railway)", auto_running:"Ya se está ejecutando ✓",
-    st_h:"Estado del catálogo", st_load:"Actualizar", st_hint:"Mete tu token y pulsa Actualizar.",
+    st_h:"Estado del catálogo", st_load:"Actualizar", st_retry:"Reintentar fotos", st_retry_ok:"Reintentando %n fotos en segundo plano ✓", st_hint:"Mete tu token y pulsa Actualizar.",
     st_products:"productos", st_photos:"con foto", st_tagged:"etiquetados", st_qc:"con QC", st_agents:"agentes activos", st_subs:"suscriptores", st_alerts:"alertas de precio", st_demand:"peticiones", st_clicks:"clics de agente", st_lastingest:"Última ingesta automática", st_never:"nunca", st_keys:"Claves", st_gkey:"Google Sheets", st_aikey:"IA (Claude)", st_on:"activa", st_off:"falta",
     gd_h:"Guía rápida (orden recomendado)", gd_sub:"Todo el proceso, paso a paso. Cada bloque de abajo es un paso.",
     gd_steps:[
@@ -246,7 +250,7 @@ const T={
     al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
     rq_h:"Demand (requests)", rq_hint:"What users search for that is NOT in the catalog. Use it to prioritize what to add.", rq_load:"View demand", rq_count:"requests", rq_q:"Search", rq_c:"Times", rq_none:"No requests yet.",
     auto_h:"Automatic importer", auto_hint:'Ingests the curated community-sheet list on its own (dedup + your codes), periodically, with no action from you. Enable/tune it with the <code>AUTO_INGEST</code> env var on Railway. This button runs it <b>now</b>.', auto_btn:"Run importer now", auto_started:"Importer started in the background ✓ (check Railway logs)", auto_running:"Already running ✓",
-    st_h:"Catalog status", st_load:"Refresh", st_hint:"Enter your token and hit Refresh.",
+    st_h:"Catalog status", st_load:"Refresh", st_retry:"Retry photos", st_retry_ok:"Retrying %n photos in the background ✓", st_hint:"Enter your token and hit Refresh.",
     st_products:"products", st_photos:"with photo", st_tagged:"tagged", st_qc:"with QC", st_agents:"active agents", st_subs:"subscribers", st_alerts:"price alerts", st_demand:"requests", st_clicks:"agent clicks", st_lastingest:"Last auto-ingest", st_never:"never", st_keys:"Keys", st_gkey:"Google Sheets", st_aikey:"AI (Claude)", st_on:"active", st_off:"missing",
     gd_h:"Quick guide (recommended order)", gd_sub:"The whole process, step by step. Each block below is a step.",
     gd_steps:[
@@ -542,6 +546,13 @@ async function loadStatus(){
   <p class="hint" style="margin-top:12px">${t("st_lastingest")}: <b>${last}</b> · ${t("st_keys")}: ${t("st_gkey")} ${tag(d.hasGoogleKey)} · ${t("st_aikey")} ${tag(d.hasAiKey)}</p>`;
 }
 $("#loadStatus").onclick=loadStatus;
+$("#retryPhotos").onclick=async()=>{
+  $("#retryPhotos").disabled=true; const o=$("#retryPhotos").textContent; $("#retryPhotos").textContent=t("launching");
+  let d; try{ d=await (await fetch("/api/admin/retry-photos",{method:"POST",headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false,error:t("err")}; }
+  $("#retryPhotos").disabled=false; $("#retryPhotos").textContent=o;
+  $("#retryOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok);margin-top:10px">${t("st_retry_ok").replace("%n",d.reset)}</p>`:`<p class="msg err">${d.error||t("err")}</p>`;
+  if(d.ok) setTimeout(loadStatus,1500);
+};
 
 applyLang(); renderGuide();
 if($("#token").value) loadStatus();

@@ -277,6 +277,15 @@ function handleAdminStatus(req, res) {
   });
 }
 
+// Admin: reintentar fotos ahora (resetea intentos de los que siguen sin foto y
+// relanza el enriquecimiento). Útil si Weidian throttleó y quieres reintentar ya.
+function handleAdminRetryPhotos(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const r = db.prepare("UPDATE products SET enrich_tries=0, last_checked=NULL WHERE platform='weidian' AND image_url IS NULL").run();
+  resumePhotos();
+  json(res, 200, { ok: true, reset: r.changes });
+}
+
 // Admin: lanzar el importador automático ahora (opcional; también corre solo).
 function handleAdminAutoIngest(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
@@ -668,7 +677,7 @@ function startEnrichTagJob(items, opts = {}) {
     // el re-chequeo periódico los reintenta luego.
     const weid = items.filter((it) => it.platform === "weidian");
     job.done += items.length - weid.length;
-    const CONC = 3;
+    const CONC = 2; // suave para no mantener vivo el throttle de Weidian
     for (let i = 0; i < weid.length; i += CONC) {
       await Promise.all(weid.slice(i, i + CONC).map(async (it) => {
         try {
@@ -687,7 +696,7 @@ function startEnrichTagJob(items, opts = {}) {
         } catch { job.failed++; }
         job.done++;
       }));
-      await sleepMs(1000);
+      await sleepMs(1000 + Math.floor(Math.random() * 1200)); // pausa con jitter
     }
     if (opts.tag !== false && hasKey()) { // Fase 2: etiquetado IA
       job.phase = "etiquetado"; job.done = 0;
@@ -827,6 +836,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
     if (u.pathname === "/api/admin/status") return void handleAdminStatus(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
@@ -957,7 +967,7 @@ function resumePhotos() {
   // tope de 6 intentos. Recupera los throttled sin re-machacar los sin-foto-real.
   const cutoff = new Date(Date.now() - 30 * 60e3).toISOString();
   const items = db.prepare(
-    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND COALESCE(enrich_tries,0) < 6 AND (last_checked IS NULL OR last_checked < ?) ORDER BY COALESCE(enrich_tries,0), id LIMIT 300"
+    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND COALESCE(enrich_tries,0) < 12 AND (last_checked IS NULL OR last_checked < ?) ORDER BY COALESCE(enrich_tries,0), id LIMIT 120"
   ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
   if (!items.length) return;
   photoJobRunning = true;
@@ -982,7 +992,7 @@ async function bootstrap() {
     // Fotos pendientes: arranca ya y sigue reintentando cada pocos minutos
     // (recupera los que falla Weidian por throttling, sin depender de reinicios).
     resumePhotos();
-    setInterval(resumePhotos, 4 * 60e3).unref?.();
+    setInterval(resumePhotos, 6 * 60e3).unref?.();
     // Importador automático (si toca): crece el catálogo solo, sin admin.
     if (AUTO_INGEST) {
       autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));
