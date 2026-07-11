@@ -491,7 +491,7 @@ const T={
     building_fit:"Building your fit under",total_est:"Estimated total",budget_w:"Budget",pieces:"pieces" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
-const pname=(p)=> LANG==="en"?(p.raw_name||p.name):p.name;
+const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
 const CATMAP={};
 const catDisp=(c)=>{ const e=CATMAP[c]; return e?(LANG==="en"?e.en:e.es):(c||""); };
 const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:48,total:0,loading:false };
@@ -675,7 +675,7 @@ function openModal(p){
       <h3>${esc(pname(p))}</h3>
       <div class="mcat">${ic("tag",13,1.9)} ${esc(catDisp(p.category||""))}</div>
       <div class="mprice">${eur(p.price_eur)}</div>
-      ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${p.qc_summary?` · ${esc(p.qc_summary)}`:""}</div>`:""}
+      ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)?` · ${esc(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)}`:""}</div>`:""}
       <div class="agents-title">${t("elige_agente")}</div>
       <div class="agents">${agents}</div>
       <div class="note">${t("note")}</div>

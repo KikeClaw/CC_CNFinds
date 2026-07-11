@@ -117,7 +117,7 @@ function handleProducts(res, params) {
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
   const rows = db.prepare(`
-    SELECT id, platform, item_id, name, clean_title, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
+    SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
     FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?
   `).all(...args, limit, offset);
 
@@ -126,10 +126,10 @@ function handleProducts(res, params) {
     try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
     let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.clean_title || r.name, raw_name: r.name, brand: r.brand, category: r.category,
+      id: r.id, name: r.clean_title || r.name, title_en: r.clean_title_en, raw_name: r.name, brand: r.brand, category: r.category,
       price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
-      qc_score: r.qc_score, qc_summary: qc.summary,
+      qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
       links: buildLinks(r.platform, r.item_id),
     };
   });
@@ -165,17 +165,17 @@ function selectProducts(f) {
   const sort = SORTS[f.sort] || SORTS.trending;
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...argv).c;
   const rows = db.prepare(`
-    SELECT id, platform, item_id, name, clean_title, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
+    SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
     FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?
   `).all(...argv, Math.min(f.limit || 48, 200), f.offset || 0);
   const items = rows.map((r) => {
     let gallery = []; try { gallery = r.images ? JSON.parse(r.images) : []; } catch {}
     let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.clean_title || r.name, raw_name: r.name, brand: r.brand,
+      id: r.id, name: r.clean_title || r.name, title_en: r.clean_title_en, raw_name: r.name, brand: r.brand,
       category: r.category, price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
-      qc_score: r.qc_score, qc_summary: qc.summary,
+      qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
       links: buildLinks(r.platform, r.item_id),
     };
   });
@@ -300,9 +300,10 @@ function getProductById(id) {
   let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
   return {
     id: r.id, platform: r.platform, item_id: r.item_id,
-    name: r.clean_title || r.name, brand: r.brand, category: r.category,
+    name: r.clean_title || r.name, name_en: r.clean_title_en, brand: r.brand, category: r.category,
     price_eur: r.price_eur, image: r.image_url, images,
-    ai_description: r.ai_description, qc_score: r.qc_score, qc_summary: qc.summary,
+    ai_description: r.ai_description, ai_description_en: r.ai_description_en,
+    qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
     links: buildLinks(r.platform, r.item_id),
   };
 }
@@ -419,8 +420,8 @@ function startEnrichTagJob(items, opts = {}) {
           const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(it.id);
           if (r) {
             const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
-            db.prepare("UPDATE products SET clean_title=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-              .run(out.clean_title, out.brand, out.model_name, out.colorway, out.gender, out.category, JSON.stringify(out.tags || []), it.id);
+            db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
+              .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender, canonCat(out.category), JSON.stringify(out.tags || []), it.id);
             job.tagged++;
           }
         } catch {}
@@ -443,8 +444,8 @@ function startTagJob(ids) {
         const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(pid);
         if (r) {
           const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
-          db.prepare("UPDATE products SET clean_title=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-            .run(out.clean_title, out.brand, out.model_name, out.colorway, out.gender, out.category, JSON.stringify(out.tags || []), pid);
+          db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
+            .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
           job.tagged++;
         }
       } catch {}
@@ -476,7 +477,7 @@ function startQcJob(ids) {
           let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => `${u}.webp?w=700&h=700`); } catch {}
           if (imgs.length) {
             const out = await qcOne(imgs, r.clean_title || r.name);
-            db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?").run(out.qc_score, JSON.stringify({ summary: out.qc_summary, flags: out.flags }), pid);
+            db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?").run(out.qc_score, JSON.stringify({ summary: out.qc_summary, summary_en: out.qc_summary_en, flags: out.flags }), pid);
             job.scored++;
           }
         }

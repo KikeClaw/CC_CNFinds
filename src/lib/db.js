@@ -40,8 +40,8 @@ export function openDb(path) {
   if (!cols.includes("images")) db.exec("ALTER TABLE products ADD COLUMN images TEXT"); // JSON array de URLs
   // Columnas de enriquecimiento con IA
   const aiCols = {
-    clean_title: "TEXT", model_name: "TEXT", colorway: "TEXT", gender: "TEXT",
-    tags: "TEXT", ai_description: "TEXT", qc_score: "INTEGER", qc_notes: "TEXT",
+    clean_title: "TEXT", clean_title_en: "TEXT", model_name: "TEXT", colorway: "TEXT", gender: "TEXT",
+    tags: "TEXT", ai_description: "TEXT", ai_description_en: "TEXT", qc_score: "INTEGER", qc_notes: "TEXT",
   };
   for (const [name, type] of Object.entries(aiCols)) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);

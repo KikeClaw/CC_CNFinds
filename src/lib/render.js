@@ -134,13 +134,16 @@ export function productPage(p, related, base, lang = "es") {
   const lp = lang === "en" ? "?lang=en" : "";
   const canonical = `${base}/producto/${p.id}`;
   const imgs = p.images && p.images.length ? p.images : (p.image ? [p.image] : []);
-  const title = `${p.name}${p.brand ? " — " + p.brand : ""} | CNFinds`;
-  const desc = (p.ai_description ? p.ai_description.replace(/\s+/g, " ") : tr(lang, "p_desc")(p.name, p.brand, eur(p.price_eur))).slice(0, 160);
+  const pName = lang === "en" ? (p.name_en || p.name) : p.name;
+  const aiDesc = lang === "en" ? (p.ai_description_en || p.ai_description) : p.ai_description;
+  const qcSum = lang === "en" ? (p.qc_summary_en || p.qc_summary) : p.qc_summary;
+  const title = `${pName}${p.brand ? " — " + p.brand : ""} | CNFinds`;
+  const desc = (aiDesc ? aiDesc.replace(/\s+/g, " ") : tr(lang, "p_desc")(pName, p.brand, eur(p.price_eur))).slice(0, 160);
   const jsonld = {
-    "@context": "https://schema.org", "@type": "Product", name: p.name,
+    "@context": "https://schema.org", "@type": "Product", name: pName,
     image: imgs.slice(0, 5).map((u) => th(u, 800, 800)), category: p.category || undefined,
     brand: p.brand ? { "@type": "Brand", name: p.brand } : undefined,
-    description: p.ai_description || undefined,
+    description: aiDesc || undefined,
     offers: { "@type": "Offer", priceCurrency: "EUR", price: p.price_eur ?? undefined, availability: "https://schema.org/InStock", url: canonical },
     ...(p.qc_score ? { aggregateRating: { "@type": "AggregateRating", ratingValue: p.qc_score, bestRating: 10, ratingCount: 1 } } : {}),
   };
@@ -151,18 +154,18 @@ export function productPage(p, related, base, lang = "es") {
   if (p.brand) crumbs.push({ href: `/marca/${slug(p.brand)}${lp}`, label: p.brand });
 
   const body = `
-<div class="crumb">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join(" › ")} › ${esc(p.name)}</div>
+<div class="crumb">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join(" › ")} › ${esc(pName)}</div>
 <div class="prod">
   <div class="gal">
-    <div class="main">${imgs[0] ? `<img src="${th(imgs[0], 820, 820)}" alt="${esc(p.name)}">` : ""}</div>
+    <div class="main">${imgs[0] ? `<img src="${th(imgs[0], 820, 820)}" alt="${esc(pName)}">` : ""}</div>
     ${imgs.length > 1 ? `<div class="ts">${imgs.slice(0, 8).map((u) => `<img loading="lazy" src="${th(u, 120, 120)}" alt="">`).join("")}</div>` : ""}
   </div>
   <div>
     ${p.brand ? `<div class="pbrand"><a href="/marca/${slug(p.brand)}${lp}">${esc(p.brand)}</a></div>` : ""}
-    <h1>${esc(p.name)}</h1>
-    ${p.qc_score ? `<div class="qc">★ QC ${p.qc_score}/10${p.qc_summary ? " · " + esc(p.qc_summary) : ""}</div>` : ""}
+    <h1>${esc(pName)}</h1>
+    ${p.qc_score ? `<div class="qc">★ QC ${p.qc_score}/10${qcSum ? " · " + esc(qcSum) : ""}</div>` : ""}
     <div class="price">${eur(p.price_eur)}</div>
-    ${p.ai_description ? `<div class="desc">${esc(p.ai_description)}</div>` : ""}
+    ${aiDesc ? `<div class="desc">${esc(aiDesc)}</div>` : ""}
     <div class="at">${esc(tr(lang, "choose_agent"))}</div>
     <div class="agents">${agents}</div>
     <p class="note">${esc(tr(lang, "note"))}</p>
