@@ -285,7 +285,9 @@
       <a href="#marcas" data-i18n="marcas">Marcas</a>
       <a href="#fit" data-i18n="fit">Fit IA</a>
       <a href="#convertidor" data-i18n="conversor">Conversor</a>
+      <a href="/cupones" data-i18n="nav_cupones">Cupones</a>
       <a href="/guias" data-i18n="guias">Guías</a>
+      <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
     </div>
     <div class="right">
       <div class="seg"><span class="on" id="curBtn" style="cursor:pointer" title="Cambiar divisa">EUR</span><span id="langBtn" style="cursor:pointer" title="Language">ES</span></div>
@@ -371,6 +373,11 @@
     <div class="grid" id="trending"></div>
   </section>
 
+  <section id="nuevos">
+    <div class="head"><h2><span class="sq" id="hnew"></span><span data-i18n="new_title">Nuevos finds</span></h2><a class="link" href="#catalogo" id="newAll"><span data-i18n="vertodo">Ver todo</span> <span id="l2n"></span></a></div>
+    <div class="grid" id="newfinds"></div>
+  </section>
+
   <section id="fit">
     <div class="head"><h2><span class="sq" id="hfit"></span><span data-i18n="fit_title">Arma tu fit con IA</span></h2><span class="muted" style="font-size:13px" data-i18n="fit_sub">Dinos tu presupuesto y montamos un outfit</span></div>
     <div class="conv">
@@ -392,6 +399,16 @@
       <button class="go" id="shipBtn" data-i18n="ship_btn">Estimar</button>
     </div>
     <div id="shipResult" class="conv-result"></div>
+  </section>
+
+  <section id="tracker">
+    <div class="head"><h2><span class="sq" id="htrack"></span><span data-i18n="track_title">Rastreador de paquetes</span></h2><span class="muted" style="font-size:13px" data-i18n="track_sub">Sigue tu envío en más de 1.000 transportistas</span></div>
+    <div class="conv" style="max-width:720px">
+      <span class="sic" id="trackIc"></span>
+      <input id="trackNum" data-i18n-ph="track_ph" placeholder="Nº de seguimiento…" />
+      <button class="go" id="trackBtn" data-i18n="track_btn">Rastrear</button>
+    </div>
+    <div id="trackResult" class="conv-result"></div>
   </section>
 
   <section id="marcas">
@@ -434,8 +451,10 @@
         <span class="wm"><b>CN</b>Finds</span>
       </a>
       <p style="margin-top:12px" data-i18n="f_desc">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
+      <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
     <div><h4 data-i18n="f_shop">Tienda</h4><a href="#catalogo" data-i18n="f_all">Todos los productos</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
+    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="#convertidor" data-i18n="conversor">Conversor</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
   </div>
@@ -493,7 +512,9 @@ const T={
     ship_weight:"Peso estimado",ship_days:"días",ship_note:"Estimación orientativa. El coste real depende del agente, la línea, el volumen y el destino. El agente cobra el envío; el producto se paga aparte.",
     qc_title:"QC Checker con IA",qc_sub:"Pega un link y la IA puntúa la calidad de las fotos",qc_check_btn:"Analizar QC",
     qc_analyzing:"Analizando fotos con IA…",qc_score_lbl:"Calidad",qc_flags_lbl:"Posibles defectos",qc_buy:"Comprar con",
-    qc_nophotos:"No pude obtener fotos de este producto (plataforma no soportada aún o item caído).",qc_disc:"Puntuación orientativa por IA sobre las fotos disponibles. No sustituye a las fotos QC reales del agente tras comprar." },
+    qc_nophotos:"No pude obtener fotos de este producto (plataforma no soportada aún o item caído).",qc_disc:"Puntuación orientativa por IA sobre las fotos disponibles. No sustituye a las fotos QC reales del agente tras comprar.",
+    track_title:"Rastreador de paquetes",track_sub:"Sigue tu envío en más de 1.000 transportistas",track_ph:"Nº de seguimiento…",track_btn:"Rastrear",track_note:"Abrimos el seguimiento en 17TRACK en una pestaña nueva.",new_title:"Nuevos finds",
+    nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -534,12 +555,23 @@ const T={
     ship_weight:"Estimated weight",ship_days:"days",ship_note:"Rough estimate. The real cost depends on the agent, line, volume and destination. The agent charges shipping; the product is paid separately.",
     qc_title:"AI QC Checker",qc_sub:"Paste a link and the AI scores the photo quality",qc_check_btn:"Check QC",
     qc_analyzing:"Analyzing photos with AI…",qc_score_lbl:"Quality",qc_flags_lbl:"Possible defects",qc_buy:"Buy with",
-    qc_nophotos:"Couldn't get photos for this product (platform not supported yet or dead item).",qc_disc:"Rough AI score on the available photos. It doesn't replace the agent's real QC photos after you buy." },
+    qc_nophotos:"Couldn't get photos for this product (platform not supported yet or dead item).",qc_disc:"Rough AI score on the available photos. It doesn't replace the agent's real QC photos after you buy.",
+    track_title:"Package tracker",track_sub:"Track your parcel across 1,000+ carriers",track_ph:"Tracking number…",track_btn:"Track",track_note:"We open tracking on 17TRACK in a new tab.",new_title:"New finds",
+    nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
 const CATMAP={};
 const catDisp=(c)=>{ const e=CATMAP[c]; return e?(LANG==="en"?e.en:e.es):(c||""); };
+// Rellena tus URLs de comunidad para que aparezcan los enlaces en el footer.
+const COMMUNITY={ discord:"", telegram:"" };
+function renderSocial(){
+  const el=$("#social"); if(!el) return;
+  const links=[];
+  if(COMMUNITY.discord) links.push(`<a class="agent" href="${COMMUNITY.discord}" target="_blank" rel="noopener">Discord</a>`);
+  if(COMMUNITY.telegram) links.push(`<a class="agent" href="${COMMUNITY.telegram}" target="_blank" rel="noopener">Telegram</a>`);
+  el.innerHTML=links.join("");
+}
 const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:48,total:0,loading:false };
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
@@ -809,6 +841,9 @@ if($("#hship")){ $("#hship").innerHTML=ic("box",21,1.9); $("#hship").style.color
 if($("#shipIc")) $("#shipIc").innerHTML=ic("box",20,1.8);
 if($("#hqc")){ $("#hqc").innerHTML=ic("shield",21,1.9); $("#hqc").style.color="#f59e0b"; }
 if($("#qcIc")) $("#qcIc").innerHTML=ic("shield",20,1.8);
+if($("#htrack")){ $("#htrack").innerHTML=ic("box",21,1.9); $("#htrack").style.color="#2d7ff9"; }
+if($("#trackIc")) $("#trackIc").innerHTML=ic("box",20,1.8);
+if($("#hnew")){ $("#hnew").innerHTML=ic("sparkles",21,1.9); $("#hnew").style.color="#ec4899"; }
 async function armarFit(){
   const budget=parseFloat($("#fitBudget").value)||150;
   const style=$("#fitStyle").value.trim();
@@ -876,6 +911,23 @@ function estimateShip(){
 }
 $("#shipBtn").onclick=estimateShip;
 
+/* rastreador de paquetes (abre 17TRACK) */
+function trackPkg(){
+  const n=$("#trackNum").value.trim(); if(!n) return;
+  const url="https://t.17track.net/en#nums="+encodeURIComponent(n);
+  window.open(url,"_blank","noopener");
+  $("#trackResult").innerHTML=`<div class="conv-card"><div class="conv-meta">${t("track_note")} <a href="${url}" target="_blank" rel="noopener" style="color:var(--brandc);font-weight:600">17TRACK ${ic("arrow",12,2)}</a></div></div>`;
+}
+$("#trackBtn").onclick=trackPkg;
+$("#trackNum").addEventListener("keydown",e=>{ if(e.key==="Enter") trackPkg(); });
+
+/* nuevos finds */
+async function loadNewFinds(){
+  const d=await (await fetch("/api/products?sort=newest&limit=8")).json();
+  d.items.forEach(it=>CACHE[it.id]=it);
+  $("#newfinds").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#newfinds"));
+}
+
 /* búsqueda visual (subir foto -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
 $("#visBtn").onclick=()=>$("#visFile").click();
@@ -926,10 +978,11 @@ function applyLang(){
   const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
   populateShip();
 }
-function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); load(true); }
+function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); }
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 applyLang();
-loadCats(); loadBrands(); loadTrending(); load(true);
+renderSocial();
+loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true);
 </script>
 </body>
 </html>

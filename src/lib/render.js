@@ -222,13 +222,135 @@ export function guidesIndexPage(guides, base, lang = "es") {
   return doc({ title: tr(lang, "guias_title"), desc: tr(lang, "guias_desc"), canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
 }
 
+// --- Hub de cupones y bonos de agentes ---
+export function couponsPage({ agents, base, lang = "es" }) {
+  const lp = lang === "en" ? "?lang=en" : "";
+  const canonical = `${base}/cupones`;
+  const en = lang === "en";
+  const t2 = {
+    h: en ? "Agent coupons & welcome bonuses" : "Cupones y bonos de bienvenida de agentes",
+    intro: en
+      ? "Sign-up bonuses and shipping coupons for the shopping agents we support. Some links are affiliate links — we may earn a small commission at no extra cost to you."
+      : "Bonos de registro y cupones de envío de los agentes de compra que soportamos. Algunos enlaces son de afiliado: podemos recibir una pequeña comisión sin coste adicional para ti.",
+    signup: en ? "Sign up & get coupons" : "Registrarse y obtener cupones",
+    title: en ? "Agent coupons & bonuses — Kakobuy, ACBuy & more | CNFinds" : "Cupones y bonos de agentes — Kakobuy, ACBuy y más | CNFinds",
+    note: en ? "Coupons and bonuses change often; verify the current offer on the agent's site." : "Los cupones y bonos cambian a menudo; verifica la oferta actual en la web del agente.",
+  };
+  const cards = agents.map((a) => `<div class="card" style="padding:22px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:11px;background:${AGENT_COLOR[a.id] || "#888"}"></span><b style="font-size:18px">${esc(a.name)}</b></div>
+    ${a.bonus ? `<div style="background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600">🎁 ${esc(a.bonus)}</div>` : ""}
+    ${a.coupons && a.coupons.length ? `<ul style="margin:2px 0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.6">${a.coupons.map((c) => `<li>${c.code ? `<code>${esc(c.code)}</code> — ` : ""}${esc(c.text)}</li>`).join("")}</ul>` : ""}
+    <div style="margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <a class="agent" href="/agente/${a.id}${lp}" style="font-size:13px">${en ? "Guide" : "Guía"}</a>
+      ${a.signup ? `<a class="agent" href="${a.signup}" target="_blank" rel="nofollow noopener" style="font-size:13px;border-color:var(--brand);color:var(--brand)">${esc(t2.signup)}</a>` : ""}
+    </div>
+  </div>`).join("");
+  const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(t2.h)}</div>
+<section><h2 class="h2" style="font-size:28px">${esc(t2.h)}</h2>
+<p style="color:var(--muted);max-width:720px;line-height:1.6;margin:0 0 18px">${esc(t2.intro)}</p>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${cards}</div>
+<p class="note" style="margin-top:18px">${esc(t2.note)}</p></section>`;
+  return doc({ title: t2.title, desc: t2.intro.slice(0, 160), canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
+}
+
+// --- Landing por agente ("Comprar con X") ---
+export function agentLandingPage({ agent, base, lang = "es" }) {
+  const lp = lang === "en" ? "?lang=en" : "";
+  const en = lang === "en";
+  const canonical = `${base}/agente/${agent.id}`;
+  const title = en ? `How to buy with ${agent.name} (2026)` : `Cómo comprar con ${agent.name} (2026)`;
+  const steps = en
+    ? [
+        ["Create your account", `Sign up on ${agent.name} (free) to get your dashboard and any welcome coupons.`],
+        ["Add the product", `Paste any Taobao/Weidian/1688 link into our <a href="/#convertidor${lp}">converter</a> or click the ${agent.name} button on any product on CNFinds.`],
+        ["Pay for the item", `Top up your balance and ${agent.name} buys it from the Chinese seller. It arrives at their warehouse in a few days.`],
+        ["Review the QC photos", `Check the quality-control photos (or use our <a href="/#qccheck${lp}">AI QC Checker</a>). Request changes if needed.`],
+        ["Ship to your country", `Choose a shipping line and pay international shipping. Estimate it with our <a href="/#envio${lp}">shipping calculator</a>.`],
+      ]
+    : [
+        ["Crea tu cuenta", `Regístrate en ${agent.name} (gratis) para tener tu panel y los cupones de bienvenida.`],
+        ["Añade el producto", `Pega cualquier link de Taobao/Weidian/1688 en nuestro <a href="/#convertidor${lp}">conversor</a> o pulsa el botón ${agent.name} de cualquier producto en CNFinds.`],
+        ["Paga el artículo", `Recargas saldo y ${agent.name} lo compra al vendedor chino. Llega a su almacén en unos días.`],
+        ["Revisa las fotos QC", `Revisa las fotos de control de calidad (o usa nuestro <a href="/#qccheck${lp}">QC Checker con IA</a>). Pide cambios si hace falta.`],
+        ["Envía a tu país", `Eliges línea de envío y pagas el envío internacional. Estímalo con nuestra <a href="/#envio${lp}">calculadora de envío</a>.`],
+      ];
+  const pros = (agent.pros || []).map((p) => `<a class="agent" style="cursor:default">${esc(p)}</a>`).join("");
+  const jsonld = {
+    "@context": "https://schema.org", "@type": "HowTo", name: title,
+    step: steps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s[0] })),
+  };
+  const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › <a href="/cupones${lp}">${en ? "Agents" : "Agentes"}</a> › ${esc(agent.name)}</div>
+<article class="guide">
+  <h1>${esc(title)}</h1>
+  ${agent.bonus ? `<p class="tip" style="background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--ink)">🎁 <b>${esc(agent.bonus)}</b></p>` : ""}
+  <p>${esc(agent.desc || "")}</p>
+  ${pros ? `<div class="chips" style="margin:12px 0 4px">${pros}</div>` : ""}
+  <h2>${en ? `How to buy with ${agent.name}, step by step` : `Cómo comprar con ${agent.name}, paso a paso`}</h2>
+  ${steps.map((s, i) => `<h3 style="margin:16px 0 4px">${i + 1}. ${esc(s[0])}</h3><p style="margin:0">${s[1]}</p>`).join("")}
+  ${agent.signup ? `<p style="margin-top:22px"><a href="${agent.signup}" target="_blank" rel="nofollow noopener" class="agent" style="border-color:var(--brand);color:var(--brand);font-weight:700">${en ? `Sign up on ${agent.name}` : `Regístrate en ${agent.name}`} →</a></p>` : ""}
+  <p class="note">${en ? "Some links are affiliate links; we may earn a small commission at no extra cost to you." : "Algunos enlaces son de afiliado; podemos recibir una pequeña comisión sin coste adicional para ti."}</p>
+</article>`;
+  return doc({ title: `${title} | CNFinds`, desc: (agent.desc || "").slice(0, 160), canonical, jsonld, lang }, body, [{ href: "/cupones" + lp, label: en ? "Agents" : "Agentes" }, { href: "/" + lp, label: tr(lang, "home") }]);
+}
+
+// --- Centro de ayuda (guía visual de todas las funciones) ---
+export function helpPage({ guides, base, lang = "es" }) {
+  const lp = lang === "en" ? "?lang=en" : "";
+  const en = lang === "en";
+  const canonical = `${base}/ayuda`;
+  const t2 = {
+    h: en ? "Help center" : "Centro de ayuda",
+    sub: en ? "Everything you need to go from discovery to your doorstep." : "Todo lo que necesitas para pasar del descubrimiento a tu casa.",
+    how: en ? "How it works" : "Cómo funciona",
+    tools: en ? "Tools & features" : "Herramientas y funciones",
+    guidesH: en ? "In-depth guides" : "Guías a fondo",
+    title: en ? "Help center — how to buy reps step by step | CNFinds" : "Centro de ayuda — cómo comprar reps paso a paso | CNFinds",
+  };
+  const stepsHow = en
+    ? [["1", "Search or discover", "Browse the catalog, search in natural language or upload a photo."], ["2", "Choose your agent", "Every product has agent links. The agent buys it in China for you."], ["3", "Get it at home", "Review QC photos, pay international shipping and receive it."]]
+    : [["1", "Busca o descubre", "Explora el catálogo, busca en lenguaje natural o sube una foto."], ["2", "Elige tu agente", "Cada producto trae links de agente. El agente lo compra en China por ti."], ["3", "Recibe en casa", "Revisa las fotos QC, paga el envío internacional y recíbelo."]];
+  const tools = en
+    ? [
+        ["🔎", "Natural-language & visual search", "Type what you want or upload a photo to find its match.", `/${lp}`],
+        ["🔗", "Link converter", "Turn any Taobao/Weidian/1688 or agent link into your agent links.", `/#convertidor${lp}`],
+        ["🛡️", "AI QC Checker", "Paste a link and the AI scores the photo quality 1–10.", `/#qccheck${lp}`],
+        ["📦", "Shipping calculator", "Estimate parcel weight and shipping cost by line.", `/#envio${lp}`],
+        ["🚚", "Package tracker", "Track your parcel across 1,000+ carriers.", `/#tracker${lp}`],
+        ["🧩", "AI outfit builder", "Give a budget and get a full coherent outfit.", `/#fit${lp}`],
+        ["🎁", "Agent coupons", "Welcome bonuses and shipping coupons per agent.", `/cupones${lp}`],
+        ["❤️", "Favorites", "Save products with the heart; they stay in your browser.", `/${lp}`],
+      ]
+    : [
+        ["🔎", "Búsqueda por IA y visual", "Escribe lo que quieres o sube una foto para encontrar su equivalente.", `/${lp}`],
+        ["🔗", "Conversor de enlaces", "Convierte cualquier link de Taobao/Weidian/1688 o de agente en tus links.", `/#convertidor${lp}`],
+        ["🛡️", "QC Checker con IA", "Pega un link y la IA puntúa la calidad de las fotos del 1 al 10.", `/#qccheck${lp}`],
+        ["📦", "Calculadora de envío", "Estima el peso del paquete y el coste por línea.", `/#envio${lp}`],
+        ["🚚", "Rastreador de paquetes", "Sigue tu paquete en más de 1.000 transportistas.", `/#tracker${lp}`],
+        ["🧩", "Armador de fits con IA", "Da un presupuesto y monta un outfit completo y coherente.", `/#fit${lp}`],
+        ["🎁", "Cupones de agentes", "Bonos de bienvenida y cupones de envío por agente.", `/cupones${lp}`],
+        ["❤️", "Favoritos", "Guarda productos con el corazón; se quedan en tu navegador.", `/${lp}`],
+      ];
+  const stepCards = stepsHow.map((s) => `<div class="card" style="padding:20px"><div style="font-family:var(--fd);font-weight:800;font-size:22px;color:var(--brand)">${s[0]}</div><div style="font-weight:600;margin:6px 0 4px">${esc(s[1])}</div><div style="color:var(--muted);font-size:13.5px;line-height:1.5">${esc(s[2])}</div></div>`).join("");
+  const toolCards = tools.map((tl) => `<a class="card" href="${tl[3]}" style="padding:20px;display:block"><div style="font-size:26px">${tl[0]}</div><div style="font-weight:600;margin:6px 0 4px">${esc(tl[1])}</div><div style="color:var(--muted);font-size:13.5px;line-height:1.5">${esc(tl[2])}</div></a>`).join("");
+  const guideCards = (guides || []).map((g) => `<a class="card" href="/guia/${g.slug}${lp}" style="padding:18px"><div style="color:var(--brand);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.05em">${esc(tr(lang, "guide"))}</div><div style="font-weight:600;font-size:15px;margin:6px 0">${esc(gTitle(g, lang))}</div><div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(gDesc(g, lang))}</div></a>`).join("");
+  const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(t2.h)}</div>
+<section><h2 class="h2" style="font-size:30px">${esc(t2.h)}</h2><p style="color:var(--muted);max-width:720px;line-height:1.6;margin:-6px 0 20px">${esc(t2.sub)}</p>
+<h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.how)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-bottom:26px">${stepCards}</div>
+<h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.tools)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-bottom:26px">${toolCards}</div>
+<h3 style="font-size:17px;margin:8px 0 12px">${esc(t2.guidesH)}</h3><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${guideCards}</div>
+</section>`;
+  return doc({ title: t2.title, desc: t2.sub, canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
+}
+
 // --- Sitemap ---
-export function sitemapXml(base, { productIds, categories, brands, guides = [] }) {
+export function sitemapXml(base, { productIds, categories, brands, guides = [], agents = [], pages = [] }) {
   const url = (loc) => `<url><loc>${loc}</loc></url>`;
   const urls = [
     url(base + "/"),
     url(base + "/guias"),
+    ...pages.map((p) => url(base + p)),
     ...guides.map((g) => url(`${base}/guia/${g}`)),
+    ...agents.map((a) => url(`${base}/agente/${a}`)),
     ...categories.map((c) => url(`${base}/categoria/${slug(c)}`)),
     ...brands.map((b) => url(`${base}/marca/${slug(b)}`)),
     ...productIds.map((id) => url(`${base}/producto/${id}`)),

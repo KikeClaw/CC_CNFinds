@@ -16,9 +16,10 @@ import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
-import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage } from "./lib/render.js";
+import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, helpPage } from "./lib/render.js";
 import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { canonCat, catLabel } from "./lib/categories.js";
+import { agentMeta, signupUrl } from "../config/agents-meta.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -335,6 +336,36 @@ function reqLang(req) {
   return String(req.headers["accept-language"] || "").toLowerCase().startsWith("en") ? "en" : "es";
 }
 
+// Agentes con metadatos (bono, descripción, ventajas, cupones, registro) en el idioma dado.
+function agentsForLang(lang) {
+  const pick = (o) => (o ? (lang === "en" ? o.en : o.es) : "");
+  return getAgentState().map((a) => {
+    const m = agentMeta(a.id);
+    if (!m) return null;
+    return {
+      id: a.id, name: a.name, enabled: a.enabled,
+      bonus: pick(m.bonus), desc: pick(m.desc),
+      pros: m.pros ? (lang === "en" ? m.pros.en : m.pros.es) : [],
+      coupons: (m.coupons || []).map((c) => ({ code: c.code, text: pick(c.text) })),
+      signup: signupUrl(a.id),
+    };
+  }).filter(Boolean);
+}
+function handleCoupons(req, res) {
+  const lang = reqLang(req);
+  html(res, couponsPage({ agents: agentsForLang(lang), base: baseUrl(req), lang }));
+}
+function handleAgentLanding(req, res, id) {
+  const lang = reqLang(req);
+  const a = agentsForLang(lang).find((x) => x.id === id);
+  if (!a) return html(res, "<h1>404</h1>", 404);
+  html(res, agentLandingPage({ agent: a, base: baseUrl(req), lang }));
+}
+function handleHelp(req, res) {
+  const lang = reqLang(req);
+  html(res, helpPage({ guides: GUIDES, base: baseUrl(req), lang }));
+}
+
 function getProductById(id) {
   const r = db.prepare("SELECT * FROM products WHERE id=?").get(id);
   if (!r) return null;
@@ -379,8 +410,9 @@ function handleSitemap(req, res) {
   const ids = db.prepare("SELECT id FROM products").all().map((r) => r.id);
   const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
   const brands = db.prepare("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL").all().map((r) => r.brand);
+  const agents = getAgentState().filter((a) => agentMeta(a.id)).map((a) => a.id);
   res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug) }));
+  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones"] }));
 }
 
 // ---- Admin: importador universal ----
@@ -604,6 +636,9 @@ const server = createServer((req, res) => {
     const parts = u.pathname.split("/").filter(Boolean);
     if (u.pathname === "/guias") return html(res, guidesIndexPage(GUIDES, baseUrl(req), reqLang(req)));
     if (parts[0] === "guia" && parts[1]) { const g = guideBySlug(decodeURIComponent(parts[1])); return g ? html(res, articlePage(g, baseUrl(req), reqLang(req))) : html(res, "<h1>404</h1>", 404); }
+    if (u.pathname === "/cupones" || u.pathname === "/coupons") return handleCoupons(req, res);
+    if (u.pathname === "/ayuda" || u.pathname === "/help") return handleHelp(req, res);
+    if ((parts[0] === "agente" || parts[0] === "agent") && parts[1]) return handleAgentLanding(req, res, decodeURIComponent(parts[1]));
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
