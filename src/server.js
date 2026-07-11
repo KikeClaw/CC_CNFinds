@@ -20,6 +20,8 @@ import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, coupon
 import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
+import { COMMUNITY_SHEETS, sheetUrl } from "../config/sources.js";
+import { fetchSheetLinks } from "./lib/sheet-api.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -248,6 +250,14 @@ async function handleRequest(req, res) {
   try { db.prepare("INSERT INTO requests (query, email, created_at, lang) VALUES (?, ?, ?, ?)").run(query, email || null, new Date().toISOString(), reqLang(req)); }
   catch { return json(res, 500, { ok: false, error: "Error" }); }
   json(res, 200, { ok: true });
+}
+// Admin: lanzar el importador automático ahora (opcional; también corre solo).
+function handleAdminAutoIngest(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  if (!AUTO_INGEST) return json(res, 200, { ok: false, error: "Desactivado (AUTO_INGEST=off)." });
+  if (autoIngestRunning) return json(res, 200, { ok: true, running: true, last: metaGet("last_auto_ingest") });
+  autoIngestSources({ force: true }).catch((e) => console.error("Auto-ingest falló:", e.message));
+  json(res, 200, { ok: true, started: true, sheets: COMMUNITY_SHEETS.length });
 }
 // Admin: demanda agregada (qué añadir al catálogo).
 function handleAdminRequests(req, res) {
@@ -583,12 +593,18 @@ async function gatherCandidates(mode, content) {
     let tabs; try { tabs = await discoverTabs(id); } catch { tabs = [{ gid: "0", name: "" }]; }
     if (!tabs.length) tabs = [{ gid: "0", name: "" }];
     const all = [];
+    // 1) URLs en TEXTO (export CSV por pestaña)
     for (const t of tabs) {
       let csv; try { csv = await fetchSheet(id, t.gid); } catch { continue; }
       const cands = rowsToCandidates(parseCsv(csv));
       const cat = cleanCategory(t.name || "");
       for (const c of cands) if (!c.category && cat) c.category = cat;
       all.push(...cands);
+    }
+    // 2) HIPERVÍNCULOS (hojas tipo cnnewfinds) vía Sheets API, si hay clave.
+    if (process.env.GOOGLE_API_KEY) {
+      try { all.push(...await fetchSheetLinks(id, process.env.GOOGLE_API_KEY)); }
+      catch (e) { console.error(`Sheets API (${id}): ${e.message}`); }
     }
     return all;
   }
@@ -772,6 +788,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/suggest") return void handleSuggest(res, u.searchParams);
     if (req.method === "POST" && u.pathname === "/api/request") return void handleRequest(req, res);
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
@@ -853,6 +870,45 @@ function inferGenders() {
   if (n) console.log(`Género inferido para ${n} productos (por defecto: unisex).`);
 }
 
+// --- Importador automático (sin admin): ingiere la lista curada de hojas de la
+// comunidad de forma periódica. Dedup por (plataforma,itemId) + tus códigos.
+// Solo enriquece FOTOS (sin IA = sin coste). Se controla con env vars:
+//   AUTO_INGEST=off  -> desactiva
+//   AUTO_INGEST_INTERVAL_HOURS=168  -> cada cuánto (por defecto semanal)
+const AUTO_INGEST = String(process.env.AUTO_INGEST ?? "on").toLowerCase() !== "off";
+const AUTO_INGEST_INTERVAL_H = parseInt(process.env.AUTO_INGEST_INTERVAL_HOURS || "168", 10);
+const metaGet = (k) => { try { return db.prepare("SELECT val FROM app_meta WHERE key=?").get(k)?.val || null; } catch { return null; } };
+const metaSet = (k, v) => { try { db.prepare("INSERT INTO app_meta (key,val) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET val=excluded.val").run(k, v); } catch {} };
+let autoIngestRunning = false;
+async function autoIngestSources({ force = false } = {}) {
+  if (!AUTO_INGEST || autoIngestRunning) return;
+  const last = metaGet("last_auto_ingest");
+  if (!force && last && (Date.now() - Date.parse(last)) / 36e5 < AUTO_INGEST_INTERVAL_H) return; // aún no toca
+  autoIngestRunning = true;
+  metaSet("last_auto_ingest", new Date().toISOString());
+  console.log(`Importador automático: ingiriendo ${COMMUNITY_SHEETS.length} hojas de la comunidad…`);
+  const getRow = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=? AND image_url IS NULL");
+  const newItems = [];
+  let added = 0, updated = 0;
+  for (const s of COMMUNITY_SHEETS) {
+    try {
+      const deduped = dedupeCands(db, await gatherCandidates("sheet", sheetUrl(s.id)));
+      const r = applyCands(db, deduped, `auto:${s.name}`);
+      added += r.added; updated += r.updated;
+      for (const c of deduped) {
+        if (c.status === "new" && c.platform === "weidian") { const row = getRow.get(c.platform, c.itemId); if (row) newItems.push({ id: row.id, platform: c.platform, item_id: c.itemId }); }
+      }
+      console.log(`  ${s.name}: +${r.added} nuevos · ${r.updated} act.`);
+    } catch (e) { console.error(`  ${s.name} falló: ${e.message}`); }
+    await new Promise((r) => setTimeout(r, 1500)); // cortesía entre hojas
+  }
+  const total = db.prepare("SELECT COUNT(*) c FROM products").get().c;
+  console.log(`Importador automático: total +${added} nuevos · ${updated} actualizados · catálogo: ${total}`);
+  normalizeCategories(); inferGenders();
+  if (newItems.length) { startEnrichTagJob(newItems, { tag: false }); console.log(`Enriqueciendo fotos de ${newItems.length} productos nuevos…`); }
+  autoIngestRunning = false;
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -871,6 +927,13 @@ async function bootstrap() {
       "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND (last_checked IS NULL OR last_checked < ?)"
     ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
     if (items.length) { startEnrichTagJob(items, { tag: false }); console.log(`Enriqueciendo ${items.length} fotos pendientes en segundo plano...`); }
+    // Importador automático (si toca): crece el catálogo solo, sin admin.
+    if (AUTO_INGEST) {
+      autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));
+      // Reintenta periódicamente en procesos de larga vida (el guardado de
+      // last_auto_ingest evita repetir antes del intervalo).
+      setInterval(() => autoIngestSources().catch(() => {}), 6 * 3600e3).unref?.();
+    }
   } catch (e) { console.error("Bootstrap falló:", e.message); }
 }
 

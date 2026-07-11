@@ -64,6 +64,8 @@ export function openDb(path) {
   // Peticiones: qué buscan los usuarios que NO está en el catálogo (señal de
   // demanda para saber qué añadir). Email opcional para avisar cuando lo añadas.
   db.exec("CREATE TABLE IF NOT EXISTS requests (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, email TEXT, created_at TEXT, lang TEXT)");
+  // Clave/valor interno (p.ej. última ejecución del importador automático).
+  db.exec("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, val TEXT)");
   return db;
 }
 
