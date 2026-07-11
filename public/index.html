@@ -267,10 +267,10 @@
   </linearGradient>
 </defs></svg>
 
-<div class="promo" id="promo">
+<div class="promo" id="promo" style="display:none">
   <div class="wrap">
     <span id="promoIc"></span>
-    <span><b>Código CNFinds</b> · 15–30% de descuento en envío en Kakobuy · Mulebuy · OOPBuy</span>
+    <a href="/cupones" style="color:#fff;text-decoration:none"><span data-i18n="promo_text">Bonos de bienvenida y cupones de envío en tus agentes de compra</span> <b data-i18n="promo_cta">Ver cupones →</b></a>
     <button class="x" id="promoX" aria-label="Cerrar"></button>
   </div>
 </div>
@@ -296,10 +296,10 @@
       <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
     </div>
     <div class="right">
-      <div class="seg"><span class="on" id="curBtn" style="cursor:pointer" title="Cambiar divisa">EUR</span><span id="langBtn" style="cursor:pointer" title="Language">ES</span></div>
-      <button class="iconbtn" id="fav" title="Favoritos"></button>
-      <button class="iconbtn" id="theme" title="Tema"></button>
-      <button class="iconbtn burger" id="burger" title="Menú"></button>
+      <div class="seg"><span class="on" id="curBtn" role="button" tabindex="0" style="cursor:pointer" title="Cambiar divisa" aria-label="Cambiar divisa">EUR</span><span id="langBtn" role="button" tabindex="0" style="cursor:pointer" title="Language" aria-label="Change language">ES</span></div>
+      <button class="iconbtn" id="fav" title="Favoritos" aria-label="Favoritos"></button>
+      <button class="iconbtn" id="theme" title="Tema" aria-label="Cambiar tema"></button>
+      <button class="iconbtn burger" id="burger" title="Menú" aria-label="Menú" aria-expanded="false"></button>
     </div>
   </div>
 </header>
@@ -336,7 +336,7 @@
       <button class="ia-card" data-ia="nl" style="--cc:#2d7ff9"><div class="ii" id="ia1"></div><div class="it" data-i18n="c_nl_t">Búsqueda en lenguaje natural</div><div class="id" data-i18n="c_nl_d">"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.</div><span class="ib"><span data-i18n="c_try">Probar</span> <span class="iba"></span></span></button>
       <button class="ia-card" data-ia="vis" style="--cc:#8b5cf6"><div class="ii" id="ia2"></div><div class="it" data-i18n="c_vis_t">Búsqueda visual «W2C this»</div><div class="id" data-i18n="c_vis_d">Sube la foto de cualquier prenda y encuentra su equivalente al instante.</div><span class="ib"><span data-i18n="c_upload">Subir foto</span> <span class="iba"></span></span></button>
       <button class="ia-card" data-ia="fit" style="--cc:#16a34a"><div class="ii" id="ia3"></div><div class="it" data-i18n="c_fit_t">Armador de fits con IA</div><div class="id" data-i18n="c_fit_d">Dinos tu presupuesto y montamos un outfit completo y coherente.</div><span class="ib"><span data-i18n="armar">Armar</span> <span class="iba"></span></span></button>
-      <div class="ia-card static" style="--cc:#f59e0b"><div class="ii" id="ia4"></div><div class="it" data-i18n="c_qc_t">QC con IA + catálogo limpio</div><div class="id" data-i18n="c_qc_d">Puntuación de calidad por visión y fichas normalizadas automáticamente.</div><span class="ib" style="color:var(--muted)" data-i18n="c_hood">Bajo el capó</span></div>
+      <button class="ia-card" data-ia="qc" style="--cc:#f59e0b"><div class="ii" id="ia4"></div><div class="it" data-i18n="c_qc_t">QC con IA + catálogo limpio</div><div class="id" data-i18n="c_qc_d">Puntuación de calidad por visión y fichas normalizadas automáticamente.</div><span class="ib"><span data-i18n="c_try">Probar</span> <span class="iba"></span></span></button>
     </div>
   </section>
 
@@ -520,7 +520,8 @@ const T={
     qc_analyzing:"Analizando fotos con IA…",qc_score_lbl:"Calidad",qc_flags_lbl:"Posibles defectos",qc_buy:"Comprar con",
     qc_nophotos:"No pude obtener fotos de este producto (plataforma no soportada aún o item caído).",qc_disc:"Puntuación orientativa por IA sobre las fotos disponibles. No sustituye a las fotos QC reales del agente tras comprar.",
     track_title:"Rastreador de paquetes",track_sub:"Sigue tu envío en más de 1.000 transportistas",track_ph:"Nº de seguimiento…",track_btn:"Rastrear",track_note:"Abrimos el seguimiento en 17TRACK en una pestaña nueva.",new_title:"Nuevos finds",
-    nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad" },
+    nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad",
+    promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -563,7 +564,8 @@ const T={
     qc_analyzing:"Analyzing photos with AI…",qc_score_lbl:"Quality",qc_flags_lbl:"Possible defects",qc_buy:"Buy with",
     qc_nophotos:"Couldn't get photos for this product (platform not supported yet or dead item).",qc_disc:"Rough AI score on the available photos. It doesn't replace the agent's real QC photos after you buy.",
     track_title:"Package tracker",track_sub:"Track your parcel across 1,000+ carriers",track_ph:"Tracking number…",track_btn:"Track",track_note:"We open tracking on 17TRACK in a new tab.",new_title:"New finds",
-    nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community" },
+    nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community",
+    promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →" },
 };
 const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
@@ -654,11 +656,13 @@ function paintTheme(){ $("#theme").innerHTML=ic(themeNow()==="dark"?"sun":"moon"
 $("#theme").onclick=()=>{ const nx=themeNow()==="dark"?"light":"dark"; document.documentElement.setAttribute("data-theme", nx); try{localStorage.setItem("cnf_theme",nx);}catch(e){} paintTheme(); };
 paintTheme();
 $("#fav").innerHTML=ic("heart",18,1.8);
-$("#promoX").onclick=()=>$("#promo").style.display="none";
+/* promo: se muestra salvo que el usuario la cerrara antes (recordado) */
+try{ if(!localStorage.getItem("cnf_promo_x")) $("#promo").style.display=""; }catch(e){ $("#promo").style.display=""; }
+$("#promoX").onclick=()=>{ $("#promo").style.display="none"; try{localStorage.setItem("cnf_promo_x","1");}catch(e){} };
 
 /* menú móvil */
 $("#burger").innerHTML=ic("menu",20,1.9);
-$("#burger").onclick=()=>document.querySelector("header").classList.toggle("navopen");
+$("#burger").onclick=()=>{ const h=document.querySelector("header"); const open=h.classList.toggle("navopen"); $("#burger").setAttribute("aria-expanded", open?"true":"false"); };
 document.querySelectorAll(".nav .links a").forEach(a=>a.addEventListener("click",()=>document.querySelector("header").classList.remove("navopen")));
 
 /* ver favoritos */
@@ -750,9 +754,9 @@ function openModal(p){
   const agents=Object.entries(p.links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",16,2)}</span></a>`).join("");
   const imgs=(p.images&&p.images.length)?p.images:(p.image?[p.image]:[]);
   const main=imgs[0];
-  const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${u}.webp?w=120&h=120&cp=1" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";
+  const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${u}.webp?w=120&h=120&cp=1" alt="" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";
   $("#modal").innerHTML=`
-    <div class="mimg"><div class="mmain">${main?`<img id="mMain" src="${main}.webp?w=820&h=820&cp=1" alt="">`:""}</div>${thumbs}</div>
+    <div class="mimg"><div class="mmain">${main?`<img id="mMain" src="${main}.webp?w=820&h=820&cp=1" alt="${esc(pname(p))}">`:""}</div>${thumbs}</div>
     <div class="mbody">
       <button class="close" onclick="closeModal()">${ic("x",17,2)}</button>
       ${p.brand?`<div class="mbrand">${esc(p.brand)}</div>`:""}
@@ -801,7 +805,7 @@ async function qcCheck(){
   const sum=LANG==="en"?(d.qc.qc_summary_en||d.qc.qc_summary):d.qc.qc_summary;
   const score=d.qc.qc_score;
   const color=score>=8?"#16a34a":score>=6?"#f59e0b":"#ef4444";
-  const thumbs=(d.images||[]).slice(0,6).map(u=>`<img src="${u}" loading="lazy" style="width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">`).join("");
+  const thumbs=(d.images||[]).slice(0,6).map(u=>`<img src="${u}" loading="lazy" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">`).join("");
   const flags=(d.qc.flags||[]).length?`<div><b style="font-size:13px">${t("qc_flags_lbl")}:</b> <span style="color:var(--muted);font-size:13px">${d.qc.flags.map(esc).join(" · ")}</span></div>`:"";
   $("#qcResult").innerHTML=`<div class="conv-card" style="flex-direction:column;align-items:stretch;gap:14px">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -969,9 +973,12 @@ document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   if(k==="nl"){ $("#q").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>{ $("#q").focus(); $("#q").placeholder=t("conv_placeholder"); },400); }
   else if(k==="vis"){ $("#visFile").click(); }
   else if(k==="fit"){ document.getElementById("fit").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#fitBudget").focus(),400); }
+  else if(k==="qc"){ document.getElementById("qccheck").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#qcUrl").focus(),400); }
 });
 
 document.getElementById("curBtn").onclick=cycleCur; loadRates();
+/* accesibilidad: activar toggles (spans) con Enter/Espacio */
+["curBtn","langBtn"].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); el.click(); } }); });
 document.querySelectorAll("#gseg button").forEach(b=>b.onclick=()=>{ document.querySelectorAll("#gseg button").forEach(x=>x.classList.remove("gon")); b.classList.add("gon"); state.gender=b.dataset.g; load(true); });
 
 /* i18n */

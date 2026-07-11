@@ -54,6 +54,19 @@ function thumb(url, w = 500, h = 500) {
   return `${url}.webp?w=${w}&h=${h}&cp=1`;
 }
 
+// Limpieza ligera del nombre crudo (sin IA): colapsa espacios y quita ruido tipo
+// "( 14 + styles)" / "(3 colors)". Solo se usa como fallback cuando no hay título
+// limpio de IA; el etiquetado con IA corrige además erratas y normaliza de verdad.
+function tidyName(s) {
+  if (!s) return s;
+  return String(s)
+    .replace(/\s+/g, " ")
+    .replace(/\(\s*\d+\s*\+?\s*(?:styles?|colou?rs?|options?|variants?|models?|pcs?)\s*\)/gi, "")
+    .replace(/[\s·|,-]+$/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function json(res, code, data) {
   res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
@@ -127,7 +140,7 @@ function handleProducts(res, params) {
     try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
     let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.clean_title || r.name, title_en: r.clean_title_en, raw_name: r.name, brand: r.brand, category: r.category,
+      id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en, raw_name: r.name, brand: r.brand, category: r.category,
       price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
       qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
@@ -215,7 +228,7 @@ function selectProducts(f) {
     let gallery = []; try { gallery = r.images ? JSON.parse(r.images) : []; } catch {}
     let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
     return {
-      id: r.id, name: r.clean_title || r.name, title_en: r.clean_title_en, raw_name: r.name, brand: r.brand,
+      id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en, raw_name: r.name, brand: r.brand,
       category: r.category, price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
       qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
@@ -373,7 +386,7 @@ function getProductById(id) {
   let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
   return {
     id: r.id, platform: r.platform, item_id: r.item_id,
-    name: r.clean_title || r.name, name_en: r.clean_title_en, brand: r.brand, category: r.category,
+    name: r.clean_title || tidyName(r.name), name_en: r.clean_title_en, brand: r.brand, category: r.category,
     price_eur: r.price_eur, image: r.image_url, images,
     ai_description: r.ai_description, ai_description_en: r.ai_description_en,
     qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
@@ -384,7 +397,7 @@ function relatedProducts(p) {
   return db.prepare(
     "SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE id<>? AND image_url IS NOT NULL AND (brand=? OR category=?) ORDER BY (brand=?) DESC, hot DESC LIMIT 8"
   ).all(p.id, p.brand, p.category, p.brand)
-    .map((r) => ({ id: r.id, name: r.clean_title || r.name, brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
+    .map((r) => ({ id: r.id, name: r.clean_title || tidyName(r.name), brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
 }
 function handleProductPage(req, res, id) {
   const p = getProductById(id);
@@ -396,7 +409,7 @@ function handleListPage(req, res, kind, name) {
   const col = kind === "marca" ? "brand" : "category";
   const rows = db.prepare(
     `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${col}=? ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
-  ).all(name).map((r) => ({ id: r.id, name: r.clean_title || r.name, brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
+  ).all(name).map((r) => ({ id: r.id, name: r.clean_title || tidyName(r.name), brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
   if (!rows.length) return html(res, "<h1>404</h1>", 404);
   const lang = reqLang(req);
   const lp = lang === "en" ? "?lang=en" : "";
@@ -550,7 +563,7 @@ function startQcJob(ids) {
         if (r) {
           let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => `${u}.webp?w=700&h=700`); } catch {}
           if (imgs.length) {
-            const out = await qcOne(imgs, r.clean_title || r.name);
+            const out = await qcOne(imgs, r.clean_title || tidyName(r.name));
             db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?").run(out.qc_score, JSON.stringify({ summary: out.qc_summary, summary_en: out.qc_summary_en, flags: out.flags }), pid);
             job.scored++;
           }
