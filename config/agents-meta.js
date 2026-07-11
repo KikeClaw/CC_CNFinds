@@ -27,6 +27,7 @@ const SIGNUP = {
 // Contenido por agente. `bonus`, `desc`, `pros`, `coupons` son bilingües.
 export const AGENT_META = {
   kakobuy: {
+    cashback: "3.5–7.5%",
     bonus: { es: "Hasta $500 en cupones de bienvenida al registrarte", en: "Up to $500 in welcome coupons on sign-up" },
     desc: {
       es: "Agente fiable y muy popular: control de calidad (QC) gratis, soporta Weidian/Taobao/1688 y ofrece buenas líneas de envío. Bonificación de afiliado del 3,5–7,5% sin tope.",

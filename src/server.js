@@ -67,6 +67,17 @@ function tidyName(s) {
     .trim();
 }
 
+// Enriquece los links de agente con su cashback y bono (bilingüe) para la
+// comparativa de agentes en la ficha/modal.
+function enrichLinks(links) {
+  const out = {};
+  for (const [id, l] of Object.entries(links)) {
+    const m = agentMeta(id);
+    out[id] = { ...l, cashback: (m && m.cashback) || null, bonus: (m && m.bonus) || null };
+  }
+  return out;
+}
+
 function json(res, code, data) {
   res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
@@ -144,7 +155,7 @@ function handleProducts(res, params) {
       price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
       qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
-      links: buildLinks(r.platform, r.item_id),
+      links: enrichLinks(buildLinks(r.platform, r.item_id)),
     };
   });
 
@@ -161,7 +172,7 @@ function handleConvert(res, params) {
   json(res, 200, {
     ok: true, platform, itemId,
     original: originalUrl(platform, itemId),
-    links: buildLinks(platform, itemId),
+    links: enrichLinks(buildLinks(platform, itemId)),
   });
 }
 
@@ -192,13 +203,13 @@ async function handleQcCheck(req, res) {
       if (en.ok && en.images && en.images.length) images = en.images;
     }
     if (!images.length) {
-      return json(res, 200, { ok: false, platform, itemId, error: "No pude obtener fotos de este producto (plataforma no soportada aun, o item caido).", links: buildLinks(platform, itemId) });
+      return json(res, 200, { ok: false, platform, itemId, error: "No pude obtener fotos de este producto (plataforma no soportada aun, o item caido).", links: enrichLinks(buildLinks(platform, itemId)) });
     }
     // 2) Puntuacion QC por vision (modelo rapido para controlar coste). Max 4 fotos.
     //    El CDN de Weidian redimensiona con el sufijo .webp: fotos ligeras y rapidas.
     const wp = (u, w) => (/geilicdn|weidian/.test(u) ? `${u}.webp?w=${w}&h=${w}` : u);
     const qc = await qcOne(images.slice(0, 4).map((u) => wp(u, 700)), name, { model: MODELS.fast });
-    const result = { ok: true, platform, itemId, name, images: images.slice(0, 8).map((u) => wp(u, 300)), qc, links: buildLinks(platform, itemId) };
+    const result = { ok: true, platform, itemId, name, images: images.slice(0, 8).map((u) => wp(u, 300)), qc, links: enrichLinks(buildLinks(platform, itemId)) };
     qcCheckCache.set(key, result);
     if (qcCheckCache.size > 300) qcCheckCache.delete(qcCheckCache.keys().next().value);
     json(res, 200, result);
@@ -232,7 +243,7 @@ function selectProducts(f) {
       category: r.category, price_eur: r.price_eur, hot: !!r.hot,
       thumb: thumb(r.image_url), image: r.image_url, images: gallery,
       qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
-      links: buildLinks(r.platform, r.item_id),
+      links: enrichLinks(buildLinks(r.platform, r.item_id)),
     };
   });
   return { total, items };
@@ -390,7 +401,7 @@ function getProductById(id) {
     price_eur: r.price_eur, image: r.image_url, images,
     ai_description: r.ai_description, ai_description_en: r.ai_description_en,
     qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
-    links: buildLinks(r.platform, r.item_id),
+    links: enrichLinks(buildLinks(r.platform, r.item_id)),
   };
 }
 function relatedProducts(p) {

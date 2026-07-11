@@ -38,6 +38,17 @@ const L = {
 };
 const tr = (lang, k) => (L[lang] && L[lang][k] != null ? L[lang][k] : L.es[k]);
 
+// BreadcrumbList JSON-LD desde una lista [{name, href}] + la página actual (sin url).
+function breadcrumbLd(base, items) {
+  return {
+    "@context": "https://schema.org", "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem", position: i + 1, name: it.name,
+      ...(it.href ? { item: base + it.href } : {}),
+    })),
+  };
+}
+
 const CSS = `
 :root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.13);--brand:#ff4d2e;--hot:#ff2d55;--radius:20px;--card-shadow:0 1px 2px rgba(10,10,20,.05),0 5px 16px rgba(10,10,20,.07);
 --fd:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--ft:"Geist",-apple-system,system-ui,sans-serif}
@@ -66,6 +77,14 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;background:colo
 .at{font-size:12.5px;color:var(--muted);margin:14px 0 8px}
 .agents{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
 .agent{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-weight:600;font-size:14px}
+.acmp-t{width:100%;border-collapse:collapse;margin-top:6px;font-size:13.5px}
+.acmp-t th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:6px 10px;border-bottom:1px solid var(--line)}
+.acmp-t td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.acmp-t td:first-child{font-weight:600;white-space:nowrap}
+.acmp-t td .d{display:inline-block;width:9px;height:9px;border-radius:9px;margin-right:8px;vertical-align:middle}
+.acmp-t td.bn{color:var(--muted);font-size:12.5px}
+.acmp-t .buy{display:inline-block;background:var(--brand);color:#fff;font-weight:700;font-size:13px;padding:7px 14px;border-radius:10px;white-space:nowrap}
+@media(max-width:560px){.acmp-t th:nth-child(3),.acmp-t td.bn{display:none}}
 .agent:hover{border-color:var(--ink)}.agent .d{width:9px;height:9px;border-radius:9px}
 .note{color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5}
 section{padding:34px 0}.h2{font-size:22px;letter-spacing:-.03em;margin:0 0 18px;font-weight:700}
@@ -147,8 +166,13 @@ export function productPage(p, related, base, lang = "es") {
     offers: { "@type": "Offer", priceCurrency: "EUR", price: p.price_eur ?? undefined, availability: "https://schema.org/InStock", url: canonical },
     ...(p.qc_score ? { aggregateRating: { "@type": "AggregateRating", ratingValue: p.qc_score, bestRating: 10, ratingCount: 1 } } : {}),
   };
-  const agents = Object.entries(p.links).map(([k, l]) =>
-    `<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</a>`).join("");
+  const en = lang === "en";
+  const bonusTxt = (l) => (l.bonus ? (en ? l.bonus.en || l.bonus.es : l.bonus.es) : "");
+  const rows = Object.entries(p.links).map(([k, l]) =>
+    `<tr><td><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</td><td>${l.cashback ? esc(l.cashback) : "—"}</td><td class="bn">${esc(bonusTxt(l)) || "—"}</td><td><a class="buy" href="${l.url}" target="_blank" rel="nofollow noopener">${en ? "Buy" : "Comprar"} →</a></td></tr>`).join("");
+  const agents = Object.keys(p.links).length
+    ? `<table class="acmp-t"><thead><tr><th>${en ? "Agent" : "Agente"}</th><th>Cashback</th><th>${en ? "Welcome bonus" : "Bono de bienvenida"}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+    : `<p class="note">${en ? "No agents enabled yet." : "Aún no hay agentes activos."}</p>`;
   const crumbs = [{ href: "/" + lp, label: tr(lang, "home") }];
   if (p.category) crumbs.push({ href: `/categoria/${slug(p.category)}${lp}`, label: catLabel(p.category, lang) });
   if (p.brand) crumbs.push({ href: `/marca/${slug(p.brand)}${lp}`, label: p.brand });
@@ -172,7 +196,8 @@ export function productPage(p, related, base, lang = "es") {
   </div>
 </div>
 ${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}</h2><div class="grid">${related.map((r) => cardHtml(r, lp)).join("")}</div></section>` : ""}`;
-  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld, lang }, body, crumbs);
+  const bc = breadcrumbLd(base, [...crumbs.map((c) => ({ name: c.label, href: c.href })), { name: pName }]);
+  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld: [jsonld, bc], lang }, body, crumbs);
 }
 
 // --- Landing de listado (categoria / marca) ---
@@ -186,12 +211,22 @@ export function listPage({ kind, name, displayLabel, items, base, crumbs, topLin
     "@context": "https://schema.org", "@type": "ItemList",
     itemListElement: items.slice(0, 20).map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${base}/producto/${p.id}`, name: p.name })),
   };
+  const en = lang === "en";
+  const intro = kind === "marca"
+    ? (en
+      ? `Discover ${items.length}+ ${label} replica finds with real QC photos and factory prices. Buy through a trusted shopping agent (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenerates every link with QC-first picks so you compare and checkout with confidence.`
+      : `Descubre ${items.length}+ finds de ${label} con fotos QC reales y precios de fábrica. Compra a través de un agente fiable (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenera cada enlace con selección QC-first para que compares y compres con confianza.`)
+    : (en
+      ? `Browse ${items.length}+ ${label} finds with QC photos and factory prices, ready to buy via a shopping agent. Use our AI QC Checker and shipping calculator to buy smarter on CNFinds.`
+      : `Explora ${items.length}+ finds de ${label} con fotos QC y precios de fábrica, listos para comprar vía agente. Usa nuestro QC Checker con IA y la calculadora de envío para comprar mejor en CNFinds.`);
   const body = `
 <div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(label)}</div>
 <section><h2 class="h2" style="font-size:28px">${esc(label)} <span style="color:var(--muted);font-weight:500;font-size:16px">· ${items.length} ${esc(tr(lang, "products"))}</span></h2>
+<p style="color:var(--muted);max-width:760px;line-height:1.6;margin:-6px 0 16px">${esc(intro)}</p>
 ${topLinks && topLinks.length ? `<div class="chips" style="margin-bottom:18px">${topLinks.map((c) => `<a href="${c.href}${lp}">${esc(c.label)}</a>`).join("")}</div>` : ""}
 <div class="grid">${items.map((r) => cardHtml(r, lp)).join("")}</div></section>`;
-  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld, lang }, body, crumbs || []);
+  const bc = breadcrumbLd(base, [{ name: tr(lang, "home"), href: "/" + lp }, { name: label }]);
+  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld: [jsonld, bc], lang }, body, crumbs || []);
 }
 
 // --- Guías (contenido / SEO) ---

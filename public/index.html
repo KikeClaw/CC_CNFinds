@@ -233,6 +233,17 @@
   .modal .mcat{ color:var(--muted); font-size:13px; display:inline-flex; gap:6px; align-items:center; }
   .modal .qcbadge{ display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb,var(--ok,#16a34a) 14%,transparent); color:var(--ok,#16a34a); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:600; margin:2px 0 6px; line-height:1.3; }
   .agents-title{ font-size:12.5px; color:var(--muted); margin:24px 0 11px; font-weight:500; }
+  /* comparativa de agentes (filas) */
+  .acmp{ display:flex; flex-direction:column; gap:8px; }
+  .acmp .row{ display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--surface2); box-shadow:var(--card-shadow); text-decoration:none; color:inherit; transition:.15s; }
+  .acmp .row:hover{ border-color:var(--ink); transform:translateY(-1px); }
+  .acmp .adot{ width:10px; height:10px; border-radius:9px; flex:none; }
+  .acmp .an{ font-weight:600; font-size:14px; letter-spacing:-.01em; }
+  .acmp .cb{ font-size:11px; font-weight:700; color:#16a34a; background:color-mix(in srgb,#16a34a 15%,transparent); padding:2px 8px; border-radius:7px; flex:none; }
+  .acmp .bn{ font-size:11.5px; color:var(--muted); margin-left:auto; text-align:right; max-width:50%; line-height:1.3; }
+  .acmp .ag{ color:var(--muted); flex:none; margin-left:6px; }
+  .acmp .bn ~ .ag{ margin-left:6px; }
+  .acmp .row:not(:has(.bn)) .ag{ margin-left:auto; }
   .agents{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .agent{ display:flex; align-items:center; gap:11px; padding:14px; border:1px solid var(--line); border-radius:15px; background:var(--surface2); transition:.16s; }
   .agent:hover{ border-color:var(--ink); transform:translateY(-2px); }
@@ -493,7 +504,7 @@ const T={
     fit_title:"Arma tu fit con IA",fit_sub:"Dinos tu presupuesto y montamos un outfit",armar:"Armar",
     brands:"Marcas populares",brands_sub:"Toca para filtrar",catalogo:"Catálogo",
     s_trending:"Destacados",s_new:"Novedades",s_pa:"Precio: menor a mayor",s_pd:"Precio: mayor a menor",s_name:"Nombre A–Z",
-    ver_agentes:"Ver agentes",elige_agente:"Elige tu agente de compra",
+    ver_agentes:"Ver agentes",elige_agente:"Compara y elige tu agente de compra",cashback:"Cashback de afiliado",
     note:"El precio es orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.",
     p_count:"productos",noresults:"Sin resultados para tu búsqueda.",loadmore:"Cargar más",
     f_shop:"Tienda",f_all:"Todos los productos",f_all_guides:"Todas las guías",f_legal:"Legal",f_desc:"Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.",
@@ -537,7 +548,7 @@ const T={
     fit_title:"Build your fit with AI",fit_sub:"Tell us your budget and we'll build an outfit",armar:"Build",
     brands:"Popular brands",brands_sub:"Tap to filter",catalogo:"Catalog",
     s_trending:"Featured",s_new:"New",s_pa:"Price: low to high",s_pd:"Price: high to low",s_name:"Name A–Z",
-    ver_agentes:"View agents",elige_agente:"Choose your shopping agent",
+    ver_agentes:"View agents",elige_agente:"Compare and choose your shopping agent",cashback:"Affiliate cashback",
     note:"Price is indicative (factory). Final cost includes international shipping handled by the agent. CNFinds does not sell or process payments.",
     p_count:"products",noresults:"No results for your search.",loadmore:"Load more",
     f_shop:"Shop",f_all:"All products",f_all_guides:"All guides",f_legal:"Legal",f_desc:"Your platform to discover products, review QC photos and find the best shopping agent at the best price.",
@@ -751,7 +762,11 @@ function applyAndScroll(){ load(true); document.getElementById("catalogo").scrol
 function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=u+'.webp?w=820&h=820&cp=1'; document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
 function openModal(p){
   if(!p) return;
-  const agents=Object.entries(p.links).map(([k,l])=>`<a class="agent" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span><span class="ag">${ic("arrow",16,2)}</span></a>`).join("");
+  const agents=Object.entries(p.links).map(([k,l])=>{
+    const cb=l.cashback?`<span class="cb" title="${t("cashback")}">${esc(l.cashback)}</span>`:"";
+    const bn=l.bonus?`<span class="bn">${esc(LANG==="en"?(l.bonus.en||l.bonus.es):l.bonus.es)}</span>`:"";
+    return `<a class="row" href="${l.url}" target="_blank" rel="nofollow noopener"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span>${cb}${bn}<span class="ag">${ic("arrow",16,2)}</span></a>`;
+  }).join("");
   const imgs=(p.images&&p.images.length)?p.images:(p.image?[p.image]:[]);
   const main=imgs[0];
   const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${u}.webp?w=120&h=120&cp=1" alt="" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";
@@ -765,7 +780,7 @@ function openModal(p){
       <div class="mprice">${eur(p.price_eur)}</div>
       ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)?` · ${esc(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)}`:""}</div>`:""}
       <div class="agents-title">${t("elige_agente")}</div>
-      <div class="agents">${agents}</div>
+      <div class="acmp">${agents}</div>
       <div class="note">${t("note")}</div>
     </div>`;
   $("#overlay").classList.add("open");
