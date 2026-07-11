@@ -128,7 +128,7 @@
   .strip{ display:flex; gap:12px; overflow-x:auto; padding:4px 2px 12px; scrollbar-width:none; scroll-snap-type:x proximity; }
   .strip::-webkit-scrollbar{ display:none; }
   .cat{ flex:0 0 auto; width:140px; padding:20px 16px; border:1px solid var(--line); border-radius:var(--radius);
-    background:var(--surface); transition:.22s cubic-bezier(.2,.7,.3,1); scroll-snap-align:start; }
+    background:var(--surface); box-shadow:var(--card-shadow); transition:.22s cubic-bezier(.2,.7,.3,1); scroll-snap-align:start; }
   .cat:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
   .cat .ci{ width:46px; height:46px; border-radius:14px; display:grid; place-items:center; margin-bottom:14px;
     background:color-mix(in srgb,var(--cc) 15%,transparent); color:var(--cc); }
@@ -160,7 +160,7 @@
 
   /* brands */
   .brands{ display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); }
-  .bcard{ border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface); padding:16px;
+  .bcard{ border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface); box-shadow:var(--card-shadow); padding:16px;
     display:flex; align-items:center; gap:13px; transition:.22s cubic-bezier(.2,.7,.3,1); }
   .bcard:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
   .mono{ width:48px; height:48px; border-radius:13px; background:var(--soft); display:grid; place-items:center;
@@ -243,7 +243,7 @@
 
   /* showcase IA */
   .ia-grid{ display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); }
-  .ia-card{ text-align:left; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); padding:20px; display:flex; flex-direction:column; gap:10px; transition:.22s cubic-bezier(.2,.7,.3,1); cursor:pointer; font:inherit; color:inherit; }
+  .ia-card{ text-align:left; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--card-shadow); padding:20px; display:flex; flex-direction:column; gap:10px; transition:.22s cubic-bezier(.2,.7,.3,1); cursor:pointer; font:inherit; color:inherit; }
   .ia-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
   .ia-card.static{ cursor:default; }
   .ia-card .ii{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb,var(--cc,#8b5cf6) 14%,transparent); color:var(--cc,#8b5cf6); }
