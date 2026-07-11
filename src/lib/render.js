@@ -1,7 +1,7 @@
 // Renderizado server-side de paginas indexables (SEO): ficha de producto,
 // landings de categoria/marca, sitemap. HTML con contenido real + meta + schema.
 import { catLabel } from "./categories.js";
-const AGENT_COLOR = { cnfans: "#ff5a2c", mulebuy: "#2d7ff9", kakobuy: "#18a558", oopbuy: "#8b5cf6" };
+const AGENT_COLOR = { cnfans: "#ff5a2c", mulebuy: "#2d7ff9", kakobuy: "#18a558", oopbuy: "#8b5cf6", hoobuy: "#e11d48", superbuy: "#f59e0b", sugargoo: "#ec4899", acbuy: "#0ea5e9", cssbuy: "#14b8a6", lovegobuy: "#f43f5e", joyagoo: "#a855f7", allchinabuy: "#eab308", orientdig: "#22c55e", hipobuy: "#6366f1" };
 
 export function esc(s) {
   return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));

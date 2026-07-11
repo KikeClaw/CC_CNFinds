@@ -24,6 +24,13 @@ export const AFFILIATE_CODES = {
   hoobuy:  process.env.HOOBUY_REF  || "YOUR_HOOBUY_CODE",
   superbuy: process.env.SUPERBUY_REF || "YOUR_SUPERBUY_CODE",
   sugargoo: process.env.SUGARGOO_REF || "YOUR_SUGARGOO_CODE",
+  acbuy:    process.env.ACBUY_REF    || "YOUR_ACBUY_CODE",
+  cssbuy:   process.env.CSSBUY_REF   || "YOUR_CSSBUY_CODE",
+  lovegobuy: process.env.LOVEGOBUY_REF || "YOUR_LOVEGOBUY_CODE",
+  joyagoo:  process.env.JOYAGOO_REF  || "YOUR_JOYAGOO_CODE",
+  allchinabuy: process.env.ALLCHINABUY_REF || "YOUR_ALLCHINABUY_CODE",
+  orientdig: process.env.ORIENTDIG_REF || "YOUR_ORIENTDIG_CODE",
+  hipobuy:  process.env.HIPOBUY_REF  || "YOUR_HIPOBUY_CODE",
 };
 
 export function isPlaceholder(code) {
@@ -56,6 +63,10 @@ const SHOP_TYPE = {
   oopbuy: { taobao: "taobao", weidian: "weidian", "1688": "1688" },
   // Hoobuy usa número de plataforma en la ruta (VERIFICAR)
   hoobuy: { taobao: "1", weidian: "2", "1688": "3" },
+  // ACBuy usa códigos cortos de fuente (VERIFICAR)
+  acbuy: { taobao: "TB", weidian: "WD", "1688": "AL" },
+  // CSSBuy incrusta el tipo en el slug del item (VERIFICAR)
+  cssbuy: { taobao: "", weidian: "micro-", "1688": "1688-" },
 };
 
 // --- Generadores de link por agente -----------------------------------------
@@ -116,6 +127,68 @@ export const AGENTS = [
     buildUrl: (platform, itemId, code) => {
       const orig = encodeURIComponent(originalUrl(platform, itemId));
       return `https://www.sugargoo.com/#/home/productDetail?productLink=${orig}&memberId=${code}`;
+    },
+  },
+  {
+    id: "acbuy",
+    name: "ACBuy",
+    // VERIFICAR al activar: https://www.acbuy.com/product?id=XXXX&source=WD&u=CODE (source: TB/WD/AL)
+    buildUrl: (platform, itemId, code) =>
+      `https://www.acbuy.com/product?id=${itemId}&source=${SHOP_TYPE.acbuy[platform] || "TB"}&u=${code}`,
+  },
+  {
+    id: "cssbuy",
+    name: "CSSBuy",
+    // VERIFICAR al activar: https://www.cssbuy.com/item-micro-XXXX.html?promotionCode=CODE
+    // (taobao: item-XXXX / weidian: item-micro-XXXX / 1688: item-1688-XXXX)
+    buildUrl: (platform, itemId, code) => {
+      const seg = SHOP_TYPE.cssbuy[platform] ?? "";
+      return `https://www.cssbuy.com/item-${seg}${itemId}.html?promotionCode=${code}`;
+    },
+  },
+  {
+    id: "lovegobuy",
+    name: "LoveGoBuy",
+    // VERIFICAR al activar: https://www.lovegobuy.com/product?id=XXXX&shop_type=weidian&invite_code=CODE
+    buildUrl: (platform, itemId, code) => {
+      const t = SHOP_TYPE.family[platform] || "taobao";
+      return `https://www.lovegobuy.com/product?id=${itemId}&shop_type=${t}&invite_code=${code}`;
+    },
+  },
+  {
+    id: "joyagoo",
+    name: "JoyaGoo",
+    // VERIFICAR al activar: https://www.joyagoo.com/product?id=XXXX&shop_type=weidian&ref=CODE
+    buildUrl: (platform, itemId, code) => {
+      const t = SHOP_TYPE.family[platform] || "taobao";
+      return `https://www.joyagoo.com/product?id=${itemId}&shop_type=${t}&ref=${code}`;
+    },
+  },
+  {
+    id: "allchinabuy",
+    name: "AllChinaBuy",
+    // VERIFICAR al activar (familia Superbuy): https://www.allchinabuy.com/en/page/buy/?url=<URL_ENCODED>&partnercode=CODE
+    buildUrl: (platform, itemId, code) => {
+      const orig = encodeURIComponent(originalUrl(platform, itemId));
+      return `https://www.allchinabuy.com/en/page/buy/?url=${orig}&partnercode=${code}`;
+    },
+  },
+  {
+    id: "orientdig",
+    name: "OrientDig",
+    // VERIFICAR al activar: https://orientdig.com/product?id=XXXX&shop_type=weidian&ref=CODE
+    buildUrl: (platform, itemId, code) => {
+      const t = SHOP_TYPE.family[platform] || "taobao";
+      return `https://orientdig.com/product?id=${itemId}&shop_type=${t}&ref=${code}`;
+    },
+  },
+  {
+    id: "hipobuy",
+    name: "Hipobuy",
+    // VERIFICAR al activar: https://hipobuy.com/product?id=XXXX&shop_type=weidian&ref=CODE
+    buildUrl: (platform, itemId, code) => {
+      const t = SHOP_TYPE.family[platform] || "taobao";
+      return `https://hipobuy.com/product?id=${itemId}&shop_type=${t}&ref=${code}`;
     },
   },
 ];
