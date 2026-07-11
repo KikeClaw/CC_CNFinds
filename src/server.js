@@ -663,20 +663,27 @@ function startEnrichTagJob(items, opts = {}) {
   jobs.set(id, job);
   if (jobs.size > 40) jobs.delete(jobs.keys().next().value); // GC básico
   (async () => {
-    for (const it of items) { // Fase 1: fotos (Weidian)
-      if (it.platform !== "weidian") { job.done++; continue; }
-      try {
-        const res = await enrichProduct(it.platform, it.item_id, {});
-        const now = new Date().toISOString();
-        if (res.ok && res.images.length) {
-          db.prepare("UPDATE products SET image_url=?, images=?, last_checked=? WHERE id=?")
-            .run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, it.id);
-          job.withImage++;
-        } else if (res.ok) { db.prepare("UPDATE products SET last_checked=? WHERE id=?").run(now, it.id); job.dead++; }
-        else job.failed++;
-      } catch { job.failed++; }
-      job.done++;
-      await sleepMs(1200);
+    // Fase 1: fotos (Weidian). En bloques de 3 en paralelo (más rápido sin
+    // saturar). Los que fallan por throttling (res.ok=false) NO se marcan, así
+    // el re-chequeo periódico los reintenta luego.
+    const weid = items.filter((it) => it.platform === "weidian");
+    job.done += items.length - weid.length;
+    const CONC = 3;
+    for (let i = 0; i < weid.length; i += CONC) {
+      await Promise.all(weid.slice(i, i + CONC).map(async (it) => {
+        try {
+          const res = await enrichProduct(it.platform, it.item_id, {});
+          const now = new Date().toISOString();
+          if (res.ok && res.images.length) {
+            db.prepare("UPDATE products SET image_url=?, images=?, last_checked=? WHERE id=?")
+              .run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, it.id);
+            job.withImage++;
+          } else if (res.ok) { db.prepare("UPDATE products SET last_checked=? WHERE id=?").run(now, it.id); job.dead++; }
+          else job.failed++;
+        } catch { job.failed++; }
+        job.done++;
+      }));
+      await sleepMs(1000);
     }
     if (opts.tag !== false && hasKey()) { // Fase 2: etiquetado IA
       job.phase = "etiquetado"; job.done = 0;
@@ -936,6 +943,25 @@ async function autoIngestSources({ force = false } = {}) {
   autoIngestRunning = false;
 }
 
+// Re-chequeo periódico de fotos: reintenta en tandas los productos que siguen
+// sin foto (throttling de Weidian) hasta completarlos. Sin esto, los fallidos
+// solo se reintentaban al reiniciar el servidor y se quedaban clavados.
+let photoJobRunning = false;
+function resumePhotos() {
+  if (photoJobRunning) return;
+  const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();
+  const items = db.prepare(
+    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND (last_checked IS NULL OR last_checked < ?) ORDER BY last_checked IS NOT NULL, id LIMIT 300"
+  ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
+  if (!items.length) return;
+  photoJobRunning = true;
+  const jobId = startEnrichTagJob(items, { tag: false });
+  const poll = setInterval(() => {
+    const j = jobs.get(jobId);
+    if (!j || j.status !== "running") { photoJobRunning = false; clearInterval(poll); }
+  }, 5000);
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -947,13 +973,10 @@ async function bootstrap() {
     }
     normalizeCategories();
     inferGenders();
-    // Continúa fotos pendientes (self-healing tras reinicios); salta los caídos
-    // revisados hace menos de 7 días para no re-machacarlos.
-    const cutoff = new Date(Date.now() - 7 * 864e5).toISOString();
-    const items = db.prepare(
-      "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND (last_checked IS NULL OR last_checked < ?)"
-    ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
-    if (items.length) { startEnrichTagJob(items, { tag: false }); console.log(`Enriqueciendo ${items.length} fotos pendientes en segundo plano...`); }
+    // Fotos pendientes: arranca ya y sigue reintentando cada pocos minutos
+    // (recupera los que falla Weidian por throttling, sin depender de reinicios).
+    resumePhotos();
+    setInterval(resumePhotos, 4 * 60e3).unref?.();
     // Importador automático (si toca): crece el catálogo solo, sin admin.
     if (AUTO_INGEST) {
       autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));
