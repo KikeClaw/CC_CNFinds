@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("cnf_theme")||"light";}catch(e){document.documentElement.dataset.theme="light";}</script>
 <title>CNFinds — Catálogo W2C con IA: busca, encuentra y compra con confianza</title>
 <meta name="description" content="CNFinds: catálogo W2C con fotos QC y precios de fábrica. Búsqueda por IA en lenguaje natural, búsqueda visual (sube una foto) y armador de outfits. Compra vía CNFans, Kakobuy, Mulebuy y OOPBuy." />
 <meta property="og:type" content="website" />
@@ -23,10 +24,10 @@
 <style>
   :root{
     --bg:#ffffff; --soft:#f4f4f6; --surface:#ffffff; --surface2:#fafafb;
-    --ink:#0a0a0b; --ink2:#3a3a3f; --muted:#77777f; --line:rgba(10,10,15,.08); --line2:rgba(10,10,15,.05);
+    --ink:#0a0a0b; --ink2:#3a3a3f; --muted:#77777f; --line:rgba(10,10,15,.12); --line2:rgba(10,10,15,.08);
     --accent:#0a0a0b; --accent-ink:#fff; --hot:#ff2d55; --brandc:#ff5a2c;
     --brand:#ff4d2e;
-    --shadow:0 8px 34px rgba(10,10,20,.07); --shadow-lg:0 30px 80px rgba(10,10,20,.18);
+    --shadow:0 8px 34px rgba(10,10,20,.07); --shadow-lg:0 30px 80px rgba(10,10,20,.18); --card-shadow:0 1px 2px rgba(10,10,20,.05), 0 5px 16px rgba(10,10,20,.07);
     --radius:22px; --radius-sm:15px;
     --c1:#ff6a2b40; --c2:#2d7ff936; --c3:#ff2d8f3a;
     --font-d:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;
@@ -41,8 +42,8 @@
       --c1:#ff6a2b33; --c2:#2d7ff92e; --c3:#ff2d8f30;
     }
   }
-  :root[data-theme="light"]{ --bg:#fff; --soft:#f4f4f6; --surface:#fff; --surface2:#fafafb; --ink:#0a0a0b; --ink2:#3a3a3f; --muted:#77777f; --line:rgba(10,10,15,.08); --line2:rgba(10,10,15,.05); --accent:#0a0a0b; --accent-ink:#fff; --hot:#ff2d55; --shadow:0 8px 34px rgba(10,10,20,.07); --shadow-lg:0 30px 80px rgba(10,10,20,.18); --c1:#ff6a2b40; --c2:#2d7ff936; --c3:#ff2d8f3a; }
-  :root[data-theme="dark"]{ --bg:#08080a; --soft:#111114; --surface:#141417; --surface2:#1a1a1e; --ink:#f6f6f8; --ink2:#c7c7cf; --muted:#8b8b95; --line:rgba(255,255,255,.11); --line2:rgba(255,255,255,.06); --accent:#f6f6f8; --accent-ink:#08080a; --hot:#ff456b; --shadow:0 8px 34px rgba(0,0,0,.55); --shadow-lg:0 30px 80px rgba(0,0,0,.72); --c1:#ff6a2b33; --c2:#2d7ff92e; --c3:#ff2d8f30; }
+  :root[data-theme="light"]{ --bg:#fff; --soft:#f4f4f6; --surface:#fff; --surface2:#fafafb; --ink:#0a0a0b; --ink2:#3a3a3f; --muted:#77777f; --line:rgba(10,10,15,.12); --line2:rgba(10,10,15,.08); --accent:#0a0a0b; --accent-ink:#fff; --hot:#ff2d55; --shadow:0 8px 34px rgba(10,10,20,.07); --shadow-lg:0 30px 80px rgba(10,10,20,.18); --card-shadow:0 1px 2px rgba(10,10,20,.05), 0 5px 16px rgba(10,10,20,.07); --c1:#ff6a2b40; --c2:#2d7ff936; --c3:#ff2d8f3a; }
+  :root[data-theme="dark"]{ --bg:#08080a; --soft:#111114; --surface:#17171b; --surface2:#1e1e23; --ink:#f6f6f8; --ink2:#c7c7cf; --muted:#8b8b95; --line:rgba(255,255,255,.15); --line2:rgba(255,255,255,.10); --accent:#f6f6f8; --accent-ink:#08080a; --hot:#ff456b; --shadow:0 8px 34px rgba(0,0,0,.55); --shadow-lg:0 30px 80px rgba(0,0,0,.72); --card-shadow:0 1px 2px rgba(0,0,0,.5); --c1:#ff6a2b33; --c2:#2d7ff92e; --c3:#ff2d8f30; }
 
   *{ box-sizing:border-box; }
   html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
@@ -136,8 +137,8 @@
 
   /* product grid */
   .grid{ display:grid; gap:20px; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); }
-  .card{ background:var(--surface); border:1px solid var(--line2); border-radius:var(--radius); overflow:hidden;
-    transition:.24s cubic-bezier(.2,.7,.3,1); cursor:pointer; display:flex; flex-direction:column; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+    box-shadow:var(--card-shadow); transition:.24s cubic-bezier(.2,.7,.3,1); cursor:pointer; display:flex; flex-direction:column; }
   .card:hover{ transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:transparent; }
   .ph{ position:relative; aspect-ratio:1/1; background:var(--soft); overflow:hidden; }
   .ph img{ width:100%; height:100%; object-fit:cover; transition:.5s cubic-bezier(.2,.7,.3,1); }
@@ -650,7 +651,7 @@ document.querySelectorAll(".tab").forEach((tb,i)=>tb.querySelector(".ti").innerH
 /* theme + fav + promo */
 function themeNow(){ return document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"); }
 function paintTheme(){ $("#theme").innerHTML=ic(themeNow()==="dark"?"sun":"moon",18,1.8); }
-$("#theme").onclick=()=>{ document.documentElement.setAttribute("data-theme", themeNow()==="dark"?"light":"dark"); paintTheme(); };
+$("#theme").onclick=()=>{ const nx=themeNow()==="dark"?"light":"dark"; document.documentElement.setAttribute("data-theme", nx); try{localStorage.setItem("cnf_theme",nx);}catch(e){} paintTheme(); };
 paintTheme();
 $("#fav").innerHTML=ic("heart",18,1.8);
 $("#promoX").onclick=()=>$("#promo").style.display="none";

@@ -39,9 +39,9 @@ const L = {
 const tr = (lang, k) => (L[lang] && L[lang][k] != null ? L[lang][k] : L.es[k]);
 
 const CSS = `
-:root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.09);--brand:#ff4d2e;--hot:#ff2d55;--radius:20px;
+:root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.13);--brand:#ff4d2e;--hot:#ff2d55;--radius:20px;--card-shadow:0 1px 2px rgba(10,10,20,.05),0 5px 16px rgba(10,10,20,.07);
 --fd:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--ft:"Geist",-apple-system,system-ui,sans-serif}
-@media(prefers-color-scheme:dark){:root{--bg:#08080a;--soft:#141417;--surface:#161618;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.12)}}
+:root[data-theme="dark"]{--bg:#08080a;--soft:#141417;--surface:#17171b;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.15);--card-shadow:0 1px 2px rgba(0,0,0,.5)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}h1,h2,h3,.brand{font-family:var(--fd)}
 .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
@@ -70,7 +70,7 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;background:colo
 .note{color:var(--muted);font-size:12px;margin-top:16px;line-height:1.5}
 section{padding:34px 0}.h2{font-size:22px;letter-spacing:-.03em;margin:0 0 18px;font-weight:700}
 .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:.2s;display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:.2s;display:block;box-shadow:var(--card-shadow)}
 .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.12)}
 .card .ph{aspect-ratio:1/1;background:var(--soft)}.card .ph img{width:100%;height:100%;object-fit:cover}
 .card .b{padding:11px 12px 14px}.card .cb{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
