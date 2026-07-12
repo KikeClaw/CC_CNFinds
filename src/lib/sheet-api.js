@@ -24,6 +24,18 @@ function cellHref(c) {
 function cleanName(s) {
   return String(s || "").replace(/\s+/g, " ").trim().slice(0, 140);
 }
+const IMG_EXT = /\.(?:jpg|jpeg|png|webp|gif)(?:[?#]|$)/i;
+// Extrae la URL de imagen de una celda: fórmula =IMAGE("url"), hipervínculo a
+// imagen, o la propia celda si es una URL de imagen.
+function imgFromCell(c) {
+  if (!c) return null;
+  const f = c.userEnteredValue && c.userEnteredValue.formulaValue;
+  if (f) { const m = /IMAGE\(\s*"([^"]+)"/i.exec(f); if (m) return m[1]; }
+  if (c.hyperlink && IMG_EXT.test(c.hyperlink)) return c.hyperlink;
+  const fv = c.formattedValue;
+  if (fv && /^https?:\/\//.test(fv.trim()) && IMG_EXT.test(fv.trim())) return fv.trim();
+  return null;
+}
 
 export async function fetchSheetLinks(sheetId, apiKey, { timeoutMs = 40000 } = {}) {
   const fields = "sheets(properties(title),data(rowData(values(hyperlink,formattedValue,userEnteredValue))))";
@@ -67,7 +79,12 @@ export async function fetchSheetLinks(sheetId, apiKey, { timeoutMs = 40000 } = {
             const fv = cells[j] && cells[j].formattedValue;
             if (fv && fv.trim().length > 3 && !isNoise(fv) && !PRICE_RE.test(fv)) { name = cleanName(fv); break; }
           }
-          out.push({ platform: parsed.platform, itemId: parsed.itemId, name, price });
+          // imagen: URL de la columna IMAGE del bloque (evita scrapear Weidian)
+          let image = null;
+          for (let j = Math.max(0, i - 3); j <= Math.min(cells.length - 1, i + 3); j++) {
+            const u = imgFromCell(cells[j]); if (u) { image = u; break; }
+          }
+          out.push({ platform: parsed.platform, itemId: parsed.itemId, name, price, image });
         }
       }
     }

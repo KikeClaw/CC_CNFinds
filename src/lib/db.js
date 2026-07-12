@@ -86,7 +86,7 @@ export function upsertProduct(db, p, source, now) {
       brand      = COALESCE(excluded.brand, products.brand),
       category   = COALESCE(excluded.category, products.category),
       price_eur  = COALESCE(excluded.price_eur, products.price_eur),
-      image_url  = COALESCE(excluded.image_url, products.image_url),
+      image_url  = COALESCE(products.image_url, excluded.image_url),
       hot        = MAX(products.hot, excluded.hot),
       status     = 'active',
       last_seen  = excluded.last_seen
