@@ -22,6 +22,7 @@ import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
 import { COMMUNITY_SHEETS, sheetUrl } from "../config/sources.js";
 import { fetchSheetLinks } from "./lib/sheet-api.js";
+import { fetchSheetHtml } from "./lib/sheet-html.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -641,6 +642,19 @@ async function gatherCandidates(mode, content) {
       try { all.push(...await fetchSheetLinks(id, process.env.GOOGLE_API_KEY)); }
       catch (e) { console.error(`Sheets API (${id}): ${e.message}`); }
     }
+    // 3) FOTOS del grid renderizado (htmlview). Las hojas cnnewfinds no exponen
+    // las imágenes por API, pero SÍ salen en el grid HTML público. Mapeamos
+    // itemId -> imagen y rellenamos las que faltan. Así evitamos scrapear Weidian.
+    try {
+      const imgMap = new Map();
+      for (const t of tabs) {
+        let rows; try { rows = await fetchSheetHtml(id, t.gid); } catch { continue; }
+        for (const r of rows) if (r.image) imgMap.set(`${r.platform}:${r.itemId}`, r.image);
+      }
+      if (imgMap.size) for (const c of all) {
+        if (!c.image) { const u = imgMap.get(`${c.platform}:${c.itemId}`); if (u) c.image = u; }
+      }
+    } catch (e) { console.error(`htmlview (${id}): ${e.message}`); }
     return all;
   }
   throw new Error("modo desconocido");
