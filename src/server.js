@@ -54,7 +54,11 @@ try {
 // Miniatura optimizada servida por el CDN de Weidian (webp + resize al vuelo).
 function thumb(url, w = 500, h = 500) {
   if (!url) return null;
-  return `${url}.webp?w=${w}&h=${h}&cp=1`;
+  // geilicdn/Weidian aceptan el transform .webp?w=..&h=..&cp=1; Google
+  // (sheets-images-rt) usa el sufijo =wNNN; otros hosts se sirven tal cual.
+  if (/geilicdn|weidian/.test(url)) return `${url}.webp?w=${w}&h=${h}&cp=1`;
+  if (/sheets-images-rt/.test(url)) return url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
+  return url;
 }
 
 // Limpieza ligera del nombre crudo (sin IA): colapsa espacios y quita ruido tipo

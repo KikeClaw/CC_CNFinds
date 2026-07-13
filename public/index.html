@@ -847,7 +847,9 @@ function renderFilters(){
 function applyAndScroll(){ load(true); document.getElementById("catalogo").scrollIntoView({behavior:"smooth"}); }
 
 /* modal */
-function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=u+'.webp?w=820&h=820&cp=1'; document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
+/* geilicdn/Weidian: transform .webp?w=..; Google (sheets-images-rt): sufijo =wNNN; resto: tal cual */
+function imgv(u,w){ if(!u) return ''; if(/geilicdn|weidian/.test(u)) return u+'.webp?w='+w+'&h='+w+'&cp=1'; if(/sheets-images-rt/.test(u)) return u.replace(/=w\d+(-h\d+)?$/,'=w'+w); return u; }
+function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=imgv(u,820); document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
 /* alerta de bajada de precio (captura) */
 function priceAlertHtml(p){
   return `<div class="paband">
@@ -878,9 +880,9 @@ function openModal(p){
   }).join("");
   const imgs=(p.images&&p.images.length)?p.images:(p.image?[p.image]:[]);
   const main=imgs[0];
-  const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${u}.webp?w=120&h=120&cp=1" alt="" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";
+  const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${imgv(u,120)}" alt="" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";
   $("#modal").innerHTML=`
-    <div class="mimg"><div class="mmain">${main?`<img id="mMain" src="${main}.webp?w=820&h=820&cp=1" alt="${esc(pname(p))}">`:""}</div>${thumbs}</div>
+    <div class="mimg"><div class="mmain">${main?`<img id="mMain" src="${imgv(main,820)}" alt="${esc(pname(p))}">`:""}</div>${thumbs}</div>
     <div class="mbody">
       <button class="close" onclick="closeModal()">${ic("x",17,2)}</button>
       ${p.brand?`<div class="mbrand">${esc(p.brand)}</div>`:""}
