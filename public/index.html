@@ -427,6 +427,11 @@
     <div class="strip" id="strip"></div>
   </section>
 
+  <section id="recent" style="display:none">
+    <div class="head"><h2><span class="sq"></span><span data-i18n="recent_title">Vistos recientemente</span></h2><a class="link" href="/productos"><span data-i18n="vertodo">Ver todo</span></a></div>
+    <div class="grid" id="recentGrid"></div>
+  </section>
+
   <section id="tendencias">
     <div class="head"><h2><span class="sq" id="hflame"></span><span data-i18n="trend">Tendencias ahora</span></h2><span class="muted" style="font-size:13px" data-i18n="trend_sub">Lo más buscado esta semana</span></div>
     <div class="grid" id="trending"></div>
@@ -486,6 +491,7 @@
       <div class="chips" id="activeFilters"></div>
       <select class="sort" id="sort">
         <option value="trending" data-i18n="s_trending">Destacados</option>
+        <option value="popular" data-i18n="s_popular">Más populares</option>
         <option value="newest" data-i18n="s_new">Novedades</option>
         <option value="price_asc" data-i18n="s_pa">Precio: menor a mayor</option>
         <option value="price_desc" data-i18n="s_pd">Precio: mayor a menor</option>
@@ -546,6 +552,11 @@
 .expager button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
 .expager button:disabled{opacity:.4;cursor:default}
 .exfilt-toggle{display:none}
+.excrumbs{display:flex;gap:7px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:12px;align-items:center}
+.excrumbs a{color:var(--muted);text-decoration:none} .excrumbs a:hover{color:var(--brandc)}
+.excrumbs .sep{opacity:.45}
+.excopy{padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;cursor:pointer;font-size:13px;font-weight:600}
+.excopy:hover{border-color:var(--brand);color:var(--brandc)}
 @media(max-width:860px){
   .exlayout{grid-template-columns:1fr}
   .exfacets{position:fixed;inset:0;z-index:70;background:var(--card);max-height:none;overflow:auto;padding:22px;gap:16px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.25)}
@@ -555,6 +566,7 @@
 </style>
 
 <main id="exploreMain" class="wrap" style="display:none">
+  <nav class="excrumbs" id="exCrumbs" aria-label="breadcrumb"></nav>
   <div class="exhead">
     <div>
       <h1 data-i18n="ex_title">Explorar catálogo</h1>
@@ -562,8 +574,10 @@
     </div>
     <div class="exhead-r">
       <button class="exfilt-toggle" id="exFiltToggle" data-i18n="ex_filters">Filtros</button>
+      <button class="excopy" id="exCopy" data-i18n="ex_copy" title="Copiar enlace">Copiar enlace</button>
       <select class="sort" id="exSort" aria-label="Ordenar">
         <option value="trending" data-i18n="s_trending">Destacados</option>
+        <option value="popular" data-i18n="s_popular">Más populares</option>
         <option value="newest" data-i18n="s_new">Novedades</option>
         <option value="price_asc" data-i18n="s_pa">Precio: menor a mayor</option>
         <option value="price_desc" data-i18n="s_pd">Precio: mayor a menor</option>
@@ -627,7 +641,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
+    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -677,7 +691,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
+    nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -894,6 +908,18 @@ async function loadTrending(){
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#trending").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#trending"));
 }
+/* Vistos recientemente (localStorage): retención para quien vuelve. */
+async function loadRecent(){
+  let ids=[]; try{ ids=JSON.parse(localStorage.getItem("cnf_recent")||"[]"); }catch{}
+  ids=ids.filter(Boolean).slice(0,12); if(!ids.length) return;
+  let d; try{ d=await (await fetch("/api/products?ids="+ids.join(",")+"&limit=12")).json(); }catch{ return; }
+  if(!d.items||!d.items.length) return;
+  const order=new Map(ids.map((id,i)=>[id,i]));
+  d.items.sort((a,b)=>(order.get(a.id)??99)-(order.get(b.id)??99));
+  d.items.forEach(it=>CACHE[it.id]=it);
+  $("#recentGrid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#recentGrid"));
+  $("#recent").style.display="block";
+}
 
 /* card */
 function cardHtml(p){
@@ -964,8 +990,10 @@ function submitPriceAlert(e,pid){
     .catch(()=>{ msg.style.color="var(--brand)"; msg.textContent=t("news_err"); });
   return false;
 }
+function pushRecent(id){ try{ let r=JSON.parse(localStorage.getItem("cnf_recent")||"[]"); r=[id,...r.filter(x=>x!==id)].slice(0,12); localStorage.setItem("cnf_recent",JSON.stringify(r)); }catch{} }
 function openModal(p){
   if(!p) return;
+  pushRecent(p.id);
   const agents=Object.entries(p.links).map(([k,l])=>{
     const cb=l.cashback?`<span class="cb" title="${t("cashback")}">${esc(l.cashback)}</span>`:"";
     const bn=l.bonus?`<span class="bn">${esc(LANG==="en"?(l.bonus.en||l.bonus.es):l.bonus.es)}</span>`:"";
@@ -1305,7 +1333,19 @@ async function exFetch(){
   $("#exEmpty").style.display=prod.total?"none":"block";
   $("#exCount").textContent=`${EX.total.toLocaleString(LANG==="en"?"en":"es")} ${t("p_count")}`;
   EX.brandsAll=fac.brands||[];
-  exRenderCats(fac.categories||[]); exRenderBrands(); exRenderChips(); exRenderPager();
+  exRenderCats(fac.categories||[]); exRenderBrands(); exRenderChips(); exRenderPager(); exRenderCrumbs(); exSetTitle();
+}
+function exRenderCrumbs(){
+  const it=[`<a href="/">${LANG==="en"?"Home":"Inicio"}</a>`,`<span class="sep">›</span>`,`<a href="/productos">${t("nav_catalogo")}</a>`];
+  EX.cats.forEach(c=>it.push(`<span class="sep">›</span> <span>${esc(catDisp(c)||c)}</span>`));
+  EX.brands.forEach(b=>it.push(`<span class="sep">›</span> <span>${esc(b)}</span>`));
+  const el=$("#exCrumbs"); if(el) el.innerHTML=it.join(" ");
+}
+function exSetTitle(){
+  const bits=[]; if(EX.q)bits.push(`“${EX.q}”`); EX.brands.forEach(b=>bits.push(b)); EX.cats.forEach(c=>bits.push(catDisp(c)||c));
+  const human=bits.join(" · ");
+  const h1=document.querySelector("#exploreMain h1"); if(h1) h1.textContent=human||t("ex_title");
+  document.title=(human?human+" — ":"")+(LANG==="en"?"Catalog — CNFinds":"Catálogo — CNFinds");
 }
 function exRenderCats(cats){
   cats.forEach(c=>{ CATMAP[c.category]={es:c.label_es||c.category,en:c.label_en||c.category}; });
@@ -1367,6 +1407,7 @@ function exInit(){
   $("#exClear").onclick=()=>{ EX.q="";EX.cats.clear();EX.brands.clear();EX.gender="";EX.pmin="";EX.pmax="";EX.sort="trending";EX.page=0; EX.brandFilter="";$("#exBrandSearch").value=""; exApplyLangToInputs(); exFetch(); };
   $("#exFiltToggle").onclick=()=>{ $("#exFacets").classList.add("open"); $("#exFacetsClose").style.display="block"; };
   $("#exFacetsClose").onclick=()=>{ $("#exFacets").classList.remove("open"); };
+  $("#exCopy").onclick=async()=>{ const b=$("#exCopy"),o=b.textContent; try{ await navigator.clipboard.writeText(location.href); b.textContent=t("ex_copied"); }catch{ b.textContent=t("ex_copied"); prompt(t("ex_copy"),location.href); } setTimeout(()=>{b.textContent=o;},1500); };
   exFetch();
 }
 function enterExplore(){
@@ -1379,7 +1420,7 @@ function enterExplore(){
 applyLang();
 renderSocial();
 const EXPLORING=location.pathname==="/productos";
-if(!EXPLORING){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); }
+if(!EXPLORING){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
 if(EXPLORING){ enterExplore(); }
 else { const sp=new URLSearchParams(location.search);
   const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }

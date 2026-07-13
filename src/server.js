@@ -6,6 +6,7 @@
 //
 //   npm run serve
 import { createServer } from "node:http";
+import { timingSafeEqual, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -16,7 +17,7 @@ import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
-import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, helpPage } from "./lib/render.js";
+import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, helpPage, esc } from "./lib/render.js";
 import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
@@ -90,12 +91,36 @@ function json(res, code, data) {
   res.end(JSON.stringify(data));
 }
 
+// --- Rate limiting sencillo en memoria (ventana fija por IP + clave) ---
+// Protege sobre todo los endpoints que cuestan dinero (IA) de spam/abuso.
+const rlBuckets = new Map();
+function clientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  return (xff ? String(xff).split(",")[0].trim() : "") || req.socket?.remoteAddress || "?";
+}
+function rateLimit(req, res, key, max, windowMs) {
+  const now = Date.now();
+  const id = key + "|" + clientIp(req);
+  let b = rlBuckets.get(id);
+  if (!b || now > b.reset) { b = { count: 0, reset: now + windowMs }; rlBuckets.set(id, b); }
+  b.count++;
+  if (rlBuckets.size > 5000) for (const [k, v] of rlBuckets) if (now > v.reset) rlBuckets.delete(k);
+  if (b.count > max) {
+    res.writeHead(429, { "Content-Type": "application/json; charset=utf-8", "Retry-After": String(Math.ceil((b.reset - now) / 1000)) });
+    res.end(JSON.stringify({ ok: false, error: "Demasiadas peticiones, prueba en un momento." }));
+    return false;
+  }
+  return true;
+}
+
 const SORTS = {
   trending: "(image_url IS NOT NULL) DESC, hot DESC, price_eur DESC",
   newest: "(image_url IS NOT NULL) DESC, id DESC",
   price_asc: "(image_url IS NOT NULL) DESC, price_eur ASC",
   price_desc: "(image_url IS NOT NULL) DESC, price_eur DESC",
   name: "(image_url IS NOT NULL) DESC, name ASC",
+  // Más populares: por nº de clics en links de agente (intención de compra real).
+  popular: "(image_url IS NOT NULL) DESC, (SELECT COUNT(*) FROM clicks WHERE clicks.product_id = products.id) DESC, hot DESC",
 };
 
 function handleCategories(res) {
@@ -555,6 +580,7 @@ function readBody(req, maxBytes = 8_000_000) {
 }
 
 // Busqueda visual: imagen (data URL o URL) -> atributos -> productos equivalentes.
+const visCache = new Map(); // hash(imagen) -> detección (evita repetir la visión IA)
 async function handleVisualSearch(req, res) {
   if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
   let body;
@@ -564,7 +590,13 @@ async function handleVisualSearch(req, res) {
   try {
     const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
     const brands = db.prepare("SELECT brand FROM products WHERE brand IS NOT NULL GROUP BY brand ORDER BY COUNT(*) DESC LIMIT 25").all().map((r) => r.brand);
-    const det = await imageToQuery(image, { categories: cats, brands });
+    const hash = createHash("sha1").update(String(image)).digest("hex");
+    let det = visCache.get(hash);
+    if (!det) {
+      det = await imageToQuery(image, { categories: cats, brands });
+      visCache.set(hash, det);
+      if (visCache.size > 300) visCache.delete(visCache.keys().next().value);
+    }
     // Si hay marca o categoria, esos son los "equivalentes"; las keywords
     // descriptivas no casan con los nombres terse del catalogo (todavia).
     const q = det.brand || det.category ? "" : (det.keywords || "");
@@ -617,6 +649,61 @@ function reqLang(req) {
   const c = String(req.headers.cookie || "").match(/(?:^|;\s*)cnf_lang=(en|es)/);
   if (c) return c[1];
   return String(req.headers["accept-language"] || "").toLowerCase().startsWith("en") ? "en" : "es";
+}
+
+// SSR de una tarjeta (para que los crawlers indexen /productos sin ejecutar JS).
+function ssrCard(r, lang) {
+  const name = esc((lang === "en" ? (r.clean_title_en || r.clean_title || r.name) : (r.clean_title || r.name)) || "");
+  const img = thumb(r.image_url);
+  const price = r.price_eur != null ? "€" + Number(r.price_eur).toFixed(2) : "—";
+  return `<a class="card" href="/producto/${r.id}"><div class="ph">${img ? `<img loading="lazy" src="${esc(img)}" alt="${name}">` : ""}</div>`
+    + `<div class="cbody"><div class="cbrand">${r.brand ? esc(r.brand) : "&nbsp;"}</div><div class="cname">${name}</div>`
+    + `<div class="cfoot"><span class="price">${price}</span></div></div></a>`;
+}
+
+// Inyecta en index.html el SEO específico de /productos según los filtros de la URL:
+// título/descripción/canónica/OG dinámicos, H1, grid pre-renderizado y migas
+// (BreadcrumbList). La SPA sustituye el grid al cargar; los crawlers ven contenido.
+function injectExploreSeo(page, u, base, lang) {
+  const params = u.searchParams;
+  const f = parseFilters(params);
+  const sort = SORTS[params.get("sort")] || SORTS.trending;
+  const { where, args } = buildWhere(f);
+  const wsql = where.length ? "WHERE " + where.join(" AND ") : "";
+  let total = 0, rows = [];
+  try {
+    total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
+    rows = db.prepare(`SELECT id, name, clean_title, clean_title_en, brand, price_eur, image_url FROM products ${wsql} ORDER BY ${sort} LIMIT 48`).all(...args);
+  } catch {}
+  const catLabels = f.cats.map((c) => catLabel(c, lang));
+  const bits = [];
+  if (f.q) bits.push(`“${f.q}”`);
+  bits.push(...f.brands, ...catLabels);
+  const brandCat = bits.join(" · ");
+  const suffix = lang === "en" ? "Catalog — CNFinds" : "Catálogo — CNFinds";
+  const title = (brandCat ? `${brandCat} — ` : "") + suffix;
+  const desc = brandCat
+    ? (lang === "en" ? `${total} W2C products for ${brandCat} — QC photos, factory prices, buy via your agent on CNFinds.`
+                     : `${total} productos W2C de ${brandCat} — fotos QC, precios de fábrica, compra vía tu agente en CNFinds.`)
+    : (lang === "en" ? `Browse ${total}+ W2C products with cross-filters by category and brand. QC photos, factory prices, agent comparison.`
+                     : `Explora ${total}+ productos W2C con filtros cruzables por categoría y marca. Fotos QC, precios de fábrica y comparativa de agentes.`);
+  const h1 = brandCat || (lang === "en" ? "Explore the catalog" : "Explorar catálogo");
+  const canonical = base + "/productos" + (u.search || "");
+  const grid = rows.map((r) => ssrCard(r, lang)).join("");
+  const crumbs = [{ n: lang === "en" ? "Home" : "Inicio", u: base + "/" }, { n: lang === "en" ? "Catalog" : "Catálogo", u: base + "/productos" }];
+  catLabels.forEach((c, i) => crumbs.push({ n: c, u: base + "/productos?cats=" + encodeURIComponent(f.cats[i]) }));
+  f.brands.forEach((b) => crumbs.push({ n: b, u: base + "/productos?brands=" + encodeURIComponent(b) }));
+  const ld = JSON.stringify({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.n, item: c.u })) });
+  return page
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(desc)}$2`)
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${esc(canonical)}$2`)
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${esc(canonical)}$2`)
+    .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${esc(title)}$2`)
+    .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${esc(desc)}$2`)
+    .replace('<h1 data-i18n="ex_title">Explorar catálogo</h1>', `<h1 data-i18n="ex_title">${esc(h1)}</h1>`)
+    .replace('<div class="grid" id="exGrid"></div>', `<div class="grid" id="exGrid">${grid}</div>`)
+    .replace("</head>", `<script type="application/ld+json">${ld}</script>\n</head>`);
 }
 
 // Agentes con metadatos (bono, descripción, ventajas, cupones, registro) en el idioma dado.
@@ -699,7 +786,11 @@ function handleSitemap(req, res) {
 }
 
 // ---- Admin: importador universal ----
-function adminAuth(req) { return (req.headers["x-admin-token"] || "") === ADMIN_TOKEN; }
+function adminAuth(req) {
+  const a = Buffer.from(String(req.headers["x-admin-token"] || ""));
+  const b = Buffer.from(String(ADMIN_TOKEN));
+  return a.length === b.length && timingSafeEqual(a, b); // comparación de tiempo constante
+}
 
 async function gatherCandidates(mode, content) {
   if (mode === "text") return harvestText(content);
@@ -936,17 +1027,35 @@ function handleAdminJob(req, res, id) {
 const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
-    if (req.method === "POST" && u.pathname === "/api/visual-search") return void handleVisualSearch(req, res);
-    if (req.method === "POST" && u.pathname === "/api/qc-check") return void handleQcCheck(req, res);
-    if (req.method === "POST" && u.pathname === "/api/subscribe") return void handleSubscribe(req, res);
+    // Cabeceras de seguridad en TODA respuesta (se fijan antes de writeHead).
+    // La CSP permite inline (la SPA usa scripts/estilos inline), Google Fonts,
+    // imágenes https de cualquier CDN (productos) y la API de divisas.
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=(self)");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Content-Security-Policy", [
+      "default-src 'self'", "base-uri 'self'", "object-src 'none'",
+      "frame-ancestors 'self'", "form-action 'self'",
+      "img-src 'self' data: https:",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "script-src 'self' 'unsafe-inline'", // nota: si añades ANALYTICS_SNIPPET externo, amplía aquí
+      "connect-src 'self' https://api.frankfurter.app",
+    ].join("; "));
+    // Rate-limit en endpoints que cuestan IA (evita spam/coste) y de captura.
+    if (req.method === "POST" && u.pathname === "/api/visual-search") { if (!rateLimit(req, res, "vis", 15, 3600e3)) return; return void handleVisualSearch(req, res); }
+    if (req.method === "POST" && u.pathname === "/api/qc-check") { if (!rateLimit(req, res, "qc", 40, 3600e3)) return; return void handleQcCheck(req, res); }
+    if (req.method === "POST" && u.pathname === "/api/subscribe") { if (!rateLimit(req, res, "sub", 10, 60e3)) return; return void handleSubscribe(req, res); }
     if (req.method === "POST" && u.pathname === "/api/track") return void handleTrack(req, res);
-    if (req.method === "POST" && u.pathname === "/api/price-alert") return void handlePriceAlert(req, res);
+    if (req.method === "POST" && u.pathname === "/api/price-alert") { if (!rateLimit(req, res, "pa", 10, 60e3)) return; return void handlePriceAlert(req, res); }
     if (u.pathname === "/api/admin/subscribers") return void handleAdminSubscribers(req, res);
     if (u.pathname === "/api/admin/analytics") return void handleAdminAnalytics(req, res);
     if (u.pathname === "/api/admin/alerts") return void handleAdminAlerts(req, res);
     if (u.pathname === "/api/search-fallback") return void handleSearchFallback(res, u.searchParams);
     if (u.pathname === "/api/suggest") return void handleSuggest(res, u.searchParams);
-    if (req.method === "POST" && u.pathname === "/api/request") return void handleRequest(req, res);
+    if (req.method === "POST" && u.pathname === "/api/request") { if (!rateLimit(req, res, "req", 15, 60e3)) return; return void handleRequest(req, res); }
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
     if (u.pathname === "/api/admin/status") return void handleAdminStatus(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
@@ -968,8 +1077,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/categories") return handleCategories(res);
     if (u.pathname === "/api/brands") return handleBrands(res, u.searchParams);
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);
-    if (u.pathname === "/api/ai-search") return void handleAiSearch(res, u.searchParams);
-    if (u.pathname === "/api/ai-fit") return void handleAiFit(res, u.searchParams);
+    if (u.pathname === "/api/ai-search") { if (!rateLimit(req, res, "ais", 30, 3600e3)) return; return void handleAiSearch(res, u.searchParams); }
+    if (u.pathname === "/api/ai-fit") { if (!rateLimit(req, res, "fit", 20, 3600e3)) return; return void handleAiFit(res, u.searchParams); }
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
@@ -986,6 +1095,10 @@ const server = createServer((req, res) => {
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
     if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos") {
       let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
+      // SEO real para /productos: título/descr/canónica dinámicos según filtros,
+      // grid pre-renderizado (los crawlers ven productos + enlaces internos) y
+      // migas de pan (BreadcrumbList). La SPA reemplaza el grid al cargar.
+      if (u.pathname === "/productos") page = injectExploreSeo(page, u, baseUrl(req), reqLang(req));
       // Analítica opcional: define ANALYTICS_SNIPPET (Plausible/GA/Umami…) y se inyecta.
       if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
