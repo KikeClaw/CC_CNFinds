@@ -1041,6 +1041,9 @@ function inferGenders() {
 //   AUTO_INGEST_INTERVAL_HOURS=168  -> cada cuánto (por defecto semanal)
 const AUTO_INGEST = String(process.env.AUTO_INGEST ?? "on").toLowerCase() !== "off";
 const AUTO_INGEST_INTERVAL_H = parseInt(process.env.AUTO_INGEST_INTERVAL_HOURS || "168", 10);
+// Etiquetado automático con IA por lotes (limpia nombre/marca/género/tags → más
+// filtros y marcas en el explorador). Usa Haiku (barato). AUTO_TAG=off lo apaga.
+const AUTO_TAG = String(process.env.AUTO_TAG ?? "on").toLowerCase() !== "off";
 const metaGet = (k) => { try { return db.prepare("SELECT val FROM app_meta WHERE key=?").get(k)?.val || null; } catch { return null; } };
 const metaSet = (k, v) => { try { db.prepare("INSERT INTO app_meta (key,val) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET val=excluded.val").run(k, v); } catch {} };
 let autoIngestRunning = false;
@@ -1094,6 +1097,22 @@ function resumePhotos() {
   }, 5000);
 }
 
+// Etiquetado automático por lotes: coge productos CON foto pero sin título limpio
+// y los pasa por la IA (marca, género, color, tags ES/EN). En tandas de 250 para
+// no disparar coste ni límites de tasa; el resto se hace en la siguiente ronda.
+let tagJobRunning = false;
+function resumeTagging() {
+  if (tagJobRunning || !AUTO_TAG || !hasKey()) return;
+  const ids = db.prepare("SELECT id FROM products WHERE clean_title IS NULL AND image_url IS NOT NULL ORDER BY id LIMIT 250").all().map((r) => r.id);
+  if (!ids.length) return;
+  tagJobRunning = true;
+  const jobId = startTagJob(ids);
+  const poll = setInterval(() => {
+    const j = jobs.get(jobId);
+    if (!j || j.status !== "running") { tagJobRunning = false; clearInterval(poll); }
+  }, 5000);
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -1109,6 +1128,8 @@ async function bootstrap() {
     // (recupera los que falla Weidian por throttling, sin depender de reinicios).
     resumePhotos();
     setInterval(resumePhotos, 6 * 60e3).unref?.();
+    // Etiquetado automático por lotes: el explorador gana marcas/filtros solo.
+    if (AUTO_TAG) { resumeTagging(); setInterval(resumeTagging, 8 * 60e3).unref?.(); }
     // Importador automático (si toca): crece el catálogo solo, sin admin.
     if (AUTO_INGEST) {
       autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));

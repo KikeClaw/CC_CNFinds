@@ -627,7 +627,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
+    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -677,7 +677,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_catalogo:"Catalog",viewall:"See the full catalog →",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
+    nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -932,6 +932,8 @@ function renderFilters(){
   if(state.q) chips.push(["q",`“${state.q}”`]);
   $("#activeFilters").innerHTML=chips.map(([k,v])=>`<span class="active-filter">${esc(v)} <button data-clear="${k}">${ic("x",13,2.2)}</button></span>`).join("");
   $("#activeFilters").querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{ state[b.dataset.clear]=""; if(b.dataset.clear==="q")$("#q").value=""; load(true); });
+  // El CTA "Ver todo" refleja el filtro activo (idea: pre-filtrar el explorador).
+  const mb=$("#more"); if(mb){ const lbl=state.brand||(state.category?catDisp(state.category):""); mb.textContent=lbl?`${t("viewall_in")} ${lbl} →`:t("viewall"); }
 }
 function applyAndScroll(){ load(true); document.getElementById("catalogo").scrollIntoView({behavior:"smooth"}); }
 
@@ -1231,9 +1233,9 @@ function submitRequest(e){
   return false;
 }
 $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
-$("#more").onclick=()=>{ const p=new URLSearchParams(); if(state.q)p.set("q",state.q); if(state.gender)p.set("gender",state.gender); const qs=p.toString(); location.href="/productos"+(qs?"?"+qs:""); };
+$("#more").onclick=()=>{ const p=new URLSearchParams(); if(state.q)p.set("q",state.q); if(state.gender)p.set("gender",state.gender); if(state.category)p.set("cats",state.category); if(state.brand)p.set("brands",state.brand); const qs=p.toString(); location.href="/productos"+(qs?"?"+qs:""); };
 document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); tb.classList.add("active"); $("#q").focus(); });
-addEventListener("scroll",()=>{ if(state.loading||state.offset>=state.total)return; if(innerHeight+scrollY>document.body.offsetHeight-750) load(false); });
+/* La home es un teaser (12): sin scroll infinito. "Ver todo" lleva al explorador. */
 
 /* showcase IA: iconos + acciones */
 $("#hia").innerHTML=ic("sparkles",21,1.9); $("#hia").style.color="#8b5cf6";
