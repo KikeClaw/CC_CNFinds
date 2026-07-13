@@ -791,19 +791,31 @@ function startTagJob(ids) {
   const job = { id, total: ids.length, done: 0, tagged: 0, withImage: 0, dead: 0, phase: "etiquetado", status: "running" };
   jobs.set(id, job);
   if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+  const sel = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL");
+  const upd = db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?");
+  // Un reintento tras una breve espera absorbe límites de tasa puntuales sin
+  // saltarse el producto (si aun así falla, queda sin etiquetar y se reintenta
+  // al re-pulsar, ya que solo cogemos clean_title IS NULL).
+  const tagRetry = async (input) => { try { return await tagOne(input); } catch { await sleepMs(1500); return await tagOne(input); } };
   (async () => {
-    for (const pid of ids) {
-      try {
-        const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(pid);
-        if (r) {
-          const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
-          db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-            .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
-          job.tagged++;
-        }
-      } catch {}
-      job.done++;
-    }
+    // Pool de workers en paralelo (antes era secuencial → ~5× más rápido). Mismo
+    // nº de llamadas y mismo coste; solo aprovecha la espera de red.
+    let idx = 0;
+    const worker = async () => {
+      while (idx < ids.length) {
+        const pid = ids[idx++];
+        try {
+          const r = sel.get(pid);
+          if (r) {
+            const out = await tagRetry({ name: r.name, category: r.category, price: r.price_eur });
+            upd.run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
+            job.tagged++;
+          }
+        } catch {}
+        job.done++;
+      }
+    };
+    await Promise.all(Array.from({ length: 5 }, worker));
     job.phase = "listo"; job.status = "done";
   })().catch(() => { job.status = "error"; });
   return id;
