@@ -324,7 +324,7 @@
 
 <header>
   <div class="wrap nav">
-    <a class="brand" href="#top">
+    <a class="brand" href="/">
       <span class="mark"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
         <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
         <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
@@ -334,10 +334,10 @@
     </a>
     <div class="links">
       <a href="/productos" class="nav-cta" data-i18n="nav_catalogo">Catálogo</a>
-      <a href="#categorias" data-i18n="categorias">Categorías</a>
-      <a href="#marcas" data-i18n="marcas">Marcas</a>
-      <a href="#fit" data-i18n="fit">Fit IA</a>
-      <a href="#convertidor" data-i18n="conversor">Conversor</a>
+      <a href="/#categorias" data-i18n="categorias">Categorías</a>
+      <a href="/#marcas" data-i18n="marcas">Marcas</a>
+      <a href="/#fit" data-i18n="fit">Fit IA</a>
+      <a href="/#convertidor" data-i18n="conversor">Conversor</a>
       <a href="/cupones" data-i18n="nav_cupones">Cupones</a>
       <a href="/guias" data-i18n="guias">Guías</a>
       <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
@@ -423,7 +423,7 @@
   </section>
 
   <section id="categorias">
-    <div class="head"><h2><span class="sq" id="hgrid"></span><span data-i18n="cat">Explorar por categoría</span></h2><a class="link" href="#catalogo"><span data-i18n="vertodo">Ver todo</span> <span id="l1"></span></a></div>
+    <div class="head"><h2><span class="sq" id="hgrid"></span><span data-i18n="cat">Explorar por categoría</span></h2><a class="link" href="/productos"><span data-i18n="vertodo">Ver todo</span> <span id="l1"></span></a></div>
     <div class="strip" id="strip"></div>
   </section>
 
@@ -433,7 +433,7 @@
   </section>
 
   <section id="nuevos">
-    <div class="head"><h2><span class="sq" id="hnew"></span><span data-i18n="new_title">Nuevos finds</span></h2><a class="link" href="#catalogo" id="newAll"><span data-i18n="vertodo">Ver todo</span> <span id="l2n"></span></a></div>
+    <div class="head"><h2><span class="sq" id="hnew"></span><span data-i18n="new_title">Nuevos finds</span></h2><a class="link" href="/productos" id="newAll"><span data-i18n="vertodo">Ver todo</span> <span id="l2n"></span></a></div>
     <div class="grid" id="newfinds"></div>
   </section>
 
@@ -596,7 +596,7 @@
 <footer>
   <div class="wrap fgrid">
     <div>
-      <a class="brand" href="#top" style="margin-bottom:14px">
+      <a class="brand" href="/" style="margin-bottom:14px">
         <span class="mark"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
           <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
           <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
@@ -607,8 +607,8 @@
       <p style="margin-top:12px" data-i18n="f_desc">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
       <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
-    <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
-    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="#convertidor" data-i18n="conversor">Conversor</a></div>
+    <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="/#categorias" data-i18n="categorias">Categorías</a><a href="/#marcas" data-i18n="marcas">Marcas</a></div>
+    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="/#convertidor" data-i18n="conversor">Conversor</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
   </div>
@@ -830,6 +830,8 @@ $("#promoX").onclick=()=>{ $("#promo").style.display="none"; try{localStorage.se
 $("#burger").innerHTML=ic("menu",20,1.9);
 $("#burger").onclick=()=>{ const h=document.querySelector("header"); const open=h.classList.toggle("navopen"); $("#burger").setAttribute("aria-expanded", open?"true":"false"); };
 document.querySelectorAll(".nav .links a").forEach(a=>a.addEventListener("click",()=>document.querySelector("header").classList.remove("navopen")));
+/* Logo/nombre: en la home hace scroll suave arriba; en /productos navega a la home. */
+document.querySelectorAll(".brand").forEach(b=>b.addEventListener("click",e=>{ if(location.pathname==="/"){ e.preventDefault(); scrollTo({top:0,behavior:"smooth"}); } }));
 
 /* ver favoritos */
 $("#fav").onclick=()=>{
