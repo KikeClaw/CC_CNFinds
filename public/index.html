@@ -75,11 +75,14 @@
   /* header */
   header{ position:sticky; top:0; z-index:40; background:color-mix(in srgb,var(--bg) 78%,transparent);
     backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--line2); }
-  .nav{ display:flex; align-items:center; gap:30px; height:62px; }
-  .nav .links{ display:flex; gap:4px; }
-  .nav .links a{ padding:8px 14px; border-radius:999px; color:var(--muted); font-size:14px; font-weight:500; transition:.15s; }
+  .nav{ display:flex; align-items:center; gap:18px; height:64px; }
+  .nav .brand{ flex:1 1 0; }
+  .nav .links{ display:flex; gap:2px; flex:0 0 auto; justify-content:center; }
+  .nav .links a{ padding:9px 15px; border-radius:999px; color:var(--muted); font-size:13.5px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s; }
   .nav .links a:hover{ background:var(--soft); color:var(--ink); }
-  .nav .right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .nav .links a.nav-cta{ color:var(--brandc); }
+  .nav .links a.nav-cta:hover{ background:var(--brand); color:#fff; }
+  .nav .right{ flex:1 1 0; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
   .seg{ display:flex; background:var(--soft); border-radius:999px; padding:3px; font-size:12.5px; font-weight:500; }
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
   .seg span.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06); }
@@ -194,6 +197,8 @@
   .more{ display:flex; justify-content:center; padding:34px; }
   .more button{ padding:13px 28px; border-radius:15px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:14px; font-weight:500; transition:.15s; }
   .more button:hover{ background:var(--soft); }
+  .more button.viewall{ padding:15px 34px; border:1px solid var(--brand); background:transparent; color:var(--brandc); font-weight:700; font-size:15px; letter-spacing:.01em; }
+  .more button.viewall:hover{ background:var(--brand); color:#fff; box-shadow:0 8px 24px color-mix(in srgb,var(--brand) 32%,transparent); }
   .empty{ text-align:center; color:var(--muted); padding:80px 0; }
   .emptybox{ max-width:640px; margin:20px auto; color:var(--ink); }
   .emptybox .eh{ display:flex; align-items:center; gap:8px; font-size:19px; }
@@ -328,8 +333,7 @@
       <span class="wm"><b>CN</b>Finds</span>
     </a>
     <div class="links">
-      <a href="/productos" data-i18n="nav_explorar">Explorar</a>
-      <a href="#catalogo" data-i18n="productos">Productos</a>
+      <a href="/productos" class="nav-cta" data-i18n="nav_catalogo">Catálogo</a>
       <a href="#categorias" data-i18n="categorias">Categorías</a>
       <a href="#marcas" data-i18n="marcas">Marcas</a>
       <a href="#fit" data-i18n="fit">Fit IA</a>
@@ -490,7 +494,7 @@
     </div>
     <div class="grid" id="grid"></div>
     <div class="empty" id="empty" style="display:none" data-i18n="noresults">Sin resultados para tu búsqueda.</div>
-    <div class="more"><button id="more" style="display:none" data-i18n="loadmore">Cargar más</button></div>
+    <div class="more"><button id="more" class="viewall" style="display:none" data-i18n="viewall">Ver todo el catálogo →</button></div>
   </section>
 
   <section id="news">
@@ -603,7 +607,7 @@
       <p style="margin-top:12px" data-i18n="f_desc">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
       <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
-    <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="/productos" data-i18n="nav_explorar">Explorar</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
+    <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
     <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="#convertidor" data-i18n="conversor">Conversor</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
@@ -623,7 +627,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
+    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -673,7 +677,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
+    nav_catalogo:"Catalog",viewall:"See the full catalog →",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -736,7 +740,9 @@ function renderSocial(){
   if(COMMUNITY.telegram) links.push(`<a class="agent" href="${COMMUNITY.telegram}" target="_blank" rel="noopener">Telegram</a>`);
   el.innerHTML=links.join("");
 }
-const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:48,total:0,loading:false };
+// La home muestra solo un teaser (12) del catálogo; "Ver todo" lleva a /productos
+// (el explorador con facetas). Así se llega al footer sin scroll infinito.
+const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:12,total:0,loading:false };
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1225,7 +1231,7 @@ function submitRequest(e){
   return false;
 }
 $("#sort").onchange=e=>{ state.sort=e.target.value; load(true); };
-$("#more").onclick=()=>load(false);
+$("#more").onclick=()=>{ const p=new URLSearchParams(); if(state.q)p.set("q",state.q); if(state.gender)p.set("gender",state.gender); const qs=p.toString(); location.href="/productos"+(qs?"?"+qs:""); };
 document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); tb.classList.add("active"); $("#q").focus(); });
 addEventListener("scroll",()=>{ if(state.loading||state.offset>=state.total)return; if(innerHeight+scrollY>document.body.offsetHeight-750) load(false); });
 
