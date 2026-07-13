@@ -125,30 +125,47 @@ function handleBrands(res, params) {
   });
 }
 
-function handleProducts(res, params) {
+// Parseo de filtros del catálogo (multi-categoría y multi-marca separadas por
+// coma). Reutilizado por /api/products y /api/facets para que ambos filtren
+// igual. Mantiene compatibilidad con los singulares category/brand (home).
+function parseFilters(params) {
   const q = (params.get("q") || "").trim();
-  const category = canonCat((params.get("category") || "").trim());
-  const brand = (params.get("brand") || "").trim();
+  const cats = (params.get("cats") || params.get("category") || "").split(",").map((s) => canonCat(s.trim())).filter(Boolean);
+  const brands = (params.get("brands") || params.get("brand") || "").split(",").map((s) => s.trim()).filter(Boolean);
   const gender = (params.get("gender") || "").trim();
-  const hot = params.get("hot") === "1";
+  const pmin = parseFloat(params.get("price_min")); const pmax = parseFloat(params.get("price_max"));
   const onlyImg = params.get("withImage") !== "0"; // por defecto, solo con foto
+  return { q, cats, brands, gender, pmin: isNaN(pmin) ? null : pmin, pmax: isNaN(pmax) ? null : pmax, onlyImg };
+}
+// Construye [where[], args[]] desde un filtro. `exclude` omite un eje para contar
+// facetas: las categorías se cuentan ignorando la selección de categoría, y las
+// marcas ignorando la de marca — así marcar una opción no vacía su propia lista.
+function buildWhere(f, exclude = {}) {
+  const where = [], args = [];
+  if (f.q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${f.q}%`, `%${f.q}%`, `%${f.q}%`, `%${f.q}%`); }
+  if (!exclude.cat && f.cats.length) { where.push(`category IN (${f.cats.map(() => "?").join(",")})`); args.push(...f.cats); }
+  if (!exclude.brand && f.brands.length) { where.push(`brand IN (${f.brands.map(() => "?").join(",")})`); args.push(...f.brands); }
+  if (f.gender === "men") where.push("gender IN ('men','unisex')");
+  else if (f.gender === "women") where.push("gender IN ('women','unisex')");
+  if (f.pmin != null) { where.push("price_eur >= ?"); args.push(f.pmin); }
+  if (f.pmax != null) { where.push("price_eur <= ?"); args.push(f.pmax); }
+  if (f.onlyImg) where.push("image_url IS NOT NULL");
+  return { where, args };
+}
+
+function handleProducts(res, params) {
+  const hot = params.get("hot") === "1";
   const sort = SORTS[params.get("sort")] || SORTS.trending;
   const limit = Math.min(parseInt(params.get("limit") || "48", 10), 200);
   const offset = Math.max(parseInt(params.get("offset") || "0", 10), 0);
-
   // Lista explícita de IDs (favoritos compartidos por URL). Máx 100.
   const ids = (params.get("ids") || "").split(",").map((x) => parseInt(x, 10)).filter(Boolean).slice(0, 100);
 
-  const where = [];
-  const args = [];
+  const f = parseFilters(params);
+  if (ids.length) f.onlyImg = false; // los favoritos por URL se muestran aunque no tengan foto
+  const { where, args } = buildWhere(f);
   if (ids.length) { where.push(`id IN (${ids.map(() => "?").join(",")})`); args.push(...ids); }
-  if (q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
-  if (category) { where.push("category = ?"); args.push(category); }
-  if (brand) { where.push("brand = ?"); args.push(brand); }
-  if (gender === "men") where.push("gender IN ('men','unisex')");
-  else if (gender === "women") where.push("gender IN ('women','unisex')");
   if (hot) where.push("hot = 1");
-  if (onlyImg && !ids.length) where.push("image_url IS NOT NULL");
   const wsql = where.length ? "WHERE " + where.join(" AND ") : "";
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
@@ -171,6 +188,23 @@ function handleProducts(res, params) {
   });
 
   json(res, 200, { total, limit, offset, items });
+}
+
+// Facetas del explorador: categorías y marcas con conteo, respetando el resto de
+// filtros (faceted search). Cada eje se cuenta ignorando su propia selección.
+function handleFacets(res, params) {
+  const f = parseFilters(params);
+  const catQ = buildWhere(f, { cat: true }); catQ.where.push("category IS NOT NULL");
+  const categories = db.prepare(`SELECT category, COUNT(*) c FROM products WHERE ${catQ.where.join(" AND ")} GROUP BY category ORDER BY c DESC`).all(...catQ.args)
+    .map((r) => ({ category: r.category, count: r.c, label_es: catLabel(r.category, "es"), label_en: catLabel(r.category, "en") }));
+  const brQ = buildWhere(f, { brand: true }); brQ.where.push("brand IS NOT NULL");
+  const brands = db.prepare(`SELECT brand, COUNT(*) c FROM products WHERE ${brQ.where.join(" AND ")} GROUP BY brand ORDER BY c DESC LIMIT 400`).all(...brQ.args)
+    .map((r) => ({ brand: r.brand, count: r.c }));
+  const tQ = buildWhere(f);
+  const total = tQ.where.length
+    ? db.prepare(`SELECT COUNT(*) c FROM products WHERE ${tQ.where.join(" AND ")}`).get(...tQ.args).c
+    : db.prepare("SELECT COUNT(*) c FROM products").get().c;
+  json(res, 200, { total, categories, brands });
 }
 
 // Boletín: guarda el email del suscriptor (el envío lo conectas tú aparte).
@@ -937,6 +971,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/ai-search") return void handleAiSearch(res, u.searchParams);
     if (u.pathname === "/api/ai-fit") return void handleAiFit(res, u.searchParams);
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
+    if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }
     if (u.pathname === "/sitemap.xml") return handleSitemap(req, res);
@@ -949,7 +984,7 @@ const server = createServer((req, res) => {
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
-    if (u.pathname === "/" || u.pathname === "/index.html") {
+    if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos") {
       let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
       // Analítica opcional: define ANALYTICS_SNIPPET (Plausible/GA/Umami…) y se inyecta.
       if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");

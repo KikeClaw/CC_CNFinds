@@ -328,6 +328,7 @@
       <span class="wm"><b>CN</b>Finds</span>
     </a>
     <div class="links">
+      <a href="/productos" data-i18n="nav_explorar">Explorar</a>
       <a href="#catalogo" data-i18n="productos">Productos</a>
       <a href="#categorias" data-i18n="categorias">Categorías</a>
       <a href="#marcas" data-i18n="marcas">Marcas</a>
@@ -377,7 +378,7 @@
   </div>
 </div>
 
-<main class="wrap">
+<main class="wrap" id="homeMain">
   <section id="ia">
     <div class="head"><h2><span class="sq" id="hia"></span><span data-i18n="ia1">Comprar con </span><span class="gr" data-i18n="ia2">superpoderes de IA</span></h2><span class="muted" style="font-size:13px" data-i18n="ia_sub">Lo que nos diferencia</span></div>
     <div class="ia-grid">
@@ -508,6 +509,86 @@
   </section>
 </main>
 
+<style>
+#exploreMain{padding-top:24px;padding-bottom:64px}
+.exhead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.exhead h1{font-family:var(--fd,var(--font-d));font-size:30px;margin:0 0 4px}
+.exhead .muted{font-size:14px}
+.exhead-r{display:flex;gap:10px;align-items:center}
+.exlayout{display:grid;grid-template-columns:256px 1fr;gap:28px;align-items:start}
+.exfacets{position:sticky;top:82px;display:flex;flex-direction:column;gap:18px;max-height:calc(100vh - 100px);overflow:auto;padding-right:4px}
+.exf-block{display:flex;flex-direction:column;gap:9px}
+.exf-h{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.exf-list{display:flex;flex-direction:column;gap:1px;max-height:288px;overflow:auto}
+.exf-opt{display:flex;align-items:center;gap:9px;padding:5px 7px;border-radius:8px;cursor:pointer;font-size:14px;line-height:1.2}
+.exf-opt:hover{background:var(--soft)}
+.exf-opt input{accent-color:var(--brand);width:16px;height:16px;flex:none}
+.exf-opt>span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exf-opt .cnt{margin-left:auto;color:var(--muted);font-size:12px;flex:none}
+.exf-opt.sel{color:var(--brandc);font-weight:600}
+#exSearch,.exf-search,.exprice input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;font-size:14px}
+.exprice{display:flex;align-items:center;gap:8px}
+.exgender{display:flex;gap:6px}
+.exgender button{flex:1;padding:8px 4px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:inherit;cursor:pointer;font-size:13px}
+.exgender button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.exclear{padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;cursor:pointer;font-size:13px;font-weight:600}
+.exclear:hover{border-color:var(--brand);color:var(--brandc)}
+.exchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;min-height:2px}
+.exchip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 11px;font-size:13px}
+.exchip button{background:none;border:none;cursor:pointer;color:var(--muted);display:inline-flex;padding:0}
+.exchip button:hover{color:var(--brandc)}
+.expager{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:32px;flex-wrap:wrap}
+.expager button{min-width:38px;height:38px;padding:0 8px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:inherit;cursor:pointer;font-size:14px}
+.expager button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+.expager button:disabled{opacity:.4;cursor:default}
+.exfilt-toggle{display:none}
+@media(max-width:860px){
+  .exlayout{grid-template-columns:1fr}
+  .exfacets{position:fixed;inset:0;z-index:70;background:var(--card);max-height:none;overflow:auto;padding:22px;gap:16px;transform:translateX(-100%);transition:transform .25s ease;box-shadow:0 0 40px rgba(0,0,0,.25)}
+  .exfacets.open{transform:none}
+  .exfilt-toggle{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit;cursor:pointer;font-size:14px;font-weight:600}
+}
+</style>
+
+<main id="exploreMain" class="wrap" style="display:none">
+  <div class="exhead">
+    <div>
+      <h1 data-i18n="ex_title">Explorar catálogo</h1>
+      <div class="muted" id="exCount"></div>
+    </div>
+    <div class="exhead-r">
+      <button class="exfilt-toggle" id="exFiltToggle" data-i18n="ex_filters">Filtros</button>
+      <select class="sort" id="exSort" aria-label="Ordenar">
+        <option value="trending" data-i18n="s_trending">Destacados</option>
+        <option value="newest" data-i18n="s_new">Novedades</option>
+        <option value="price_asc" data-i18n="s_pa">Precio: menor a mayor</option>
+        <option value="price_desc" data-i18n="s_pd">Precio: mayor a menor</option>
+        <option value="name" data-i18n="s_name">Nombre A–Z</option>
+      </select>
+    </div>
+  </div>
+  <div class="exlayout">
+    <aside class="exfacets" id="exFacets">
+      <button class="exclear" id="exFacetsClose" style="display:none" data-i18n="ex_done">Ver resultados</button>
+      <div class="exf-block"><input id="exSearch" data-i18n-ph="ex_search_ph" placeholder="Buscar en el catálogo…" aria-label="Buscar"></div>
+      <div class="exf-block"><div class="exf-h" data-i18n="ex_gender">Género</div>
+        <div class="exgender" id="exGender"><button data-g="" class="on" data-i18n="all">Todos</button><button data-g="men" data-i18n="men">Hombre</button><button data-g="women" data-i18n="women">Mujer</button></div></div>
+      <div class="exf-block"><div class="exf-h" data-i18n="ex_price">Precio (€)</div>
+        <div class="exprice"><input id="exPmin" type="number" min="0" data-i18n-ph="ex_min" placeholder="mín" aria-label="Precio mínimo"><span>–</span><input id="exPmax" type="number" min="0" data-i18n-ph="ex_max" placeholder="máx" aria-label="Precio máximo"></div></div>
+      <div class="exf-block"><div class="exf-h" data-i18n="ex_cats">Categorías</div><div class="exf-list" id="exCats"></div></div>
+      <div class="exf-block"><div class="exf-h" data-i18n="ex_brands">Marcas</div>
+        <input class="exf-search" id="exBrandSearch" data-i18n-ph="ex_brand_ph" placeholder="Filtrar marcas…" aria-label="Filtrar marcas"><div class="exf-list" id="exBrands"></div></div>
+      <button class="exclear" id="exClear" data-i18n="ex_clear">Limpiar filtros</button>
+    </aside>
+    <div class="exmain">
+      <div class="exchips" id="exChips"></div>
+      <div class="grid" id="exGrid"></div>
+      <div class="empty" id="exEmpty" style="display:none" data-i18n="noresults">Sin resultados para tu búsqueda.</div>
+      <div class="expager" id="exPager"></div>
+    </div>
+  </div>
+</main>
+
 <footer>
   <div class="wrap fgrid">
     <div>
@@ -522,7 +603,7 @@
       <p style="margin-top:12px" data-i18n="f_desc">Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.</p>
       <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
-    <div><h4 data-i18n="f_shop">Tienda</h4><a href="#catalogo" data-i18n="f_all">Todos los productos</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
+    <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="/productos" data-i18n="nav_explorar">Explorar</a><a href="#categorias" data-i18n="categorias">Categorías</a><a href="#marcas" data-i18n="marcas">Marcas</a></div>
     <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="#convertidor" data-i18n="conversor">Conversor</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
@@ -542,6 +623,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
+    nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -591,6 +673,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
+    nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -1175,12 +1258,120 @@ function applyLang(){
   document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();
 }
-function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang(); loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); }
+function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang();
+  if(EX.booted){ exApplyLangToInputs(); exFetch(); }
+  else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); } }
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
+/* ---- Explorador de catálogo (/productos): facetas cruzables ---- */
+const EX={ q:"",cats:new Set(),brands:new Set(),gender:"",pmin:"",pmax:"",sort:"trending",page:0,limit:48,total:0,brandsAll:[],brandFilter:"",booted:false };
+let exT;
+function exFromUrl(){
+  const sp=new URLSearchParams(location.search);
+  EX.q=sp.get("q")||""; EX.gender=sp.get("gender")||""; EX.sort=sp.get("sort")||"trending";
+  EX.pmin=sp.get("price_min")||""; EX.pmax=sp.get("price_max")||"";
+  EX.page=Math.max(0,parseInt(sp.get("page")||"0",10))||0;
+  EX.cats=new Set((sp.get("cats")||"").split(",").filter(Boolean));
+  EX.brands=new Set((sp.get("brands")||"").split(",").filter(Boolean));
+}
+function exQuery(){
+  const p=new URLSearchParams();
+  if(EX.q)p.set("q",EX.q); if(EX.gender)p.set("gender",EX.gender);
+  if(EX.pmin)p.set("price_min",EX.pmin); if(EX.pmax)p.set("price_max",EX.pmax);
+  if(EX.cats.size)p.set("cats",[...EX.cats].join(",")); if(EX.brands.size)p.set("brands",[...EX.brands].join(","));
+  return p;
+}
+function exToUrl(){
+  const p=exQuery(); if(EX.sort!=="trending")p.set("sort",EX.sort); if(EX.page)p.set("page",EX.page);
+  const qs=p.toString(); history.replaceState({explore:1},"","/productos"+(qs?"?"+qs:""));
+}
+async function exFetch(){
+  exToUrl();
+  const pp=exQuery(); pp.set("sort",EX.sort); pp.set("limit",EX.limit); pp.set("offset",EX.page*EX.limit);
+  let prod,fac;
+  try{ [prod,fac]=await Promise.all([ fetch("/api/products?"+pp).then(r=>r.json()), fetch("/api/facets?"+exQuery()).then(r=>r.json()) ]); }
+  catch{ return; }
+  EX.total=prod.total; prod.items.forEach(it=>CACHE[it.id]=it);
+  $("#exGrid").innerHTML=prod.items.map(cardHtml).join(""); bindCards($("#exGrid"));
+  $("#exEmpty").style.display=prod.total?"none":"block";
+  $("#exCount").textContent=`${EX.total.toLocaleString(LANG==="en"?"en":"es")} ${t("p_count")}`;
+  EX.brandsAll=fac.brands||[];
+  exRenderCats(fac.categories||[]); exRenderBrands(); exRenderChips(); exRenderPager();
+}
+function exRenderCats(cats){
+  cats.forEach(c=>{ CATMAP[c.category]={es:c.label_es||c.category,en:c.label_en||c.category}; });
+  $("#exCats").innerHTML=cats.map(c=>{
+    const on=EX.cats.has(c.category), lbl=LANG==="en"?(c.label_en||c.category):(c.label_es||c.category);
+    return `<label class="exf-opt${on?' sel':''}"><input type="checkbox" ${on?'checked':''} data-cat="${esc(c.category)}"><span>${esc(lbl)}</span><span class="cnt">${c.count}</span></label>`;
+  }).join("");
+  $("#exCats").querySelectorAll("input").forEach(i=>i.onchange=()=>{ i.checked?EX.cats.add(i.dataset.cat):EX.cats.delete(i.dataset.cat); EX.page=0; exFetch(); });
+}
+function exRenderBrands(){
+  const f=EX.brandFilter.toLowerCase();
+  const list=EX.brandsAll.filter(b=>!f||b.brand.toLowerCase().includes(f)).slice(0,200);
+  $("#exBrands").innerHTML=list.map(b=>{
+    const on=EX.brands.has(b.brand);
+    return `<label class="exf-opt${on?' sel':''}"><input type="checkbox" ${on?'checked':''} data-brand="${esc(b.brand)}"><span>${esc(b.brand)}</span><span class="cnt">${b.count}</span></label>`;
+  }).join("")||`<div class="muted" style="font-size:13px;padding:6px">${t("noresults")}</div>`;
+  $("#exBrands").querySelectorAll("input").forEach(i=>i.onchange=()=>{ i.checked?EX.brands.add(i.dataset.brand):EX.brands.delete(i.dataset.brand); EX.page=0; exFetch(); });
+}
+function exRenderChips(){
+  const chips=[];
+  EX.cats.forEach(c=>chips.push(["cat",c,catDisp(c)||c]));
+  EX.brands.forEach(b=>chips.push(["brand",b,b]));
+  if(EX.q)chips.push(["q",EX.q,`“${EX.q}”`]);
+  if(EX.gender)chips.push(["gender",EX.gender,t(EX.gender==="men"?"men":"women")]);
+  if(EX.pmin||EX.pmax)chips.push(["price","",`€${EX.pmin||0}–${EX.pmax||"∞"}`]);
+  $("#exChips").innerHTML=chips.map(([k,v,lbl])=>`<span class="exchip">${esc(lbl)} <button data-k="${k}" data-v="${esc(v)}">${ic("x",13,2.2)}</button></span>`).join("");
+  $("#exChips").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k,v=b.dataset.v;
+    if(k==="cat")EX.cats.delete(v); else if(k==="brand")EX.brands.delete(v);
+    else if(k==="q"){EX.q="";$("#exSearch").value="";} else if(k==="gender"){EX.gender="";exSyncGender();}
+    else if(k==="price"){EX.pmin="";EX.pmax="";$("#exPmin").value="";$("#exPmax").value="";}
+    EX.page=0; exFetch();
+  });
+}
+function exRenderPager(){
+  const pages=Math.ceil(EX.total/EX.limit)||1, cur=EX.page;
+  if(pages<=1){ $("#exPager").innerHTML=""; return; }
+  const btn=(p,lbl,on,dis)=>`<button ${dis?'disabled':''} class="${on?'on':''}" data-p="${p}">${lbl}</button>`;
+  let h=btn(cur-1,"‹",false,cur<=0);
+  const win=[],add=p=>{ if(p>=0&&p<pages&&!win.includes(p))win.push(p); };
+  add(0);add(1);for(let d=-2;d<=2;d++)add(cur+d);add(pages-1);add(pages-2);
+  win.sort((a,b)=>a-b); let last=-1;
+  for(const p of win){ if(p-last>1)h+=`<span style="padding:0 4px;color:var(--muted)">…</span>`; h+=btn(p,p+1,p===cur,false); last=p; }
+  h+=btn(cur+1,"›",false,cur>=pages-1);
+  $("#exPager").innerHTML=h;
+  $("#exPager").querySelectorAll("button[data-p]").forEach(b=>b.onclick=()=>{ EX.page=+b.dataset.p; exFetch(); window.scrollTo({top:0,behavior:"smooth"}); });
+}
+function exSyncGender(){ const g=$("#exGender"); if(g)g.querySelectorAll("button").forEach(b=>b.classList.toggle("on",(b.dataset.g||"")===EX.gender)); }
+function exApplyLangToInputs(){ const s=$("#exSort"); if(s)s.value=EX.sort; const q=$("#exSearch"); if(q)q.value=EX.q; const a=$("#exPmin"); if(a)a.value=EX.pmin; const z=$("#exPmax"); if(z)z.value=EX.pmax; exSyncGender(); }
+function exInit(){
+  if(EX.booted) return; EX.booted=true;
+  exFromUrl(); exApplyLangToInputs();
+  $("#exSort").onchange=()=>{ EX.sort=$("#exSort").value; EX.page=0; exFetch(); };
+  $("#exSearch").oninput=()=>{ clearTimeout(exT); exT=setTimeout(()=>{ EX.q=$("#exSearch").value.trim(); EX.page=0; exFetch(); },350); };
+  const priceH=()=>{ clearTimeout(exT); exT=setTimeout(()=>{ EX.pmin=$("#exPmin").value; EX.pmax=$("#exPmax").value; EX.page=0; exFetch(); },500); };
+  $("#exPmin").oninput=priceH; $("#exPmax").oninput=priceH;
+  $("#exGender").querySelectorAll("button").forEach(b=>b.onclick=()=>{ EX.gender=b.dataset.g||""; exSyncGender(); EX.page=0; exFetch(); });
+  $("#exBrandSearch").oninput=()=>{ EX.brandFilter=$("#exBrandSearch").value.trim(); exRenderBrands(); };
+  $("#exClear").onclick=()=>{ EX.q="";EX.cats.clear();EX.brands.clear();EX.gender="";EX.pmin="";EX.pmax="";EX.sort="trending";EX.page=0; EX.brandFilter="";$("#exBrandSearch").value=""; exApplyLangToInputs(); exFetch(); };
+  $("#exFiltToggle").onclick=()=>{ $("#exFacets").classList.add("open"); $("#exFacetsClose").style.display="block"; };
+  $("#exFacetsClose").onclick=()=>{ $("#exFacets").classList.remove("open"); };
+  exFetch();
+}
+function enterExplore(){
+  const hero=document.querySelector(".hero"); if(hero)hero.style.display="none";
+  const hm=$("#homeMain"); if(hm)hm.style.display="none";
+  $("#exploreMain").style.display="block";
+  exInit(); window.scrollTo(0,0);
+}
+
 applyLang();
 renderSocial();
-loadCats(); loadBrands(); loadTrending(); loadNewFinds();
-{ const sp=new URLSearchParams(location.search);
+const EXPLORING=location.pathname==="/productos";
+if(!EXPLORING){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); }
+if(EXPLORING){ enterExplore(); }
+else { const sp=new URLSearchParams(location.search);
   const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }
   const ids=(sp.get("favs")||"").split(",").map(x=>parseInt(x,10)).filter(Boolean);
   if(ids.length) showSharedList(ids); else load(true);
