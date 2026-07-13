@@ -291,6 +291,56 @@ function handleAdminRetryPhotos(req, res) {
   json(res, 200, { ok: true, reset: r.changes });
 }
 
+// Admin: "sanador". Escanea la foto de cada producto y QUITA del catálogo
+// (image_url=NULL) las que están realmente MUERTAS (HTTP 404/410). No toca los
+// errores de red/403/timeout: podrían ser bloqueo temporal de IP y darían falsos
+// positivos. Nulificar es reversible: si el producto sigue en alguna hoja, el
+// próximo importador lo re-sana con la foto buena (upsert usa COALESCE).
+const HEAL_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+function startHealJob() {
+  const rows = db.prepare("SELECT id, image_url FROM products WHERE image_url IS NOT NULL").all();
+  const id = "job_" + (++jobSeq);
+  const job = { id, total: rows.length, done: 0, ok: 0, dead: 0, unknown: 0, removed: 0, phase: "scan", status: "running" };
+  jobs.set(id, job);
+  if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+  const upd = db.prepare("UPDATE products SET image_url=NULL, images=NULL, enrich_tries=0, last_checked=NULL WHERE id=?");
+  const ref = process.env.SITE_URL || "https://cnfinds.online";
+  (async () => {
+    let idx = 0;
+    const worker = async () => {
+      while (idx < rows.length) {
+        const r = rows[idx++];
+        let cls = "unknown";
+        try {
+          const ctrl = new AbortController();
+          const to = setTimeout(() => ctrl.abort(), 9000);
+          let res;
+          try {
+            res = await fetch(thumb(r.image_url), { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA, "Referer": ref, "Range": "bytes=0-1" } });
+          } finally { clearTimeout(to); }
+          try { await res.body?.cancel?.(); } catch {}
+          if (res.status === 404 || res.status === 410) cls = "dead";
+          else if ((res.status === 200 || res.status === 206) && /image\//.test(res.headers.get("content-type") || "")) cls = "ok";
+          else cls = "unknown";
+        } catch { cls = "unknown"; }
+        if (cls === "dead") { try { upd.run(r.id); job.removed++; } catch {} job.dead++; }
+        else if (cls === "ok") job.ok++;
+        else job.unknown++;
+        job.done++;
+      }
+    };
+    await Promise.all(Array.from({ length: 8 }, worker));
+    job.phase = "done"; job.status = "done";
+  })().catch((e) => { job.phase = "done"; job.status = "done"; job.error = e.message; });
+  return job;
+}
+
+function handleAdminHealPhotos(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const job = startHealJob();
+  json(res, 200, { ok: true, jobId: job.id, total: job.total });
+}
+
 // Admin: lanzar el importador automático ahora (opcional; también corre solo).
 function handleAdminAutoIngest(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
@@ -855,6 +905,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/status") return void handleAdminStatus(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/heal-photos") return void handleAdminHealPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);

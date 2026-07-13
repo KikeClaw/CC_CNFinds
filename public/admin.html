@@ -65,6 +65,7 @@
       <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="st_h">Estado del catálogo</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="ghost" id="retryPhotos" data-i18n="st_retry" style="padding:8px 14px;font-size:13px">Reintentar fotos</button>
+        <button class="ghost" id="healPhotos" data-i18n="st_heal" style="padding:8px 14px;font-size:13px">Quitar fotos rotas</button>
         <button class="ghost" id="loadStatus" data-i18n="st_load" style="padding:8px 14px;font-size:13px">Actualizar</button>
       </div>
     </div>
@@ -202,6 +203,7 @@ const T={
     rq_h:"Demanda (peticiones)", rq_hint:"Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.", rq_load:"Ver demanda", rq_count:"peticiones", rq_q:"Búsqueda", rq_c:"Veces", rq_none:"Aún no hay peticiones.",
     auto_h:"Importador automático", auto_hint:'Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.', auto_btn:"Ejecutar importador ahora", auto_started:"Importador lanzado en segundo plano ✓ (mira los logs de Railway)", auto_running:"Ya se está ejecutando ✓",
     st_h:"Estado del catálogo", st_load:"Actualizar", st_retry:"Reintentar fotos", st_retry_ok:"Reintentando %n fotos en segundo plano ✓", st_hint:"Mete tu token y pulsa Actualizar.",
+    st_heal:"Quitar fotos rotas", heal_confirm:"Revisará la foto de cada producto y quitará del catálogo los que tengan la imagen MUERTA (error 404). Es reversible: si el producto sigue en una hoja, la próxima importación lo vuelve a añadir con foto buena. ¿Continuar?",
     st_products:"productos", st_photos:"con foto", st_tagged:"etiquetados", st_qc:"con QC", st_agents:"agentes activos", st_subs:"suscriptores", st_alerts:"alertas de precio", st_demand:"peticiones", st_clicks:"clics de agente", st_lastingest:"Última ingesta automática", st_never:"nunca", st_keys:"Claves", st_gkey:"Google Sheets", st_aikey:"IA (Claude)", st_on:"activa", st_off:"falta",
     gd_h:"Guía rápida (orden recomendado)", gd_sub:"Todo el proceso, paso a paso. Cada bloque de abajo es un paso.",
     gd_steps:[
@@ -220,9 +222,9 @@ const T={
     added:(a,u,tot)=>`✓ ${a} añadidos · ${u} actualizados · catálogo: ${tot} productos.`,
     enriching:(n)=>`⏳ Enriqueciendo fotos de ${n} productos nuevos… (en segundo plano)`,
     job_read_err:"(no pude leer el progreso del enriquecimiento)",
-    ph_qc:"Analizando QC con IA", ph_tag:"Etiquetando con IA", ph_photo:"Enriqueciendo fotos",
+    ph_qc:"Analizando QC con IA", ph_tag:"Etiquetando con IA", ph_photo:"Enriqueciendo fotos", ph_scan:"Escaneando fotos",
     done_prefix:"✓ Listo: ", nothing:"nada que hacer",
-    d_withImage:(n)=>`${n} con foto`, d_dead:(n)=>`${n} caídos`, d_tagged:(n)=>`${n} etiquetados`, d_scored:(n)=>`${n} con QC`,
+    d_withImage:(n)=>`${n} con foto`, d_dead:(n)=>`${n} caídos`, d_removed:(n)=>`${n} quitados del catálogo`, d_tagged:(n)=>`${n} etiquetados`, d_scored:(n)=>`${n} con QC`,
     tag_alldone:"Todo el catálogo ya está etiquetado ✓", tagging:(n)=>`⏳ Etiquetando ${n} productos con IA… (en segundo plano)`,
     qc_alldone:"No hay productos con foto pendientes de QC ✓", qcing:(n)=>`⏳ Analizando QC de ${n} productos… (en segundo plano)`,
     deleted:(d,tot)=>`Borrados: ${d} · catálogo: ${tot}`,
@@ -251,6 +253,7 @@ const T={
     rq_h:"Demand (requests)", rq_hint:"What users search for that is NOT in the catalog. Use it to prioritize what to add.", rq_load:"View demand", rq_count:"requests", rq_q:"Search", rq_c:"Times", rq_none:"No requests yet.",
     auto_h:"Automatic importer", auto_hint:'Ingests the curated community-sheet list on its own (dedup + your codes), periodically, with no action from you. Enable/tune it with the <code>AUTO_INGEST</code> env var on Railway. This button runs it <b>now</b>.', auto_btn:"Run importer now", auto_started:"Importer started in the background ✓ (check Railway logs)", auto_running:"Already running ✓",
     st_h:"Catalog status", st_load:"Refresh", st_retry:"Retry photos", st_retry_ok:"Retrying %n photos in the background ✓", st_hint:"Enter your token and hit Refresh.",
+    st_heal:"Remove broken photos", heal_confirm:"This checks every product's photo and removes from the catalog any with a DEAD image (404 error). It's reversible: if the product is still in a sheet, the next import re-adds it with a working photo. Continue?",
     st_products:"products", st_photos:"with photo", st_tagged:"tagged", st_qc:"with QC", st_agents:"active agents", st_subs:"subscribers", st_alerts:"price alerts", st_demand:"requests", st_clicks:"agent clicks", st_lastingest:"Last auto-ingest", st_never:"never", st_keys:"Keys", st_gkey:"Google Sheets", st_aikey:"AI (Claude)", st_on:"active", st_off:"missing",
     gd_h:"Quick guide (recommended order)", gd_sub:"The whole process, step by step. Each block below is a step.",
     gd_steps:[
@@ -269,9 +272,9 @@ const T={
     added:(a,u,tot)=>`✓ ${a} added · ${u} updated · catalog: ${tot} products.`,
     enriching:(n)=>`⏳ Enriching photos of ${n} new products… (in the background)`,
     job_read_err:"(couldn't read the enrichment progress)",
-    ph_qc:"Analyzing QC with AI", ph_tag:"Tagging with AI", ph_photo:"Enriching photos",
+    ph_qc:"Analyzing QC with AI", ph_tag:"Tagging with AI", ph_photo:"Enriching photos", ph_scan:"Scanning photos",
     done_prefix:"✓ Done: ", nothing:"nothing to do",
-    d_withImage:(n)=>`${n} with photo`, d_dead:(n)=>`${n} dead`, d_tagged:(n)=>`${n} tagged`, d_scored:(n)=>`${n} with QC`,
+    d_withImage:(n)=>`${n} with photo`, d_dead:(n)=>`${n} dead`, d_removed:(n)=>`${n} removed from catalog`, d_tagged:(n)=>`${n} tagged`, d_scored:(n)=>`${n} with QC`,
     tag_alldone:"The whole catalog is already tagged ✓", tagging:(n)=>`⏳ Tagging ${n} products with AI… (in the background)`,
     qc_alldone:"No products with a photo pending QC ✓", qcing:(n)=>`⏳ Analyzing QC of ${n} products… (in the background)`,
     deleted:(d,tot)=>`Deleted: ${d} · catalog: ${tot}`,
@@ -363,22 +366,23 @@ $("#apply").onclick=async()=>{
     pollJob(d.jobId,line);
   }
 };
-async function pollJob(id,line){
+async function pollJob(id,line,onDone){
   try{
     const r=await fetch("/api/admin/job?id="+encodeURIComponent(id),{headers:{"x-admin-token":$("#token").value}});
     const d=await r.json();
     if(!d.ok){ line.textContent=t("job_read_err"); return; }
     const j=d.job;
     if(j.status==="running"){
-      const ph=j.phase==="qc"?t("ph_qc"):(j.phase==="etiquetado"?t("ph_tag"):t("ph_photo"));
+      const ph=j.phase==="qc"?t("ph_qc"):(j.phase==="etiquetado"?t("ph_tag"):(j.phase==="scan"?t("ph_scan"):t("ph_photo")));
       line.textContent=`⏳ ${ph} ${j.done}/${j.total}…`;
-      setTimeout(()=>pollJob(id,line),2000);
+      setTimeout(()=>pollJob(id,line,onDone),2000);
     } else {
       line.style.color="var(--ok)";
-      const parts=[]; if(j.withImage) parts.push(t("d_withImage")(j.withImage)); if(j.dead) parts.push(t("d_dead")(j.dead)); if(j.tagged) parts.push(t("d_tagged")(j.tagged)); if(j.scored) parts.push(t("d_scored")(j.scored));
+      const parts=[]; if(j.removed) parts.push(t("d_removed")(j.removed)); if(j.withImage) parts.push(t("d_withImage")(j.withImage)); if(j.dead&&!j.removed) parts.push(t("d_dead")(j.dead)); if(j.tagged) parts.push(t("d_tagged")(j.tagged)); if(j.scored) parts.push(t("d_scored")(j.scored));
       line.textContent=t("done_prefix")+(parts.join(" · ")||t("nothing"));
+      if(onDone) onDone();
     }
-  }catch{ setTimeout(()=>pollJob(id,line),3000); }
+  }catch{ setTimeout(()=>pollJob(id,line,onDone),3000); }
 }
 
 /* Etiquetar todo el catálogo con IA */
@@ -552,6 +556,17 @@ $("#retryPhotos").onclick=async()=>{
   $("#retryPhotos").disabled=false; $("#retryPhotos").textContent=o;
   $("#retryOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok);margin-top:10px">${t("st_retry_ok").replace("%n",d.reset)}</p>`:`<p class="msg err">${d.error||t("err")}</p>`;
   if(d.ok) setTimeout(loadStatus,1500);
+};
+$("#healPhotos").onclick=async()=>{
+  if(!$("#token").value){ alert(t("st_hint")); return; }
+  if(!confirm(t("heal_confirm"))) return;
+  $("#healPhotos").disabled=true; const o=$("#healPhotos").textContent; $("#healPhotos").textContent=t("launching");
+  let d; try{ d=await (await fetch("/api/admin/heal-photos",{method:"POST",headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false,error:t("err")}; }
+  $("#healPhotos").disabled=false; $("#healPhotos").textContent=o;
+  if(!d.ok){ $("#retryOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  const line=document.createElement("p"); line.className="msg"; line.style.marginTop="10px"; line.textContent=`⏳ ${t("ph_scan")} 0/${d.total}…`;
+  $("#retryOut").innerHTML=""; $("#retryOut").appendChild(line);
+  pollJob(d.jobId,line,()=>setTimeout(loadStatus,800));
 };
 
 applyLang(); renderGuide();
