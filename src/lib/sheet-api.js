@@ -25,16 +25,18 @@ function cleanName(s) {
   return String(s || "").replace(/\s+/g, " ").trim().slice(0, 140);
 }
 const IMG_EXT = /\.(?:jpg|jpeg|png|webp|gif)(?:[?#]|$)/i;
+// Hosts de imagen inestables (imágenes "en celda" de Google que caducan → 403).
+const BAD_IMG = /googleusercontent\.com|docsubipk/i;
 // Extrae la URL de imagen de una celda: fórmula =IMAGE("url"), hipervínculo a
-// imagen, o la propia celda si es una URL de imagen.
+// imagen, o la propia celda si es una URL de imagen. Descarta hosts inestables.
 function imgFromCell(c) {
   if (!c) return null;
+  let u = null;
   const f = c.userEnteredValue && c.userEnteredValue.formulaValue;
-  if (f) { const m = /IMAGE\(\s*"([^"]+)"/i.exec(f); if (m) return m[1]; }
-  if (c.hyperlink && IMG_EXT.test(c.hyperlink)) return c.hyperlink;
-  const fv = c.formattedValue;
-  if (fv && /^https?:\/\//.test(fv.trim()) && IMG_EXT.test(fv.trim())) return fv.trim();
-  return null;
+  if (f) { const m = /IMAGE\(\s*"([^"]+)"/i.exec(f); if (m) u = m[1]; }
+  if (!u && c.hyperlink && IMG_EXT.test(c.hyperlink)) u = c.hyperlink;
+  if (!u) { const fv = c.formattedValue; if (fv && /^https?:\/\//.test(fv.trim()) && IMG_EXT.test(fv.trim())) u = fv.trim(); }
+  return u && !BAD_IMG.test(u) ? u : null;
 }
 
 export async function fetchSheetLinks(sheetId, apiKey, { timeoutMs = 40000 } = {}) {

@@ -369,6 +369,10 @@ function startHealJob() {
     const worker = async () => {
       while (idx < rows.length) {
         const r = rows[idx++];
+        // Imágenes "en celda" de Google (lh3.googleusercontent/docsubipk) caducan
+        // y dan 403: son muertas de verdad (no es ban de IP), así que las tratamos
+        // como tal. En geilicdn un 403 SÍ podría ser ban temporal → no se toca.
+        const badHost = /googleusercontent\.com|docsubipk/i.test(r.image_url || "");
         let cls = "unknown";
         try {
           const ctrl = new AbortController();
@@ -378,10 +382,12 @@ function startHealJob() {
             res = await fetch(thumb(r.image_url), { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA, "Referer": ref, "Range": "bytes=0-1" } });
           } finally { clearTimeout(to); }
           try { await res.body?.cancel?.(); } catch {}
+          const good = (res.status === 200 || res.status === 206) && /image\//.test(res.headers.get("content-type") || "");
           if (res.status === 404 || res.status === 410) cls = "dead";
-          else if ((res.status === 200 || res.status === 206) && /image\//.test(res.headers.get("content-type") || "")) cls = "ok";
+          else if (good) cls = "ok";
+          else if (badHost) cls = "dead"; // Google doc-image caducada (403/redirección/…)
           else cls = "unknown";
-        } catch { cls = "unknown"; }
+        } catch { cls = badHost ? "dead" : "unknown"; }
         if (cls === "dead") { try { upd.run(r.id); job.removed++; } catch {} job.dead++; }
         else if (cls === "ok") job.ok++;
         else job.unknown++;

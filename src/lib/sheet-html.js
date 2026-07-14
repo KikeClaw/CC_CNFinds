@@ -6,6 +6,8 @@ import { parseAnyUrl } from "./parse.js";
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 const PRICE_RE = /[$€]\s?(\d{1,5}(?:[.,]\d{1,2})?)/;
+// Hosts de imagen inestables (imágenes "en celda" de Google que caducan → 403).
+const BAD_IMG = /googleusercontent\.com|docsubipk/i;
 const isNoise = (s) => /^(link|image|imagen|price|precio|name|nombre|qc)$/i.test((s || "").trim());
 
 // Los <a> de Sheets envuelven la URL real en google.com/url?q=<ENCODED>.
@@ -44,10 +46,12 @@ export async function fetchSheetHtml(sheetId, gid, { timeoutMs = 30000 } = {}) {
       const key = `${p.platform}:${p.itemId}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      // imagen del bloque (ventana i-3..i+3); subimos la resolución del thumbnail
+      // imagen del bloque (ventana i-3..i+3); subimos la resolución del thumbnail.
+      // Descartamos lh3.googleusercontent/docsubipk: son imágenes "en celda" que
+      // caducan (403). Preferimos sheets-images-rt (docs.google.com), que es estable.
       let image = null;
       for (let j = Math.max(0, i - 3); j <= Math.min(cells.length - 1, i + 3); j++) {
-        if (cells[j].img) { image = cells[j].img.replace(/=w\d+-h\d+$/, "=w800"); break; }
+        if (cells[j].img && !BAD_IMG.test(cells[j].img)) { image = cells[j].img.replace(/=w\d+-h\d+$/, "=w800"); break; }
       }
       // precio
       let price = null;
