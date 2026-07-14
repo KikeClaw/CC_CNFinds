@@ -1,6 +1,7 @@
 // Etiquetado de un producto con IA (título limpio, marca, modelo, color, tags).
 // Reutilizado por el script `ai:tag` y por el auto-encadenado del importador.
 import { structured, MODELS } from "./ai.js";
+import { CATEGORIES } from "./categories.js";
 
 export const TAG_SCHEMA = {
   type: "object", additionalProperties: false,
@@ -11,7 +12,9 @@ export const TAG_SCHEMA = {
     model_name: { type: ["string", "null"] },
     colorway: { type: ["string", "null"] },
     gender: { type: "string", enum: ["men", "women", "unisex", "kids", "unknown"] },
-    category: { type: "string" },
+    // Categoría ACOTADA: la IA elige exactamente una de la lista canónica
+    // (evita cientos de categorías casi-duplicadas). "Other" si nada encaja.
+    category: { type: "string", enum: CATEGORIES },
     tags: { type: "array", items: { type: "string" } },
   },
   required: ["clean_title", "clean_title_en", "brand", "model_name", "colorway", "gender", "category", "tags"],
@@ -29,7 +32,8 @@ const SYSTEM =
 
 export async function tagOne({ name, category, price }) {
   return structured({
-    system: SYSTEM, model: MODELS.fast, schema: TAG_SCHEMA, maxTokens: 500,
-    prompt: `Nombre crudo: "${name}"\nCategoria actual: ${category || "?"}\nPrecio: ${price ?? "?"} EUR\n\nDevuelve los metadatos normalizados (titulo ES + EN, tags bilingues).`,
+    system: SYSTEM + " category: elige EXACTAMENTE una de: " + CATEGORIES.join(", ") + ". Usa 'Other' solo si ninguna encaja.",
+    model: MODELS.fast, schema: TAG_SCHEMA, maxTokens: 500,
+    prompt: `Nombre crudo: "${name}"\nCategoria actual: ${category || "?"}\nPrecio: ${price ?? "?"} EUR\n\nDevuelve los metadatos normalizados (titulo ES + EN, categoria de la lista, tags bilingues).`,
   });
 }
