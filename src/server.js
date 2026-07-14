@@ -1172,27 +1172,32 @@ async function autoIngestSources({ force = false } = {}) {
   if (!force && last && (Date.now() - Date.parse(last)) / 36e5 < AUTO_INGEST_INTERVAL_H) return; // aún no toca
   autoIngestRunning = true;
   metaSet("last_auto_ingest", new Date().toISOString());
-  console.log(`Importador automático: ingiriendo ${COMMUNITY_SHEETS.length} hojas de la comunidad…`);
-  const getRow = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=? AND image_url IS NULL");
-  const newItems = [];
-  let added = 0, updated = 0;
-  for (const s of COMMUNITY_SHEETS) {
-    try {
-      const deduped = dedupeCands(db, await gatherCandidates("sheet", sheetUrl(s.id)));
-      const r = applyCands(db, deduped, `auto:${s.name}`);
-      added += r.added; updated += r.updated;
-      for (const c of deduped) {
-        if (c.status === "new" && c.platform === "weidian") { const row = getRow.get(c.platform, c.itemId); if (row) newItems.push({ id: row.id, platform: c.platform, item_id: c.itemId }); }
-      }
-      console.log(`  ${s.name}: +${r.added} nuevos · ${r.updated} act.`);
-    } catch (e) { console.error(`  ${s.name} falló: ${e.message}`); }
-    await new Promise((r) => setTimeout(r, 1500)); // cortesía entre hojas
+  // try/finally CRÍTICO: si algo peta a mitad, el flag DEBE resetearse; si no,
+  // se queda "running" para siempre y bloquea todos los importadores futuros.
+  try {
+    console.log(`Importador automático: ingiriendo ${COMMUNITY_SHEETS.length} hojas de la comunidad…`);
+    const getRow = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=? AND image_url IS NULL");
+    const newItems = [];
+    let added = 0, updated = 0;
+    for (const s of COMMUNITY_SHEETS) {
+      try {
+        const deduped = dedupeCands(db, await gatherCandidates("sheet", sheetUrl(s.id)));
+        const r = applyCands(db, deduped, `auto:${s.name}`);
+        added += r.added; updated += r.updated;
+        for (const c of deduped) {
+          if (c.status === "new" && c.platform === "weidian") { const row = getRow.get(c.platform, c.itemId); if (row) newItems.push({ id: row.id, platform: c.platform, item_id: c.itemId }); }
+        }
+        console.log(`  ${s.name}: +${r.added} nuevos · ${r.updated} act.`);
+      } catch (e) { console.error(`  ${s.name} falló: ${e.message}`); }
+      await new Promise((r) => setTimeout(r, 1500)); // cortesía entre hojas
+    }
+    const total = db.prepare("SELECT COUNT(*) c FROM products").get().c;
+    console.log(`Importador automático: total +${added} nuevos · ${updated} actualizados · catálogo: ${total}`);
+    normalizeCategories(); inferGenders();
+    if (newItems.length) { startEnrichTagJob(newItems, { tag: false }); console.log(`Enriqueciendo fotos de ${newItems.length} productos nuevos…`); }
+  } finally {
+    autoIngestRunning = false;
   }
-  const total = db.prepare("SELECT COUNT(*) c FROM products").get().c;
-  console.log(`Importador automático: total +${added} nuevos · ${updated} actualizados · catálogo: ${total}`);
-  normalizeCategories(); inferGenders();
-  if (newItems.length) { startEnrichTagJob(newItems, { tag: false }); console.log(`Enriqueciendo fotos de ${newItems.length} productos nuevos…`); }
-  autoIngestRunning = false;
 }
 
 // Re-chequeo periódico de fotos: reintenta en tandas los productos que siguen
