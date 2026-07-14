@@ -113,6 +113,20 @@
   </div>
 
   <div class="card" style="margin-top:34px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="srcm_h">Gestor de fuentes</h2>
+      <button class="ghost" id="srcReload" data-i18n="srcm_reload" style="padding:8px 14px;font-size:13px">Actualizar</button>
+    </div>
+    <p class="hint" style="margin:6px 0 14px" data-i18n="srcm_hint">Las hojas que alimentan el catálogo. Añade, activa/desactiva o quita — el importador automático recorre solo las activas. Prioriza hojas con % con foto alto.</p>
+    <div class="srcadd" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <input id="srcName" data-i18n-ph="srcm_name_ph" placeholder="Nombre (ej. cnnewfinds Shoes)" style="flex:1;min-width:160px" />
+      <input id="srcUrl" data-i18n-ph="srcm_url_ph" placeholder="URL de la Google Sheet" style="flex:2;min-width:220px" />
+      <button class="primary" id="srcAdd" data-i18n="srcm_add">Añadir fuente</button>
+    </div>
+    <div id="srcList"></div>
+  </div>
+
+  <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="tag_h">Etiquetado con IA</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="tag_hint" data-i18n-html="1">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
     <button class="primary" id="tagAll" data-i18n="tag_btn">Etiquetar catálogo con IA</button>
@@ -216,7 +230,11 @@ const T={
       ["Crecer con la demanda","Mira <b>Ver demanda</b>: lo que buscan los usuarios y no tienes. Te dice exactamente qué añadir al catálogo."],
       ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
     ],
-    st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo",
+    st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
+    src_good:"✅ Buena fuente: mucha foto, merece la pena.", src_meh:"⚠️ Fuente regular: pocas fotos; los sin foto se ocultarán.", src_bad:"❌ Casi sin fotos: aporta poco (se ocultarán del catálogo).",
+    srcm_h:"Gestor de fuentes", srcm_reload:"Actualizar", srcm_hint:"Las hojas que alimentan el catálogo. Añade, activa/desactiva o quita — el importador automático recorre solo las activas. Prioriza hojas con % con foto alto.",
+    srcm_name_ph:"Nombre (ej. cnnewfinds Shoes)", srcm_url_ph:"URL de la Google Sheet", srcm_add:"Añadir fuente", srcm_empty:"Aún no hay fuentes. Añade una arriba.",
+    srcm_name:"Fuente", srcm_photos:"% con foto (última)", srcm_added:"Añadida", srcm_last:"Última ingesta", srcm_active:"Activa", srcm_del:"Quitar", srcm_del_confirm:"¿Quitar esta fuente? Los productos ya importados se quedan; solo deja de ingerirse.",
     th_platform:"Plataforma", th_name:"Nombre", th_price:"Precio", new_:"nuevo", existing_:"existe",
     sample_of:(n)=>`Muestra de ${n}. Al añadir se generan tus links de afiliado y se enriquecen las fotos con <code>npm run enrich</code>.`,
     added:(a,u,tot)=>`✓ ${a} añadidos · ${u} actualizados · catálogo: ${tot} productos.`,
@@ -266,7 +284,11 @@ const T={
       ["Grow with demand","Check <b>View demand</b>: what users search for that you don't have. It tells you exactly what to add."],
       ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
     ],
-    st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog",
+    st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
+    src_good:"✅ Good source: lots of photos, worth it.", src_meh:"⚠️ So-so source: few photos; the ones without will be hidden.", src_bad:"❌ Almost no photos: adds little (they'll be hidden from the catalog).",
+    srcm_h:"Source manager", srcm_reload:"Refresh", srcm_hint:"The sheets that feed the catalog. Add, enable/disable or remove — the automatic importer only runs the enabled ones. Prefer sheets with a high % with photo.",
+    srcm_name_ph:"Name (e.g. cnnewfinds Shoes)", srcm_url_ph:"Google Sheet URL", srcm_add:"Add source", srcm_empty:"No sources yet. Add one above.",
+    srcm_name:"Source", srcm_photos:"% with photo (last)", srcm_added:"Added", srcm_last:"Last ingest", srcm_active:"Active", srcm_del:"Remove", srcm_del_confirm:"Remove this source? Already-imported products stay; it just stops being ingested.",
     th_platform:"Platform", th_name:"Name", th_price:"Price", new_:"new", existing_:"exists",
     sample_of:(n)=>`Sample of ${n}. On adding, your affiliate links are generated and photos are enriched with <code>npm run enrich</code>.`,
     added:(a,u,tot)=>`✓ ${a} added · ${u} updated · catalog: ${tot} products.`,
@@ -296,7 +318,7 @@ $("#langBtn").onclick=()=>{ LANG=LANG==="es"?"en":"es"; localStorage.setItem("cn
 
 $("#token").value=localStorage.getItem("cnf_admin")||"";
 $("#token").oninput=()=>localStorage.setItem("cnf_admin",$("#token").value);
-$("#token").addEventListener("change",()=>{ if(typeof loadStatus==="function") loadStatus(); });
+$("#token").addEventListener("change",()=>{ if(typeof loadStatus==="function") loadStatus(); if(typeof loadSources==="function") loadSources(); });
 function modeUI(){ const m=$("#mode").value; const isSheet=m==="sheet";
   $("#url").style.display=isSheet?"block":"none"; $("#content").style.display=isSheet?"none":"block";
   $("#lbl").textContent=isSheet?t("lbl_sheet"):(m==="csv"?t("lbl_csv"):t("lbl_text")); }
@@ -347,7 +369,9 @@ $("#preview").onclick=async()=>{
       <div class="stat"><b>${s.unicos}</b><span>${t("st_unique")}</span></div>
       <div class="stat" style="color:var(--ok)"><b>${s.nuevos}</b><span>${t("st_new")}</span></div>
       <div class="stat"><b>${s.existentes}</b><span>${t("st_existing")}</span></div>
+      <div class="stat" style="color:${(s.pctFoto??0)>=60?'var(--ok)':(s.pctFoto??0)>=25?'#f59e0b':'var(--brand)'}"><b>${s.pctFoto??0}%</b><span>${t("st_photo")}</span></div>
     </div>
+    <p class="hint" style="margin-top:2px">${(s.pctFoto??0)>=60?t("src_good"):(s.pctFoto??0)>=25?t("src_meh"):t("src_bad")}</p>
     <table><thead><tr><th></th><th>${t("th_platform")}</th><th>itemID</th><th>${t("th_name")}</th><th>${t("th_price")}</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="hint">${t("sample_of")(d.sample.length)}</p>
   </div>`;
@@ -520,6 +544,46 @@ $("#autoIng").onclick=async()=>{
   $("#autoIngOut").innerHTML=`<p class="msg" style="color:var(--ok)">${d.running?t("auto_running"):t("auto_started")}</p>`;
 };
 
+/* Gestor de fuentes */
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function loadSources(){
+  const el=$("#srcList"); if(!el) return;
+  if(!$("#token").value){ el.innerHTML=`<p class="hint" style="margin-top:8px">${t("st_hint")}</p>`; return; }
+  let d; try{ d=await (await fetch("/api/admin/sources",{headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false}; }
+  if(!d||!d.ok){ el.innerHTML=`<p class="hint" style="margin-top:8px">${t("st_hint")}</p>`; return; }
+  if(!d.sources.length){ el.innerHTML=`<p class="hint" style="margin-top:8px">${t("srcm_empty")}</p>`; return; }
+  const fmt=ts=>ts?new Date(ts).toLocaleDateString():"—";
+  el.innerHTML=`<table><thead><tr><th>${t("srcm_name")}</th><th>${t("srcm_photos")}</th><th>${t("srcm_added")}</th><th>${t("srcm_last")}</th><th>${t("srcm_active")}</th><th></th></tr></thead><tbody>`+
+    d.sources.map(s=>{
+      const pct=s.total_items?Math.round((s.last_photos||0)/s.total_items*100):null;
+      const pc=pct==null?'<span style="color:var(--muted)">—</span>':`<b style="color:${pct>=60?'var(--ok)':pct>=25?'#f59e0b':'var(--brand)'}">${pct}%</b> <span style="color:var(--muted);font-size:12px">(${s.last_photos||0}/${s.total_items})</span>`;
+      return `<tr style="opacity:${s.enabled?1:.45}">
+        <td><b>${esc(s.name)}</b><br><a href="${esc(s.url)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--muted)">${esc(s.id.slice(0,16))}…</a></td>
+        <td>${pc}</td>
+        <td style="color:var(--muted);font-size:13px">${fmt(s.added_at)}</td>
+        <td style="color:var(--muted);font-size:13px">${fmt(s.last_ingest)}</td>
+        <td style="text-align:center"><input type="checkbox" ${s.enabled?"checked":""} data-toggle="${esc(s.id)}" style="width:18px;height:18px;cursor:pointer"></td>
+        <td><button class="ghost" data-del="${esc(s.id)}" style="padding:5px 10px;font-size:12px">${t("srcm_del")}</button></td>
+      </tr>`;
+    }).join("")+`</tbody></table>`;
+  el.querySelectorAll("[data-toggle]").forEach(cb=>cb.onchange=()=>srcAction("toggle",{id:cb.dataset.toggle,enabled:cb.checked}));
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ if(confirm(t("srcm_del_confirm"))) srcAction("delete",{id:b.dataset.del}); });
+}
+async function srcAction(action,body){
+  try{ await fetch("/api/admin/sources/"+action,{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify(body)}); }catch{}
+  loadSources();
+}
+$("#srcAdd").onclick=async()=>{
+  const url=$("#srcUrl").value.trim(), name=$("#srcName").value.trim();
+  if(!url){ alert(t("srcm_url_ph")); return; }
+  $("#srcAdd").disabled=true; const o=$("#srcAdd").textContent; $("#srcAdd").textContent=t("launching");
+  let d; try{ d=await (await fetch("/api/admin/sources/add",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({url,name})})).json(); }catch{ d={ok:false,error:t("err")}; }
+  $("#srcAdd").disabled=false; $("#srcAdd").textContent=o;
+  if(!d.ok){ alert(d.error||t("err")); return; }
+  $("#srcUrl").value=""; $("#srcName").value=""; loadSources();
+};
+$("#srcReload").onclick=loadSources;
+
 /* Guía + estado del catálogo */
 function renderGuide(){
   const el=$("#guide"); if(!el) return;
@@ -570,7 +634,7 @@ $("#healPhotos").onclick=async()=>{
 };
 
 applyLang(); renderGuide();
-if($("#token").value) loadStatus();
+if($("#token").value){ loadStatus(); loadSources(); }
 </script>
 </body>
 </html>

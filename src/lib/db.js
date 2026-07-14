@@ -67,6 +67,13 @@ export function openDb(path) {
   db.exec("CREATE TABLE IF NOT EXISTS requests (id INTEGER PRIMARY KEY AUTOINCREMENT, query TEXT, email TEXT, created_at TEXT, lang TEXT)");
   // Clave/valor interno (p.ej. última ejecución del importador automático).
   db.exec("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, val TEXT)");
+  // Fuentes de datos (hojas de la comunidad) gestionables desde /admin: añadir,
+  // activar/desactivar y quitar sin redeploy. El importador recorre las activas.
+  db.exec(`CREATE TABLE IF NOT EXISTS sources (
+    id TEXT PRIMARY KEY, name TEXT, url TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1, added_at TEXT,
+    last_ingest TEXT, last_added INTEGER, last_photos INTEGER, total_items INTEGER
+  )`);
   return db;
 }
 

@@ -412,7 +412,47 @@ function handleAdminAutoIngest(req, res) {
   if (!AUTO_INGEST) return json(res, 200, { ok: false, error: "Desactivado (AUTO_INGEST=off)." });
   if (autoIngestRunning) return json(res, 200, { ok: true, running: true, last: metaGet("last_auto_ingest") });
   autoIngestSources({ force: true }).catch((e) => console.error("Auto-ingest falló:", e.message));
-  json(res, 200, { ok: true, started: true, sheets: COMMUNITY_SHEETS.length });
+  json(res, 200, { ok: true, started: true, sheets: listSources().filter((s) => s.enabled).length });
+}
+
+// --- Gestor de fuentes (hojas de la comunidad) editable desde /admin ---
+// La primera vez siembra la tabla con las fuentes del config; a partir de ahí
+// mandas tú desde el panel (añadir/activar/quitar), sin redeploy.
+function ensureSourcesSeeded() {
+  const n = db.prepare("SELECT COUNT(*) c FROM sources").get().c;
+  if (n > 0) return;
+  const ins = db.prepare("INSERT OR IGNORE INTO sources (id, name, url, enabled, added_at) VALUES (?, ?, ?, 1, ?)");
+  const now = new Date().toISOString();
+  for (const s of COMMUNITY_SHEETS) ins.run(s.id, s.name, sheetUrl(s.id), now);
+}
+function listSources() { try { return db.prepare("SELECT * FROM sources ORDER BY added_at").all(); } catch { return []; } }
+
+function handleAdminSources(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  ensureSourcesSeeded();
+  json(res, 200, { ok: true, sources: listSources() });
+}
+async function handleAdminSourceAdd(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const id = sheetIdFromUrl(body.url || "");
+  if (!id) return json(res, 200, { ok: false, error: "URL de Google Sheet no válida." });
+  const name = String(body.name || "").trim().slice(0, 80) || "Hoja " + id.slice(0, 6);
+  db.prepare("INSERT INTO sources (id, name, url, enabled, added_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, url=excluded.url, enabled=1")
+    .run(id, name, sheetUrl(id), new Date().toISOString());
+  json(res, 200, { ok: true, sources: listSources() });
+}
+async function handleAdminSourceToggle(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  db.prepare("UPDATE sources SET enabled=? WHERE id=?").run(body.enabled ? 1 : 0, String(body.id || ""));
+  json(res, 200, { ok: true, sources: listSources() });
+}
+async function handleAdminSourceDelete(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  db.prepare("DELETE FROM sources WHERE id=?").run(String(body.id || ""));
+  json(res, 200, { ok: true, sources: listSources() });
 }
 // Admin: demanda agregada (qué añadir al catálogo).
 function handleAdminRequests(req, res) {
@@ -852,10 +892,11 @@ async function handleAdminPreview(req, res) {
     const cands = await gatherCandidates(body.mode, body.content || "");
     const deduped = dedupeCands(db, cands);
     const nuevos = deduped.filter((c) => c.status === "new").length;
+    const conFoto = deduped.filter((c) => c.image).length; // señal de calidad de la fuente
     json(res, 200, {
       ok: true,
-      stats: { encontrados: cands.length, unicos: deduped.length, nuevos, existentes: deduped.length - nuevos },
-      sample: deduped.slice(0, 40).map((c) => ({ platform: c.platform, itemId: c.itemId, name: c.name, price: c.price, status: c.status })),
+      stats: { encontrados: cands.length, unicos: deduped.length, nuevos, existentes: deduped.length - nuevos, conFoto, pctFoto: deduped.length ? Math.round(conFoto / deduped.length * 100) : 0 },
+      sample: deduped.slice(0, 40).map((c) => ({ platform: c.platform, itemId: c.itemId, name: c.name, price: c.price, status: c.status, image: !!c.image })),
     });
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }
 }
@@ -1065,6 +1106,10 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/requests") return void handleAdminRequests(req, res);
     if (u.pathname === "/api/admin/status") return void handleAdminStatus(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/auto-ingest") return void handleAdminAutoIngest(req, res);
+    if (u.pathname === "/api/admin/sources" && req.method === "GET") return void handleAdminSources(req, res);
+    if (u.pathname === "/api/admin/sources/add" && req.method === "POST") return void handleAdminSourceAdd(req, res);
+    if (u.pathname === "/api/admin/sources/toggle" && req.method === "POST") return void handleAdminSourceToggle(req, res);
+    if (u.pathname === "/api/admin/sources/delete" && req.method === "POST") return void handleAdminSourceDelete(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/heal-photos") return void handleAdminHealPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
@@ -1175,19 +1220,24 @@ async function autoIngestSources({ force = false } = {}) {
   // try/finally CRÍTICO: si algo peta a mitad, el flag DEBE resetearse; si no,
   // se queda "running" para siempre y bloquea todos los importadores futuros.
   try {
-    console.log(`Importador automático: ingiriendo ${COMMUNITY_SHEETS.length} hojas de la comunidad…`);
+    ensureSourcesSeeded();
+    const srcs = listSources().filter((s) => s.enabled);
+    console.log(`Importador automático: ingiriendo ${srcs.length} fuentes activas…`);
     const getRow = db.prepare("SELECT id FROM products WHERE platform=? AND item_id=? AND image_url IS NULL");
+    const setStats = db.prepare("UPDATE sources SET last_ingest=?, last_added=?, last_photos=?, total_items=? WHERE id=?");
     const newItems = [];
     let added = 0, updated = 0;
-    for (const s of COMMUNITY_SHEETS) {
+    for (const s of srcs) {
       try {
         const deduped = dedupeCands(db, await gatherCandidates("sheet", sheetUrl(s.id)));
         const r = applyCands(db, deduped, `auto:${s.name}`);
         added += r.added; updated += r.updated;
+        const photos = deduped.filter((c) => c.image).length;
+        setStats.run(new Date().toISOString(), r.added, photos, deduped.length, s.id);
         for (const c of deduped) {
           if (c.status === "new" && c.platform === "weidian") { const row = getRow.get(c.platform, c.itemId); if (row) newItems.push({ id: row.id, platform: c.platform, item_id: c.itemId }); }
         }
-        console.log(`  ${s.name}: +${r.added} nuevos · ${r.updated} act.`);
+        console.log(`  ${s.name}: +${r.added} nuevos · ${r.updated} act. · ${photos}/${deduped.length} con foto`);
       } catch (e) { console.error(`  ${s.name} falló: ${e.message}`); }
       await new Promise((r) => setTimeout(r, 1500)); // cortesía entre hojas
     }
@@ -1248,6 +1298,7 @@ async function bootstrap() {
     }
     normalizeCategories();
     inferGenders();
+    ensureSourcesSeeded(); // siembra la tabla de fuentes con el config la 1ª vez
     // Fotos pendientes: arranca ya y sigue reintentando cada pocos minutos
     // (recupera los que falla Weidian por throttling, sin depender de reinicios).
     resumePhotos();
