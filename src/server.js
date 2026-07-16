@@ -1006,21 +1006,33 @@ function startQcJob(ids) {
   const job = { id, total: ids.length, done: 0, scored: 0, tagged: 0, withImage: 0, dead: 0, phase: "qc", status: "running" };
   jobs.set(id, job);
   if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+  const sel = db.prepare("SELECT clean_title, name, images FROM products WHERE id=? AND qc_score IS NULL AND images IS NOT NULL");
+  const upd = db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?");
+  const qcRetry = async (imgs, name) => { try { return await qcOne(imgs, name); } catch { await sleepMs(2000); return await qcOne(imgs, name); } };
   (async () => {
-    for (const pid of ids) {
-      try {
-        const r = db.prepare("SELECT clean_title, name, images FROM products WHERE id=? AND qc_score IS NULL AND images IS NOT NULL").get(pid);
-        if (r) {
-          let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => `${u}.webp?w=700&h=700`); } catch {}
-          if (imgs.length) {
-            const out = await qcOne(imgs, r.clean_title || tidyName(r.name));
-            db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?").run(out.qc_score, JSON.stringify({ summary: out.qc_summary, summary_en: out.qc_summary_en, flags: out.flags }), pid);
-            job.scored++;
+    // Pool de workers (antes secuencial). Concurrencia baja: son llamadas de
+    // VISIÓN (varias imágenes por producto), más pesadas que el etiquetado.
+    let idx = 0;
+    const worker = async () => {
+      while (idx < ids.length) {
+        const pid = ids[idx++];
+        try {
+          const r = sel.get(pid);
+          if (r) {
+            // thumb() aplica el transform correcto según el host (geilicdn .webp,
+            // Google =wNNN, otros tal cual). Antes se añadía .webp a todo.
+            let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => thumb(u, 700, 700)).filter(Boolean); } catch {}
+            if (imgs.length) {
+              const out = await qcRetry(imgs, r.clean_title || tidyName(r.name));
+              upd.run(out.qc_score, JSON.stringify({ summary: out.qc_summary, summary_en: out.qc_summary_en, flags: out.flags }), pid);
+              job.scored++;
+            }
           }
-        }
-      } catch {}
-      job.done++;
-    }
+        } catch {}
+        job.done++;
+      }
+    };
+    await Promise.all(Array.from({ length: 3 }, worker));
     job.phase = "listo"; job.status = "done";
   })().catch(() => { job.status = "error"; });
   return id;
@@ -1029,7 +1041,7 @@ function startQcJob(ids) {
 async function handleAdminQcAll(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
-  const ids = db.prepare("SELECT id FROM products WHERE qc_score IS NULL AND images IS NOT NULL").all().map((r) => r.id);
+  const ids = db.prepare("SELECT id FROM products WHERE qc_score IS NULL AND images IS NOT NULL AND image_url IS NOT NULL").all().map((r) => r.id);
   const jobId = ids.length ? startQcJob(ids) : null;
   json(res, 200, { ok: true, count: ids.length, jobId });
 }
@@ -1208,6 +1220,10 @@ const AUTO_INGEST_INTERVAL_H = parseInt(process.env.AUTO_INGEST_INTERVAL_HOURS |
 // Etiquetado automático con IA por lotes (limpia nombre/marca/género/tags → más
 // filtros y marcas en el explorador). Usa Haiku (barato). AUTO_TAG=off lo apaga.
 const AUTO_TAG = String(process.env.AUTO_TAG ?? "on").toLowerCase() !== "off";
+// QC automático con IA (visión): puntúa la calidad de las fotos → insignia
+// "★ QC x/10", nuestro diferenciador visible. Más caro que el etiquetado (varias
+// imágenes por producto), así que va en tandas pequeñas. AUTO_QC=off lo apaga.
+const AUTO_QC = String(process.env.AUTO_QC ?? "on").toLowerCase() !== "off";
 const metaGet = (k) => { try { return db.prepare("SELECT val FROM app_meta WHERE key=?").get(k)?.val || null; } catch { return null; } };
 const metaSet = (k, v) => { try { db.prepare("INSERT INTO app_meta (key,val) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET val=excluded.val").run(k, v); } catch {} };
 let autoIngestRunning = false;
@@ -1287,6 +1303,21 @@ function resumeTagging() {
   }, 5000);
 }
 
+// QC automático por lotes: puntúa con visión los productos VISIBLES (con foto)
+// que tengan galería y aún no tengan nota. Tandas pequeñas: es lo más caro.
+let qcJobRunning = false;
+function resumeQc() {
+  if (qcJobRunning || !AUTO_QC || !hasKey()) return;
+  const ids = db.prepare("SELECT id FROM products WHERE qc_score IS NULL AND images IS NOT NULL AND image_url IS NOT NULL ORDER BY id LIMIT 80").all().map((r) => r.id);
+  if (!ids.length) return;
+  qcJobRunning = true;
+  const jobId = startQcJob(ids);
+  const poll = setInterval(() => {
+    const j = jobs.get(jobId);
+    if (!j || j.status !== "running") { qcJobRunning = false; clearInterval(poll); }
+  }, 5000);
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -1305,6 +1336,8 @@ async function bootstrap() {
     setInterval(resumePhotos, 6 * 60e3).unref?.();
     // Etiquetado automático por lotes: el explorador gana marcas/filtros solo.
     if (AUTO_TAG) { resumeTagging(); setInterval(resumeTagging, 8 * 60e3).unref?.(); }
+    // QC automático por lotes: enciende las insignias "★ QC x/10" poco a poco.
+    if (AUTO_QC) { resumeQc(); setInterval(resumeQc, 15 * 60e3).unref?.(); }
     // Importador automático (si toca): crece el catálogo solo, sin admin.
     if (AUTO_INGEST) {
       autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));
