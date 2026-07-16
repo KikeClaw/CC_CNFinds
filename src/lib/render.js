@@ -311,6 +311,43 @@ export function couponsPage({ agents, base, lang = "es" }) {
   return doc({ title: t2.title, desc: t2.intro.slice(0, 160), canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
 }
 
+// --- Comparativa de agentes (tabla, /agentes) ---
+export function agentsComparePage({ agents, base, lang = "es" }) {
+  const lp = lang === "en" ? "?lang=en" : "";
+  const en = lang === "en";
+  const canonical = `${base}/agentes`;
+  const t2 = {
+    h: en ? "Shopping agent comparison (2026)" : "Comparativa de agentes de compra (2026)",
+    intro: en
+      ? "Compare the shopping agents we support side by side — welcome bonuses, strengths and how to sign up. Some links are affiliate links; we may earn a small commission at no extra cost to you."
+      : "Compara en paralelo los agentes de compra que soportamos: bonos de bienvenida, puntos fuertes y cómo registrarte. Algunos enlaces son de afiliado; podemos recibir una pequeña comisión sin coste adicional para ti.",
+    title: en ? "Shopping agent comparison 2026 — Kakobuy, Mulebuy, ACBuy & more | CNFinds" : "Comparativa de agentes 2026 — Kakobuy, Mulebuy, ACBuy y más | CNFinds",
+    a: en ? "Agent" : "Agente", bonus: en ? "Welcome bonus" : "Bono de bienvenida",
+    cash: "Cashback", pros: en ? "Strengths" : "Puntos fuertes", act: en ? "Actions" : "Acciones",
+    guide: en ? "Guide" : "Guía", signup: en ? "Sign up" : "Registrarse",
+    note: en ? "Bonuses change often; verify the current offer on the agent's site." : "Los bonos cambian a menudo; verifica la oferta actual en la web del agente.",
+    lead: en ? "New to agents? Read " : "¿Nuevo con los agentes? Lee ",
+    l1: en ? "what a W2C agent is" : "qué es un agente W2C", l2: en ? "best agents 2026" : "los mejores agentes 2026",
+    seeCoupons: en ? "See all coupons" : "Ver todos los cupones", browse: en ? "Browse the catalog" : "Explorar el catálogo",
+  };
+  const td = "padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top";
+  const rows = agents.map((a) => `<tr>
+    <td style="${td};white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:10px;background:${AGENT_COLOR[a.id] || "#888"};margin-right:7px"></span><b>${esc(a.name)}</b></td>
+    <td style="${td}">${a.bonus ? "🎁 " + esc(a.bonus) : "—"}</td>
+    <td style="${td}">${a.cashback ? "<b>" + esc(a.cashback) + "</b>" : "—"}</td>
+    <td style="${td};color:var(--muted);font-size:13px">${(a.pros || []).slice(0, 3).map(esc).join(" · ") || "—"}</td>
+    <td style="${td};white-space:nowrap"><a href="/agente/${a.id}${lp}" style="color:var(--brandc)">${esc(t2.guide)}</a>${a.signup ? ` · <a href="${a.signup}" target="_blank" rel="nofollow noopener" style="color:var(--brand);font-weight:700">${esc(t2.signup)}</a>` : ""}</td>
+  </tr>`).join("");
+  const body = `<div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(t2.h)}</div>
+<section><h1 class="h2" style="font-size:28px;margin-top:6px">${esc(t2.h)}</h1>
+<p style="color:var(--muted);max-width:760px;line-height:1.6;margin:0 0 8px">${esc(t2.intro)}</p>
+<p style="margin:0 0 18px">${esc(t2.lead)}<a href="/guia/guia-agentes${lp}" style="color:var(--brandc)">${esc(t2.l1)}</a> · <a href="/guia/mejores-agentes-2026${lp}" style="color:var(--brandc)">${esc(t2.l2)}</a>.</p>
+<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr>${[t2.a, t2.bonus, t2.cash, t2.pros, t2.act].map((h) => `<th style="text-align:left;padding:10px 12px;border-bottom:2px solid var(--line);white-space:nowrap">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+<p class="note" style="margin-top:16px">${esc(t2.note)}</p>
+<p style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap"><a class="agent" href="/cupones${lp}">${esc(t2.seeCoupons)}</a><a class="agent" href="/productos">${esc(t2.browse)}</a></p></section>`;
+  return doc({ title: t2.title, desc: t2.intro.slice(0, 160), canonical, lang }, body, [{ href: "/" + lp, label: tr(lang, "home") }]);
+}
+
 // --- Landing por agente ("Comprar con X") ---
 export function agentLandingPage({ agent, base, lang = "es" }) {
   const lp = lang === "en" ? "?lang=en" : "";

@@ -197,8 +197,13 @@ export const AGENTS = [
 // Estado en runtime de cada agente (código + activado). Se inicializa desde
 // AFFILIATE_CODES; el admin lo edita y se persiste en la DB (agent_settings).
 // Un agente arranca activado solo si trae un código real (no placeholder).
+// Por defecto TODOS los agentes se muestran (comparación poblada = nuestro USP).
+// El que tiene código real genera tu comisión; el resto sale con enlace funcional
+// sin referido (pobla la comparación e invita a que te registres). El admin puede
+// desactivar agentes concretos. SHOW_ALL_AGENTS=off vuelve a "solo con tu código".
+export const SHOW_ALL_AGENTS = String(process.env.SHOW_ALL_AGENTS ?? "on").toLowerCase() !== "off";
 const STATE = {};
-for (const a of AGENTS) STATE[a.id] = { code: AFFILIATE_CODES[a.id], enabled: !isPlaceholder(AFFILIATE_CODES[a.id]) };
+for (const a of AGENTS) STATE[a.id] = { code: AFFILIATE_CODES[a.id], enabled: SHOW_ALL_AGENTS || !isPlaceholder(AFFILIATE_CODES[a.id]) };
 
 export function getAgentState() {
   return AGENTS.map((a) => ({
@@ -215,16 +220,17 @@ export function setAgentState(id, { code, enabled } = {}) {
 }
 
 export function buildLinks(platform, itemId) {
-  const out = {};
+  const list = [];
   for (const agent of AGENTS) {
     const st = STATE[agent.id];
-    if (!st.enabled) continue; // solo agentes activados y con código real
-    out[agent.id] = {
-      name: agent.name,
-      url: agent.buildUrl(platform, itemId, st.code || ""),
-      configured: !isPlaceholder(st.code),
-    };
+    if (!st.enabled && !SHOW_ALL_AGENTS) continue;
+    const configured = !isPlaceholder(st.code);
+    const code = configured ? st.code : ""; // sin tu código = enlace funcional sin referido
+    list.push({ id: agent.id, configured, data: { name: agent.name, url: agent.buildUrl(platform, itemId, code), configured } });
   }
+  list.sort((a, b) => Number(b.configured) - Number(a.configured)); // los que te pagan, primero
+  const out = {};
+  for (const x of list) out[x.id] = x.data;
   return out;
 }
 
@@ -254,10 +260,10 @@ export function buildSearchLinks(q) {
   const out = [];
   for (const agent of AGENTS) {
     const st = STATE[agent.id];
-    if (!st.enabled) continue;
+    if (!st.enabled && !SHOW_ALL_AGENTS) continue;
     const fn = SEARCH[agent.id];
     if (!fn) continue;
-    out.push({ id: agent.id, name: agent.name, url: fn(eq, st.code || "") });
+    out.push({ id: agent.id, name: agent.name, url: fn(eq, isPlaceholder(st.code) ? "" : st.code) });
   }
   return out;
 }

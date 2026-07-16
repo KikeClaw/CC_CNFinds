@@ -622,7 +622,7 @@
       <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
     <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="/#categorias" data-i18n="categorias">Categorías</a><a href="/#marcas" data-i18n="marcas">Marcas</a></div>
-    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agente/kakobuy" data-i18n="f_agents">Agentes</a><a href="/#convertidor" data-i18n="conversor">Conversor</a></div>
+    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agentes" data-i18n="f_agents">Agentes</a><a href="/#convertidor" data-i18n="conversor">Conversor</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
   </div>
@@ -656,7 +656,7 @@ const T={
     fit_title:"Arma tu fit con IA",fit_sub:"Dinos tu presupuesto y montamos un outfit",armar:"Armar",
     brands:"Marcas populares",brands_sub:"Toca para filtrar",catalogo:"Catálogo",
     s_trending:"Destacados",s_new:"Novedades",s_pa:"Precio: menor a mayor",s_pd:"Precio: mayor a menor",s_name:"Nombre A–Z",
-    ver_agentes:"Ver agentes",elige_agente:"Compara y elige tu agente de compra",cashback:"Cashback de afiliado",
+    ver_agentes:"Ver agentes",elige_agente:"Compara y elige tu agente de compra",cashback:"Cashback de afiliado",more_agents:(n)=>`Ver los ${n} agentes →`,
     note:"El precio es orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.",
     p_count:"productos",noresults:"Sin resultados para tu búsqueda.",loadmore:"Cargar más",
     f_shop:"Tienda",f_all:"Todos los productos",f_all_guides:"Todas las guías",f_legal:"Legal",f_desc:"Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.",
@@ -706,7 +706,7 @@ const T={
     fit_title:"Build your fit with AI",fit_sub:"Tell us your budget and we'll build an outfit",armar:"Build",
     brands:"Popular brands",brands_sub:"Tap to filter",catalogo:"Catalog",
     s_trending:"Featured",s_new:"New",s_pa:"Price: low to high",s_pd:"Price: high to low",s_name:"Name A–Z",
-    ver_agentes:"View agents",elige_agente:"Compare and choose your shopping agent",cashback:"Affiliate cashback",
+    ver_agentes:"View agents",elige_agente:"Compare and choose your shopping agent",cashback:"Affiliate cashback",more_agents:(n)=>`See all ${n} agents →`,
     note:"Price is indicative (factory). Final cost includes international shipping handled by the agent. CNFinds does not sell or process payments.",
     p_count:"products",noresults:"No results for your search.",loadmore:"Load more",
     f_shop:"Shop",f_all:"All products",f_all_guides:"All guides",f_legal:"Legal",f_desc:"Your platform to discover products, review QC photos and find the best shopping agent at the best price.",
@@ -994,11 +994,14 @@ function pushRecent(id){ try{ let r=JSON.parse(localStorage.getItem("cnf_recent"
 function openModal(p){
   if(!p) return;
   pushRecent(p.id);
-  const agents=Object.entries(p.links).map(([k,l])=>{
+  // El modal muestra los primeros 6 (los que te pagan van primero); el resto en
+  // la comparativa completa (/agentes), para no romper el tamaño del popup.
+  const allAg=Object.entries(p.links);
+  const agents=allAg.slice(0,6).map(([k,l])=>{
     const cb=l.cashback?`<span class="cb" title="${t("cashback")}">${esc(l.cashback)}</span>`:"";
     const bn=l.bonus?`<span class="bn">${esc(LANG==="en"?(l.bonus.en||l.bonus.es):l.bonus.es)}</span>`:"";
     return `<a class="row" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${k}" data-pid="${p.id}"><span class="adot" style="background:${AGENT_COLOR[k]||'#888'}"></span><span class="an">${l.name}</span>${cb}${bn}<span class="ag">${ic("arrow",16,2)}</span></a>`;
-  }).join("");
+  }).join("")+(allAg.length>6?`<a class="row acmp-more" href="/agentes"><span class="an">${t("more_agents")(allAg.length)}</span><span class="ag">${ic("arrow",16,2)}</span></a>`:"");
   const imgs=(p.images&&p.images.length)?p.images:(p.image?[p.image]:[]);
   const main=imgs[0];
   const thumbs=imgs.length>1?`<div class="mthumbs">${imgs.map((u,i)=>`<img src="${imgv(u,120)}" alt="" class="${i===0?'on':''}" onclick="setMain('${u}',this)">`).join("")}</div>`:"";

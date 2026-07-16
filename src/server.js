@@ -17,7 +17,7 @@ import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
-import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, helpPage, esc } from "./lib/render.js";
+import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, agentsComparePage, helpPage, esc } from "./lib/render.js";
 import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
@@ -760,7 +760,7 @@ function agentsForLang(lang) {
     if (!m) return null;
     return {
       id: a.id, name: a.name, enabled: a.enabled,
-      bonus: pick(m.bonus), desc: pick(m.desc),
+      bonus: pick(m.bonus), desc: pick(m.desc), cashback: m.cashback || null,
       pros: m.pros ? (lang === "en" ? m.pros.en : m.pros.es) : [],
       coupons: (m.coupons || []).map((c) => ({ code: c.code, text: pick(c.text) })),
       signup: signupUrl(a.id),
@@ -770,6 +770,10 @@ function agentsForLang(lang) {
 function handleCoupons(req, res) {
   const lang = reqLang(req);
   html(res, couponsPage({ agents: agentsForLang(lang), base: baseUrl(req), lang }));
+}
+function handleAgentsCompare(req, res) {
+  const lang = reqLang(req);
+  html(res, agentsComparePage({ agents: agentsForLang(lang), base: baseUrl(req), lang }));
 }
 function handleAgentLanding(req, res, id) {
   const lang = reqLang(req);
@@ -828,7 +832,7 @@ function handleSitemap(req, res) {
   const brands = db.prepare("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL").all().map((r) => r.brand);
   const agents = getAgentState().filter((a) => agentMeta(a.id)).map((a) => a.id);
   res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones"] }));
+  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones", "/agentes", "/productos"] }));
 }
 
 // ---- Admin: importador universal ----
@@ -1151,6 +1155,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/guias") return html(res, guidesIndexPage(GUIDES, baseUrl(req), reqLang(req)));
     if (parts[0] === "guia" && parts[1]) { const g = guideBySlug(decodeURIComponent(parts[1])); return g ? html(res, articlePage(g, baseUrl(req), reqLang(req))) : html(res, "<h1>404</h1>", 404); }
     if (u.pathname === "/cupones" || u.pathname === "/coupons") return handleCoupons(req, res);
+    if (u.pathname === "/agentes" || u.pathname === "/agents") return handleAgentsCompare(req, res);
     if (u.pathname === "/ayuda" || u.pathname === "/help") return handleHelp(req, res);
     if ((parts[0] === "agente" || parts[0] === "agent") && parts[1]) return handleAgentLanding(req, res, decodeURIComponent(parts[1]));
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
