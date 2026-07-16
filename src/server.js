@@ -248,6 +248,31 @@ function handleAdminSubscribers(req, res) {
   const rows = db.prepare("SELECT email, created_at, lang FROM subscribers ORDER BY created_at DESC").all();
   json(res, 200, { ok: true, count: rows.length, subscribers: rows });
 }
+// Admin: genera un "digest" HTML de los últimos finds, listo para pegar en tu
+// proveedor de email (Mailchimp/Resend/…). No enviamos nosotros; te damos el
+// contenido + la lista de suscriptores para que lo mandes con tu herramienta.
+function handleAdminDigest(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
+  const subs = db.prepare("SELECT COUNT(*) c FROM subscribers").get().c;
+  const rows = db.prepare("SELECT id, clean_title, name, price_eur, image_url FROM products WHERE image_url IS NOT NULL AND clean_title IS NOT NULL ORDER BY id DESC LIMIT 12").all();
+  const base = baseUrl(req);
+  const cell = (r) => {
+    if (!r) return '<td style="width:50%"></td>';
+    const nm = esc(r.clean_title || tidyName(r.name));
+    const pr = r.price_eur != null ? "€" + Number(r.price_eur).toFixed(2) : "";
+    return `<td style="padding:8px;width:50%;vertical-align:top"><a href="${base}/producto/${r.id}" style="text-decoration:none;color:#111"><img src="${thumb(r.image_url, 400, 400)}" width="240" style="width:100%;max-width:240px;border-radius:10px" alt="${nm}"><div style="font-weight:600;font-size:14px;margin-top:6px">${nm}</div><div style="color:#777;font-size:13px">${pr}</div></a></td>`;
+  };
+  let table = "";
+  for (let i = 0; i < rows.length; i += 2) table += `<tr>${cell(rows[i])}${cell(rows[i + 1])}</tr>`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:540px;margin:0 auto;color:#111">
+  <h2 style="color:#ff4d2e;margin:0 0 6px">Nuevos finds en CNFinds ✨</h2>
+  <p style="color:#555">Los últimos hallazgos con fotos QC reales y precios de fábrica:</p>
+  <table style="width:100%;border-collapse:collapse">${table}</table>
+  <p style="text-align:center;margin:20px 0"><a href="${base}/productos" style="background:#ff4d2e;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700">Ver todo el catálogo →</a></p>
+  <p style="color:#999;font-size:12px;text-align:center">Recibes esto porque te suscribiste en ${base}. Cancela cuando quieras.</p>
+</div>`;
+  json(res, 200, { ok: true, subscribers: subs, count: rows.length, html });
+}
 
 // Analítica: registra un clic en un agente (intención de compra).
 async function handleTrack(req, res) {
@@ -752,6 +777,24 @@ function injectExploreSeo(page, u, base, lang) {
     .replace("</head>", `<script type="application/ld+json">${ld}</script>\n</head>`);
 }
 
+// Hub SEO crawlable para el footer de la home: enlaza las categorías y marcas
+// populares a sus páginas SSR (/categoria, /marca). Así la home (nuestra página
+// con más autoridad) reparte enlace interno a las ~170 páginas programáticas.
+function seoHubHtml(lang) {
+  const en = lang === "en";
+  const cats = db.prepare("SELECT category, COUNT(*) c FROM products WHERE category IS NOT NULL AND image_url IS NOT NULL GROUP BY category HAVING c>=3 ORDER BY c DESC LIMIT 14").all();
+  const brands = db.prepare("SELECT brand, COUNT(*) c FROM products WHERE brand IS NOT NULL AND image_url IS NOT NULL GROUP BY brand HAVING c>=3 ORDER BY c DESC LIMIT 24").all();
+  if (!cats.length && !brands.length) return "";
+  const link = (href, label) => `<a href="${href}" style="color:var(--muted);text-decoration:none;font-size:13px">${esc(label)}</a>`;
+  const catLinks = cats.map((r) => link(`/categoria/${encodeURIComponent(r.category)}`, catLabel(r.category, lang))).join("");
+  const brandLinks = brands.map((r) => link(`/marca/${encodeURIComponent(r.brand)}`, r.brand)).join("");
+  const col = (h, links) => `<div><h4 style="font-size:13px;font-weight:700;margin:0 0 10px">${esc(h)}</h4><div style="display:flex;flex-wrap:wrap;gap:6px 16px">${links}</div></div>`;
+  return `<div class="wrap" style="display:grid;gap:22px;padding:26px 0;border-top:1px solid var(--line)">
+    ${col(en ? "Popular categories" : "Categorías populares", catLinks)}
+    ${col(en ? "Popular brands" : "Marcas populares", brandLinks)}
+  </div>`;
+}
+
 // Agentes con metadatos (bono, descripción, ventajas, cupones, registro) en el idioma dado.
 function agentsForLang(lang) {
   const pick = (o) => (o ? (lang === "en" ? o.en : o.es) : "");
@@ -1116,6 +1159,7 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/track") return void handleTrack(req, res);
     if (req.method === "POST" && u.pathname === "/api/price-alert") { if (!rateLimit(req, res, "pa", 10, 60e3)) return; return void handlePriceAlert(req, res); }
     if (u.pathname === "/api/admin/subscribers") return void handleAdminSubscribers(req, res);
+    if (u.pathname === "/api/admin/digest") return void handleAdminDigest(req, res);
     if (u.pathname === "/api/admin/analytics") return void handleAdminAnalytics(req, res);
     if (u.pathname === "/api/admin/alerts") return void handleAdminAlerts(req, res);
     if (u.pathname === "/api/search-fallback") return void handleSearchFallback(res, u.searchParams);
@@ -1169,6 +1213,7 @@ const server = createServer((req, res) => {
       // grid pre-renderizado (los crawlers ven productos + enlaces internos) y
       // migas de pan (BreadcrumbList). La SPA reemplaza el grid al cargar.
       if (u.pathname === "/productos") page = injectExploreSeo(page, u, baseUrl(req), reqLang(req));
+      page = page.replace("<!--SEOHUB-->", () => seoHubHtml(reqLang(req))); // hub de enlaces internos crawlable
       // Analítica opcional: define ANALYTICS_SNIPPET (Plausible/GA/Umami…) y se inyecta.
       if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });

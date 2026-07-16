@@ -1,6 +1,7 @@
 // Renderizado server-side de paginas indexables (SEO): ficha de producto,
 // landings de categoria/marca, sitemap. HTML con contenido real + meta + schema.
 import { catLabel } from "./categories.js";
+import { GUIDES } from "./guides.js";
 const AGENT_COLOR = { cnfans: "#ff5a2c", mulebuy: "#2d7ff9", kakobuy: "#18a558", oopbuy: "#8b5cf6", hoobuy: "#e11d48", superbuy: "#f59e0b", sugargoo: "#ec4899", acbuy: "#0ea5e9", cssbuy: "#14b8a6", lovegobuy: "#f43f5e", joyagoo: "#a855f7", allchinabuy: "#eab308", orientdig: "#22c55e", hipobuy: "#6366f1" };
 
 export function esc(s) {
@@ -289,12 +290,22 @@ const gBody = (g, lang) => (lang === "en" && g.body_en ? g.body_en : g.body);
 
 export function articlePage(guide, base, lang = "es") {
   const lp = lang === "en" ? "?lang=en" : "";
+  const en = lang === "en";
   const canonical = `${base}/guia/${guide.slug}`;
   const title = gTitle(guide, lang);
   const jsonld = { "@context": "https://schema.org", "@type": "Article", headline: title, description: gDesc(guide, lang), mainEntityOfPage: canonical, inLanguage: lang };
+  // Guías relacionadas (3 siguientes, en bucle): enlace interno + retención.
+  const others = GUIDES.filter((g) => g.slug !== guide.slug);
+  const start = Math.max(0, others.findIndex((g) => g.slug > guide.slug));
+  const related = [...others.slice(start), ...others.slice(0, start)].slice(0, 3);
+  const relatedHtml = related.length ? `<section style="margin-top:36px;border-top:1px solid var(--line);padding-top:20px">
+    <h2 class="h2" style="font-size:18px">${en ? "Related guides" : "Guías relacionadas"}</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">${related.map((g) => `<a class="card" href="/guia/${g.slug}${lp}" style="padding:16px"><div style="font-weight:600;font-size:15px;margin-bottom:4px">${esc(gTitle(g, lang))}</div><div style="color:var(--muted);font-size:13px;line-height:1.5">${esc(gDesc(g, lang).slice(0, 90))}…</div></a>`).join("")}</div>
+  </section>` : "";
   const body = `
 <div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › <a href="/guias${lp}">${esc(tr(lang, "guides"))}</a> › ${esc(title)}</div>
-<article class="guide"><h1>${esc(title)}</h1>${gBody(guide, lang)}</article>`;
+<article class="guide"><h1>${esc(title)}</h1>${gBody(guide, lang)}</article>
+${relatedHtml}`;
   return doc({ title: `${title} | CNFinds`, desc: gDesc(guide, lang), canonical, jsonld, lang }, body, [{ href: "/guias" + lp, label: tr(lang, "guides") }, { href: "/" + lp, label: tr(lang, "home") }]);
 }
 

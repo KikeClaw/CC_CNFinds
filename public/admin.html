@@ -163,8 +163,10 @@
     <div class="actions" style="margin-top:0">
       <button class="ghost" id="loadSubs" data-i18n="subs_load">Ver suscriptores</button>
       <button class="ghost" id="expSubs" style="display:none" data-i18n="subs_export">Descargar CSV</button>
+      <button class="ghost" id="genDigest" data-i18n="dg_btn">Generar boletín de nuevos finds</button>
     </div>
     <div id="subsOut"></div>
+    <div id="digestOut"></div>
   </div>
 
   <div class="card" style="margin-top:34px">
@@ -212,6 +214,7 @@ const T={
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
     subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
+    dg_btn:"Generar boletín de nuevos finds", dg_ready:(n,s)=>`Boletín listo con ${n} finds · ${s} suscriptores ✓`, dg_hint:"Copia este HTML y pégalo en tu proveedor de email (Mailchimp, Resend, Brevo…) para enviarlo a tus suscriptores.", dg_copy:"Copiar HTML", dg_copied:"¡Copiado! ✓", dg_prev:"Previsualizar",
     an_h:"Analítica de agentes", an_hint:"Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.", an_load:"Ver analítica", an_total:"clics totales", an_7:"últimos 7 días", an_30:"últimos 30 días", an_byagent:"Por agente", an_top:"Top productos", an_byday:"Por día (14 días)", an_none:"Aún no hay clics.",
     al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
     rq_h:"Demanda (peticiones)", rq_hint:"Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.", rq_load:"Ver demanda", rq_count:"peticiones", rq_q:"Búsqueda", rq_c:"Veces", rq_none:"Aún no hay peticiones.",
@@ -266,6 +269,7 @@ const T={
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
     subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
+    dg_btn:"Generate new-finds newsletter", dg_ready:(n,s)=>`Newsletter ready with ${n} finds · ${s} subscribers ✓`, dg_hint:"Copy this HTML and paste it into your email provider (Mailchimp, Resend, Brevo…) to send it to your subscribers.", dg_copy:"Copy HTML", dg_copied:"Copied! ✓", dg_prev:"Preview",
     an_h:"Agent analytics", an_hint:"Clicks on agent links = purchase intent (= your commission). See which agents and products convert.", an_load:"View analytics", an_total:"total clicks", an_7:"last 7 days", an_30:"last 30 days", an_byagent:"By agent", an_top:"Top products", an_byday:"By day (14 days)", an_none:"No clicks yet.",
     al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
     rq_h:"Demand (requests)", rq_hint:"What users search for that is NOT in the catalog. Use it to prioritize what to add.", rq_load:"View demand", rq_count:"requests", rq_q:"Search", rq_c:"Times", rq_none:"No requests yet.",
@@ -486,6 +490,20 @@ function exportSubs(){
 }
 $("#loadSubs").onclick=loadSubs;
 $("#expSubs").onclick=exportSubs;
+$("#genDigest").onclick=async()=>{
+  $("#genDigest").disabled=true; const o=$("#genDigest").textContent; $("#genDigest").textContent=t("launching");
+  let d; try{ d=await (await fetch("/api/admin/digest",{headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false,error:t("err")}; }
+  $("#genDigest").disabled=false; $("#genDigest").textContent=o;
+  if(!d.ok){ $("#digestOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  $("#digestOut").innerHTML=`<p class="msg" style="margin-top:12px;color:var(--ok)">${t("dg_ready")(d.count,d.subscribers)}</p>
+    <p class="hint" style="margin:6px 0">${t("dg_hint")}</p>
+    <textarea id="dgHtml" readonly style="width:100%;height:150px;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:inherit"></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px"><button class="ghost" id="dgCopy">${t("dg_copy")}</button><button class="ghost" id="dgPrev">${t("dg_prev")}</button></div>
+    <div id="dgPreview" style="margin-top:12px"></div>`;
+  $("#dgHtml").value=d.html;
+  $("#dgCopy").onclick=()=>{ $("#dgHtml").select(); document.execCommand("copy"); $("#dgCopy").textContent=t("dg_copied"); setTimeout(()=>$("#dgCopy").textContent=t("dg_copy"),1500); };
+  $("#dgPrev").onclick=()=>{ $("#dgPreview").innerHTML=d.html; };
+};
 
 /* Analítica de agentes */
 async function loadAnalytics(){
