@@ -228,28 +228,58 @@ export function listPage({ kind, name, displayLabel, items, base, crumbs, topLin
   const lp = lang === "en" ? "?lang=en" : "";
   const path = `${base}/${kind}/${slug(name)}`;
   const label = displayLabel || name;
-  const title = `${label} — ${items.length}+ ${tr(lang, "ld_more")} | CNFinds`;
-  const desc = tr(lang, "ld_desc")(label, items.length);
-  const jsonld = {
+  const en = lang === "en";
+  const isBrand = kind === "marca";
+  // Precio mínimo real (señal "desde €X" + más contenido para SEO).
+  const prices = items.map((p) => p.price_eur).filter((x) => x != null && x > 0);
+  const minP = prices.length ? Math.min(...prices) : null;
+  // H1/título orientados a la búsqueda real ("mejores {X} reps").
+  const h1 = en ? `Best ${label} reps` : `Mejores réplicas de ${label}`;
+  const title = en
+    ? `Best ${label} reps 2026 · ${items.length}+ QC finds | CNFinds`
+    : `Mejores réplicas de ${label} 2026 · ${items.length}+ finds con QC | CNFinds`;
+  const desc = isBrand
+    ? (en ? `Best ${label} reps 2026: ${items.length}+ finds with real QC photos${minP ? `, from €${minP.toFixed(0)}` : ""}. Buy via a trusted agent — compare and checkout with confidence on CNFinds.`
+          : `Mejores réplicas de ${label} 2026: ${items.length}+ finds con fotos QC reales${minP ? `, desde €${minP.toFixed(0)}` : ""}. Compra vía agente fiable — compara y compra con confianza en CNFinds.`)
+    : (en ? `Best ${label} reps 2026: ${items.length}+ finds with QC photos and factory prices${minP ? `, from €${minP.toFixed(0)}` : ""}, ready to buy via a shopping agent on CNFinds.`
+          : `Mejores ${label} reps 2026: ${items.length}+ finds con fotos QC y precios de fábrica${minP ? `, desde €${minP.toFixed(0)}` : ""}, listos para comprar vía agente en CNFinds.`);
+  const intro = isBrand
+    ? (en ? `Discover ${items.length}+ <b>${esc(label)}</b> replica finds with real QC photos and factory prices${minP ? `, from <b>€${minP.toFixed(0)}</b>` : ""}. Buy through a trusted shopping agent (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenerates every link, checks quality with AI and lets you compare agents so you checkout with confidence.`
+          : `Descubre ${items.length}+ finds de <b>${esc(label)}</b> con fotos QC reales y precios de fábrica${minP ? `, desde <b>€${minP.toFixed(0)}</b>` : ""}. Compra a través de un agente fiable (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenera cada enlace, revisa la calidad con IA y te deja comparar agentes para comprar con confianza.`)
+    : (en ? `Browse ${items.length}+ <b>${esc(label)}</b> finds with QC photos and factory prices${minP ? `, from <b>€${minP.toFixed(0)}</b>` : ""}, ready to buy via a shopping agent. Use our AI QC Checker and shipping calculator to buy smarter on CNFinds.`
+          : `Explora ${items.length}+ finds de <b>${esc(label)}</b> con fotos QC y precios de fábrica${minP ? `, desde <b>€${minP.toFixed(0)}</b>` : ""}, listos para comprar vía agente. Usa nuestro QC Checker con IA y la calculadora de envío para comprar mejor en CNFinds.`);
+  // FAQ (rich snippets) + enlaces internos a guías.
+  const explore = isBrand ? `/productos?brands=${encodeURIComponent(name)}` : `/productos?cats=${encodeURIComponent(name)}`;
+  const faqs = en
+    ? [
+        [`How do I buy ${label} reps?`, `Find the product here, then click a shopping agent (Kakobuy, Mulebuy…) on the listing — we regenerate the link so the agent buys it in China and forwards it to you. Full steps in our <a href="/guia/como-comprar-en-weidian?lang=en">buying guide</a>.`],
+        [`Are ${label} reps good quality?`, `It depends on the batch. Always review the <a href="/guia/fotos-qc?lang=en">QC photos</a> and our AI quality score before shipping. See <a href="/guia/mejor-batch?lang=en">how to choose the best batch</a>.`],
+        [`Which agent is best for ${label}?`, `Compare bonuses, cashback and shipping on our <a href="/agentes?lang=en">agent comparison</a>. Kakobuy is a solid starting point.`],
+      ]
+    : [
+        [`¿Cómo comprar réplicas de ${label}?`, `Busca el producto aquí y pulsa un agente (Kakobuy, Mulebuy…) en la ficha — regeneramos el enlace para que el agente lo compre en China y te lo reenvíe. Pasos completos en nuestra <a href="/guia/como-comprar-en-weidian">guía de compra</a>.`],
+        [`¿Son de buena calidad las réplicas de ${label}?`, `Depende del batch. Revisa siempre las <a href="/guia/fotos-qc">fotos QC</a> y nuestra puntuación de calidad con IA antes de enviar. Mira <a href="/guia/mejor-batch">cómo elegir el mejor batch</a>.`],
+        [`¿Qué agente es mejor para ${label}?`, `Compara bonos, cashback y envío en nuestra <a href="/agentes">comparativa de agentes</a>. Kakobuy es un buen punto de partida.`],
+      ];
+  const faqHtml = `<section style="margin-top:34px"><h2 class="h2" style="font-size:22px">${en ? "FAQ" : "Preguntas frecuentes"}</h2>${faqs.map(([q, a]) => `<h3 style="margin:16px 0 4px;font-size:16px">${esc(q)}</h3><p style="margin:0;color:var(--muted);line-height:1.6">${a}</p>`).join("")}</section>`;
+  const itemList = {
     "@context": "https://schema.org", "@type": "ItemList",
     itemListElement: items.slice(0, 20).map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${base}/producto/${p.id}`, name: p.name })),
   };
-  const en = lang === "en";
-  const intro = kind === "marca"
-    ? (en
-      ? `Discover ${items.length}+ ${label} replica finds with real QC photos and factory prices. Buy through a trusted shopping agent (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenerates every link with QC-first picks so you compare and checkout with confidence.`
-      : `Descubre ${items.length}+ finds de ${label} con fotos QC reales y precios de fábrica. Compra a través de un agente fiable (Kakobuy, Mulebuy, ACBuy…) — CNFinds regenera cada enlace con selección QC-first para que compares y compres con confianza.`)
-    : (en
-      ? `Browse ${items.length}+ ${label} finds with QC photos and factory prices, ready to buy via a shopping agent. Use our AI QC Checker and shipping calculator to buy smarter on CNFinds.`
-      : `Explora ${items.length}+ finds de ${label} con fotos QC y precios de fábrica, listos para comprar vía agente. Usa nuestro QC Checker con IA y la calculadora de envío para comprar mejor en CNFinds.`);
+  const faqLd = {
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a.replace(/<[^>]+>/g, "") } })),
+  };
   const body = `
 <div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › ${esc(label)}</div>
-<section><h2 class="h2" style="font-size:28px">${esc(label)} <span style="color:var(--muted);font-weight:500;font-size:16px">· ${items.length} ${esc(tr(lang, "products"))}</span></h2>
-<p style="color:var(--muted);max-width:760px;line-height:1.6;margin:-6px 0 16px">${esc(intro)}</p>
+<section><h1 class="h2" style="font-size:28px;margin-top:6px">${esc(h1)} <span style="color:var(--muted);font-weight:500;font-size:16px">· ${items.length} ${esc(tr(lang, "products"))}</span></h1>
+<p style="color:var(--muted);max-width:780px;line-height:1.6;margin:-2px 0 14px">${intro}</p>
+<p style="margin:0 0 16px"><a class="agent" href="${explore}" style="border-color:var(--brand);color:var(--brand);font-weight:700">${en ? `Filter all ${label} →` : `Filtrar todo ${label} →`}</a></p>
 ${topLinks && topLinks.length ? `<div class="chips" style="margin-bottom:18px">${topLinks.map((c) => `<a href="${c.href}${lp}">${esc(c.label)}</a>`).join("")}</div>` : ""}
-<div class="grid">${items.map((r) => cardHtml(r, lp)).join("")}</div></section>`;
+<div class="grid">${items.map((r) => cardHtml(r, lp)).join("")}</div></section>
+${faqHtml}`;
   const bc = breadcrumbLd(base, [{ name: tr(lang, "home"), href: "/" + lp }, { name: label }]);
-  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld: [jsonld, bc], lang }, body, crumbs || []);
+  return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld: [itemList, bc, faqLd], lang }, body, crumbs || []);
 }
 
 // --- Guías (contenido / SEO) ---

@@ -827,9 +827,11 @@ function handleListPage(req, res, kind, name) {
   html(res, listPage({ kind, name, displayLabel, items: rows, base: baseUrl(req), topLinks, crumbs: [{ href: "/" + lp, label: lang === "en" ? "Home" : "Inicio" }], lang }));
 }
 function handleSitemap(req, res) {
-  const ids = db.prepare("SELECT id FROM products").all().map((r) => r.id);
-  const cats = db.prepare("SELECT DISTINCT category FROM products WHERE category IS NOT NULL").all().map((r) => r.category);
-  const brands = db.prepare("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL").all().map((r) => r.brand);
+  const ids = db.prepare("SELECT id FROM products WHERE image_url IS NOT NULL").all().map((r) => r.id);
+  // Solo categorías/marcas con suficientes productos: evita páginas "thin" (con
+  // 1-2 items) que Google penaliza. Umbral: 3+.
+  const cats = db.prepare("SELECT category FROM products WHERE category IS NOT NULL GROUP BY category HAVING COUNT(*) >= 3").all().map((r) => r.category);
+  const brands = db.prepare("SELECT brand FROM products WHERE brand IS NOT NULL GROUP BY brand HAVING COUNT(*) >= 3").all().map((r) => r.brand);
   const agents = getAgentState().filter((a) => agentMeta(a.id)).map((a) => a.id);
   res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
   res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones", "/agentes", "/productos"] }));
