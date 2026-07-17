@@ -31,5 +31,5 @@ export async function buildFit(budget, style, candidates) {
     `Presupuesto: ${budget} EUR\n${style ? `Estilo pedido: ${style}\n` : ""}\n` +
     `Productos disponibles:\n${list}\n\n` +
     "Devuelve el outfit (picks con motivo), el total estimado y un resumen.";
-  return structured({ system, prompt, schema: SCHEMA, model: MODELS.smart, maxTokens: 900 });
+  return structured({ system, prompt, schema: SCHEMA, model: MODELS.fast, maxTokens: 900 });
 }

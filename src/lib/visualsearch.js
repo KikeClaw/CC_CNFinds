@@ -27,5 +27,5 @@ export async function imageToQuery(image, { categories = [], brands = [] } = {})
     `Categorias validas: ${categories.join(", ") || "(ninguna)"}\n` +
     `Marcas frecuentes: ${brands.join(", ") || "(ninguna)"}\n\n` +
     "Identifica la prenda de la imagen y devuelve los atributos para buscar equivalentes.";
-  return structured({ system, prompt, schema: SCHEMA, model: MODELS.smart, images: [image], maxTokens: 400 });
+  return structured({ system, prompt, schema: SCHEMA, model: MODELS.fast, images: [image], maxTokens: 400 });
 }

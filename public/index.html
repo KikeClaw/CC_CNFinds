@@ -711,7 +711,7 @@ const T={
     fav_empty:"Aún no tienes favoritos. Toca el ♡ en cualquier producto.",
     arts:"artículos",prods:"productos",favs:"favoritos",favs_f:"Favoritos",lang_name:"ES",detected:"Detectado",
     men_short:"Hombre",women_short:"Mujer",
-    trust1:"Descubrimiento con QC primero",trust2:"Comparativa de agentes",trust3:"4.000+ productos indexados",
+    trust1:"Descubrimiento con QC primero",trust2:"Comparativa de agentes",trust3:(n)=>`${n}+ productos indexados`,
     fit_budget:"Presupuesto € (ej. 150)",fit_style:"Estilo (opcional): techwear, minimal, y2k…",
     c_nl_t:"Búsqueda en lenguaje natural",c_nl_d:'"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.',c_try:"Probar",
     c_vis_t:"Búsqueda visual «W2C this»",c_vis_d:"Sube la foto de cualquier prenda y encuentra su equivalente al instante.",c_upload:"Subir foto",
@@ -762,7 +762,7 @@ const T={
     fav_empty:"No favorites yet. Tap the ♡ on any product.",
     arts:"items",prods:"products",favs:"favorites",favs_f:"Favorites",lang_name:"EN",detected:"Detected",
     men_short:"Men",women_short:"Women",
-    trust1:"QC-first discovery",trust2:"Agent comparison",trust3:"4,000+ products indexed",
+    trust1:"QC-first discovery",trust2:"Agent comparison",trust3:(n)=>`${n}+ products indexed`,
     fit_budget:"Budget € (e.g. 150)",fit_style:"Style (optional): techwear, minimal, y2k…",
     c_nl_t:"Natural-language search",c_nl_d:'"Black techwear under €50" — the AI understands and filters for you.',c_try:"Try it",
     c_vis_t:"Visual search «W2C this»",c_vis_d:"Upload a photo of any item and find its match instantly.",c_upload:"Upload photo",
@@ -794,6 +794,10 @@ const t=(k)=>((T[LANG]&&T[LANG][k])||T.es[k]||k);
 const pname=(p)=> LANG==="en"?(p.title_en||p.raw_name||p.name):p.name;
 const CATMAP={};
 const catDisp=(c)=>{ const e=CATMAP[c]; return e?(LANG==="en"?e.en:e.es):(c||""); };
+/* Tira de confianza: el nº de productos es REAL (se actualiza al cargar el catálogo),
+   redondeado a la centena inferior. Fallback 4.000 hasta que llega el dato. */
+let catalogCount=0;
+function paintTrust(){ const tr=$("#trust"); if(!tr) return; const n=catalogCount?Math.floor(catalogCount/100)*100:4000; const num=n.toLocaleString(LANG==="en"?"en-US":"es-ES"); tr.innerHTML=[["shield",t("trust1")],["layers",t("trust2")],["grid",t("trust3")(num)]].map(([i,x])=>`<span>${ic(i,16,1.8)} ${x}</span>`).join(""); }
 // Rellena tus URLs de comunidad para que aparezcan los enlaces en el footer.
 const COMMUNITY={ discord:"", telegram:"" };
 function renderSocial(){
@@ -960,6 +964,7 @@ async function showSharedList(ids){
 /* categories */
 async function loadCats(){
   const d=await (await fetch("/api/categories")).json();
+  catalogCount=d.withImage||d.total||catalogCount; paintTrust(); // nº real de productos con foto
   d.categories.forEach(c=>{ CATMAP[c.category]={es:c.label_es||c.category,en:c.label_en||c.category}; });
   $("#strip").innerHTML=d.categories.filter(c=>c.category!=="(otros)").map(c=>`
     <div class="cat" data-cat="${esc(c.category)}" style="--cc:${catColor(c.category)}">
@@ -1374,7 +1379,7 @@ function applyLang(){
   document.querySelectorAll("[data-i18n]").forEach(el=>{ const v=t(el.getAttribute("data-i18n")); if(v!=null) el.textContent=v; });
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=t(el.getAttribute("data-i18n-ph")); if(v!=null) el.setAttribute("placeholder",v); });
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
-  const tr=$("#trust"); if(tr) tr.innerHTML=[["shield",t("trust1")],["layers",t("trust2")],["grid",t("trust3")]].map(([i,x])=>`<span>${ic(i,16,1.8)} ${x}</span>`).join("");
+  paintTrust();
   const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
   document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();

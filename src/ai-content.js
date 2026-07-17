@@ -15,7 +15,7 @@ const rows = db.prepare(
   "SELECT id, name, clean_title, brand, category, price_eur FROM products WHERE ai_description IS NULL AND image_url IS NOT NULL ORDER BY hot DESC, id LIMIT ?"
 ).all(limit);
 
-console.log(`Generando contenido bilingue para ${rows.length} producto(s) con ${MODELS.smart}...\n`);
+console.log(`Generando contenido bilingue para ${rows.length} producto(s) con ${MODELS.fast}...\n`);
 const upd = db.prepare("UPDATE products SET ai_description=?, ai_description_en=? WHERE id=?");
 const SYSTEM =
   "Redactor SEO de e-commerce de moda, bilingue (espanol e ingles). Escribe una descripcion " +
@@ -30,7 +30,7 @@ const SCHEMA = {
 
 for (const r of rows) {
   const out = await structured({
-    system: SYSTEM, model: MODELS.smart, schema: SCHEMA, maxTokens: 700,
+    system: SYSTEM, model: MODELS.fast, schema: SCHEMA, maxTokens: 700,
     prompt: `Producto: ${r.clean_title || r.name}\nMarca: ${r.brand ?? "?"}\nCategoria: ${r.category ?? "?"}\nPrecio: ${r.price_eur ?? "?"} EUR\n\nEscribe la descripcion + bullets en espanol (es) y en ingles (en).`,
   });
   upd.run((out.es || "").trim(), (out.en || "").trim(), r.id);
