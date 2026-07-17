@@ -103,6 +103,11 @@
     <button class="ok" id="apply" data-i18n="apply" style="display:none">Añadir al catálogo</button>
   </div>
 
+  <details class="card" style="margin-top:14px;background:var(--soft)">
+    <summary style="cursor:pointer;font-weight:700;font-family:var(--fd);font-size:15px" data-i18n="imp_help_h">Cómo cargar una hoja y qué significan los números</summary>
+    <div class="hint" style="margin-top:10px;line-height:1.6" data-i18n="imp_help" data-i18n-html="1"></div>
+  </details>
+
   <div id="out"></div>
 
   <div class="card" style="margin-top:34px">
@@ -234,6 +239,8 @@ const T={
       ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
     ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
+    imp_help_h:"Cómo cargar una hoja y qué significan los números",
+    imp_help:"<b>Pasos:</b> elige <b>Fuente → Google Sheet (URL)</b>, pega la URL y pulsa <b>Previsualizar</b> (descubre todas las pestañas solo, no necesitas el gid). Revisa los números y pulsa <b>Añadir al catálogo</b>. Las fotos, el etiquetado IA y el QC se lanzan solos en segundo plano.<br><br><b>Qué significan los números:</b><br>• <b>Encontrados</b>: links crudos (cada producto sale ~4 veces, una por agente).<br>• <b>Únicos</b>: productos reales tras deduplicar.<br>• <b>Nuevos</b>: los que se añadirán. <b>Existentes</b>: ya los tienes → solo se refrescan.<br>• <b>% con foto</b>: calidad de la fuente (cuanto más alto, mejor).<br><br><b>Nunca duplica:</b> deduplica por <code>plataforma|item_id</code>; los repetidos se actualizan, no se re-crean. Re-cargar es seguro.<br><br><b>Para crecer de verdad:</b> las hojas de agente (Kakobuy, CNFans, Sugargoo…) son <b>~97% los mismos productos</b> con distinto link — cargar otra añade casi nada. Sube el catálogo con <b>familias/curadores distintos</b> o mirando <b>Ver demanda</b> (lo que la gente busca y no tienes). Si <b>Nuevos = 0</b>, esa hoja ya está cargada.",
     src_good:"✅ Buena fuente: mucha foto, merece la pena.", src_meh:"⚠️ Fuente regular: pocas fotos; los sin foto se ocultarán.", src_bad:"❌ Casi sin fotos: aporta poco (se ocultarán del catálogo).",
     srcm_h:"Gestor de fuentes", srcm_reload:"Actualizar", srcm_hint:"Las hojas que alimentan el catálogo. Añade, activa/desactiva o quita — el importador automático recorre solo las activas. Prioriza hojas con % con foto alto.",
     srcm_name_ph:"Nombre (ej. cnnewfinds Shoes)", srcm_url_ph:"URL de la Google Sheet", srcm_add:"Añadir fuente", srcm_empty:"Aún no hay fuentes. Añade una arriba.",
@@ -289,6 +296,8 @@ const T={
       ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
     ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
+    imp_help_h:"How to load a sheet and what the numbers mean",
+    imp_help:"<b>Steps:</b> pick <b>Source → Google Sheet (URL)</b>, paste the URL and hit <b>Preview</b> (it discovers every tab on its own, no gid needed). Check the numbers and hit <b>Add to catalog</b>. Photos, AI tagging and QC run on their own in the background.<br><br><b>What the numbers mean:</b><br>• <b>Found</b>: raw links (each product appears ~4×, one per agent).<br>• <b>Unique</b>: real products after dedup.<br>• <b>New</b>: what will be added. <b>Existing</b>: already yours → just refreshed.<br>• <b>% with photo</b>: source quality (higher is better).<br><br><b>Never duplicates:</b> dedup is by <code>platform|item_id</code>; repeats are updated, not re-created. Re-loading is safe.<br><br><b>To actually grow:</b> agent sheets (Kakobuy, CNFans, Sugargoo…) are <b>~97% the same products</b> with different links — loading another adds almost nothing. Grow with <b>different families/curators</b> or via <b>View demand</b> (what people search for that you lack). If <b>New = 0</b>, that sheet is already loaded.",
     src_good:"✅ Good source: lots of photos, worth it.", src_meh:"⚠️ So-so source: few photos; the ones without will be hidden.", src_bad:"❌ Almost no photos: adds little (they'll be hidden from the catalog).",
     srcm_h:"Source manager", srcm_reload:"Refresh", srcm_hint:"The sheets that feed the catalog. Add, enable/disable or remove — the automatic importer only runs the enabled ones. Prefer sheets with a high % with photo.",
     srcm_name_ph:"Name (e.g. cnnewfinds Shoes)", srcm_url_ph:"Google Sheet URL", srcm_add:"Add source", srcm_empty:"No sources yet. Add one above.",
