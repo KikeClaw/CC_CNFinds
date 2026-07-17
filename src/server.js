@@ -1253,7 +1253,7 @@ const server = createServer((req, res) => {
       let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
       if (u.pathname === "/herramientas") {
         const en = reqLang(req) === "en";
-        const tt = en ? "Tools — link converter, AI QC, shipping calculator | CNFinds" : "Herramientas — conversor de enlaces, QC con IA, calculadora de envío | CNFinds";
+        const tt = en ? "AI Tools — link converter, AI QC, shipping calculator | CNFinds" : "Herramientas IA — conversor de enlaces, QC con IA, calculadora de envío | CNFinds";
         const td = en ? "Free tools to buy reps smarter: agent link converter, AI QC photo checker, AI outfit builder, visual search and a shipping cost calculator." : "Herramientas gratis para comprar reps mejor: conversor de enlaces de agente, QC de fotos con IA, armador de outfits, búsqueda visual y calculadora de envío.";
         page = page.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(tt)}</title>`)
           .replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(td)}$2`)

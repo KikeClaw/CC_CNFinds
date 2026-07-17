@@ -317,8 +317,9 @@
   .ia-card .ib{ font-size:11px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:.05em; margin-top:auto; display:inline-flex; align-items:center; gap:4px; }
 
   footer{ border-top:1px solid var(--line2); background:var(--soft); margin-top:24px; }
-  .fgrid{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:34px; padding:52px 0 30px; }
-  @media(max-width:760px){ .fgrid{ grid-template-columns:1fr 1fr; } }
+  .fgrid{ display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr 1fr; gap:28px; padding:52px 0 30px; }
+  @media(max-width:900px){ .fgrid{ grid-template-columns:1fr 1fr 1fr; } }
+  @media(max-width:560px){ .fgrid{ grid-template-columns:1fr 1fr; } }
   .fgrid h4{ font-size:13px; margin:0 0 14px; letter-spacing:-.01em; }
   .fgrid a, .fgrid p{ color:var(--muted); font-size:13px; display:block; margin:8px 0; }
   .fgrid a:hover{ color:var(--ink); }
@@ -673,7 +674,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_inicio:"Inicio",nav_herramientas:"Herramientas",tools_h:"Herramientas",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
+    nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -723,7 +724,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_inicio:"Home",nav_herramientas:"Tools",tools_h:"Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
+    nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",

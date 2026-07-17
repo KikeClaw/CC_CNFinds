@@ -68,10 +68,12 @@ header{border-bottom:1px solid var(--line);position:sticky;top:0;background:colo
 .brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.04em}
 .brand .m{width:30px;height:30px;display:inline-grid;place-items:center}
 .brand b{color:var(--brand)}
-.shnav{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap}
-.shnav a{padding:8px 12px;border-radius:999px;color:var(--muted);font-size:14px;font-weight:600;white-space:nowrap}
-.shnav a:hover{background:var(--soft);color:var(--ink)}
-.shnav a.on{background:var(--brand);color:#fff}
+.navgroups{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.navgroups .links{display:flex;gap:3px;background:color-mix(in srgb,var(--soft) 60%,transparent);padding:4px;border-radius:999px;border:1px solid var(--line)}
+.navgroups a{padding:8px 12px;border-radius:999px;color:var(--muted);font-size:13.5px;font-weight:600;white-space:nowrap}
+.navgroups a:hover{background:var(--surface);color:var(--ink)}
+.navgroups a.nav-cta{color:var(--brand);font-weight:700}
+.navgroups a.active{background:var(--brand);color:#fff}
 .crumb{color:var(--muted);font-size:13px;padding:18px 0 0}.crumb a:hover{color:var(--ink)}
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:34px;padding:22px 0 10px}
 @media(max-width:760px){.prod{grid-template-columns:1fr}}
@@ -138,14 +140,17 @@ ${image ? `<meta property="og:image" content="${esc(image)}"><meta name="twitter
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}`;
 }
 
-const shellNav = (lang) => {
+const shellNav = (lang, active) => {
   const en = lang === "en", lp = en ? "?lang=en" : "";
-  return [[en ? "Home" : "Inicio", "/"], [en ? "Catalog" : "Catálogo", "/productos"], [en ? "Tools" : "Herramientas", "/herramientas"], [en ? "Coupons" : "Cupones", "/cupones" + lp], [en ? "Agents" : "Agentes", "/agentes" + lp], [en ? "Help" : "Ayuda", "/ayuda" + lp]]
-    .map(([t, h]) => `<a href="${h}">${esc(t)}</a>`).join("");
+  const A = (t, h, cta) => { const p = h.split("?")[0]; const c = ((p === active ? "active " : "") + (cta ? "nav-cta" : "")).trim(); return `<a href="${h}"${c ? ` class="${c}"` : ""}>${esc(t)}</a>`; };
+  return `<div class="navgroups">
+<div class="links">${A(en ? "Home" : "Inicio", "/")}${A(en ? "Catalog" : "Catálogo", "/productos", true)}${A(en ? "Categories" : "Categorías", "/#categorias")}${A(en ? "Brands" : "Marcas", "/#marcas")}</div>
+<div class="links">${A(en ? "AI Tools" : "Herramientas IA", "/herramientas")}${A(en ? "Coupons" : "Cupones", "/cupones" + lp)}${A(en ? "Help" : "Ayuda", "/ayuda" + lp)}</div>
+</div>`;
 };
-const shellHeader = (lang) => `<header><div class="wrap nav">
+const shellHeader = (lang, active) => `<header><div class="wrap nav">
 <a class="brand" href="/"><span class="m"><svg viewBox="0 0 32 32" width="30" height="30"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#hg)"/><g fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"><path d="M19.24 19.56 A6.6 6.6 0 1 1 21.57 13.81"/><path d="M19.24 19.56 L23.9 25"/></g></svg></span><span><b>CN</b>Finds</span></a>
-<nav class="shnav">${shellNav(lang)}</nav></div></header>`;
+${shellNav(lang, active)}</div></header>`;
 
 const shellFooter = (crumbs, lang) => `<footer><div class="wrap">
 <div class="chips">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join("")}</div>
@@ -154,7 +159,8 @@ const shellFooter = (crumbs, lang) => `<footer><div class="wrap">
 
 function doc(meta, body, crumbs = []) {
   const lang = meta.lang || "es";
-  return `<!doctype html><html lang="${lang}"><head>${head(meta)}</head><body>${shellHeader(lang)}<main class="wrap">${body}</main>${shellFooter(crumbs, lang)}</body></html>`;
+  const active = (meta.canonical || "").replace(/^https?:\/\/[^/]+/, "").split("?")[0] || "/";
+  return `<!doctype html><html lang="${lang}"><head>${head(meta)}</head><body>${shellHeader(lang, active)}<main class="wrap">${body}</main>${shellFooter(crumbs, lang)}</body></html>`;
 }
 
 function cardHtml(p, lp = "") {
