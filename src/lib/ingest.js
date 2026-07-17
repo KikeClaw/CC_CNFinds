@@ -34,10 +34,11 @@ export function rowsToCandidates(rows) {
 // 12345". Las hojas traen filas así (cabeceras, navegación, celdas con JS…).
 const CODEY = /switchToSheet|function\s*\(|\);|\{|\}|=>/;
 
-// Contenido adulto: las hojas de la comunidad traen a veces pestañas de sex shop.
-// Está fuera del nicho (moda/reps), desentona en la home y puede penalizarte en
-// Google/AdSense. NOTA: la lencería NO se bloquea (es ropa, categoría Underwear).
-const ADULT = /\b(sex[\s-]?toys?|adult[\s-]?toys?|sex[\s-]?products?|dildos?|vibrators?|masturbat\w*|butt[\s-]?plugs?|anal[\s-]?plugs?|condoms?|penis|vagina)\b/i;
+// Contenido fuera de nicho: las hojas de la comunidad traen a veces pestañas de
+// sex shop y de lencería sexy. No encaja en una web de moda/streetwear, desentona
+// en la home y es un riesgo con Google/AdSense. Se bloquea en la ingesta.
+// (La ropa interior normal —boxers, calcetines— NO se bloquea: solo lo explícito.)
+const ADULT = /\b(sex[\s-]?toys?|adult[\s-]?toys?|sex[\s-]?products?|dildos?|vibrators?|masturbat\w*|butt[\s-]?plugs?|anal[\s-]?plugs?|condoms?|penis|vagina|lingerie|lencer[íi]a|babydoll|crotchless)\b/i;
 export function isAdult(s) { return ADULT.test(String(s || "")); }
 
 export function usableName(s) {
