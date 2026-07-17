@@ -63,12 +63,14 @@ const CSS = `
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}h1,h2,h3,.brand{font-family:var(--fd)}
 .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
-header{border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(16px);z-index:10}
-.nav{display:flex;align-items:center;gap:20px;height:60px}
-.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.04em}
-.brand .m{width:30px;height:30px;display:inline-grid;place-items:center}
+header{border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:saturate(180%) blur(20px);z-index:10}
+.nav{display:flex;align-items:center;gap:18px;height:70px}
+.nav::after{content:"";flex:1 1 0}
+.brand{flex:1 1 0;display:inline-flex;align-items:center;gap:12px;font-weight:800;font-size:30px;letter-spacing:-.045em}
+.brand .m{width:40px;height:40px;display:inline-grid;place-items:center}
 .brand b{color:var(--brand)}
-.navgroups{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.navgroups{flex:0 0 auto;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+@media(max-width:1024px){.nav{height:auto;min-height:64px;flex-wrap:wrap;padding:10px 0}.nav::after{display:none}.brand{flex:0 0 auto}.navgroups{margin-left:auto}}
 .navgroups .links{display:flex;gap:3px;background:color-mix(in srgb,var(--soft) 60%,transparent);padding:4px;border-radius:999px;border:1px solid var(--line)}
 .navgroups a{padding:8px 12px;border-radius:999px;color:var(--muted);font-size:13.5px;font-weight:600;white-space:nowrap}
 .navgroups a:hover{background:var(--surface);color:var(--ink)}
@@ -149,7 +151,7 @@ const shellNav = (lang, active) => {
 </div>`;
 };
 const shellHeader = (lang, active) => `<header><div class="wrap nav">
-<a class="brand" href="/"><span class="m"><svg viewBox="0 0 32 32" width="30" height="30"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#hg)"/><g fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"><path d="M19.24 19.56 A6.6 6.6 0 1 1 21.57 13.81"/><path d="M19.24 19.56 L23.9 25"/></g></svg></span><span><b>CN</b>Finds</span></a>
+<a class="brand" href="/"><span class="m"><svg viewBox="0 0 32 32" width="40" height="40"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#hg)"/><g fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"><path d="M19.24 19.56 A6.6 6.6 0 1 1 21.57 13.81"/><path d="M19.24 19.56 L23.9 25"/></g></svg></span><span><b>CN</b>Finds</span></a>
 ${shellNav(lang, active)}</div></header>`;
 
 const shellFooter = (crumbs, lang) => `<footer><div class="wrap">
