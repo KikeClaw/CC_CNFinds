@@ -640,6 +640,16 @@
 
 <main id="pageView" class="wrap" style="display:none"><!--PAGEVIEW--></main>
 
+<main id="favView" class="wrap" style="display:none">
+  <div style="padding:26px 0 4px">
+    <h1 style="font-family:var(--fd);font-size:34px;margin:0 0 8px;letter-spacing:-.03em" data-i18n="fav_h">Favoritos</h1>
+    <p class="muted" style="max-width:640px;font-size:15px;line-height:1.6;margin:0" data-i18n="fav_sub">Guarda finds con el ♡ y ábrelos todos en tu agente de compra de una vez.</p>
+  </div>
+  <div id="favToolbar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0 20px"></div>
+  <div id="favEmpty" class="empty" style="display:none"></div>
+  <div class="grid" id="favGrid"></div>
+</main>
+
 <footer>
   <div class="wrap fgrid">
     <div>
@@ -678,6 +688,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
+    fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos todos en tu agente de compra de una vez.",haul_open:"Abrir todos",haul_opened:(n)=>`Abriendo ${n} →`,haul_hint:"Si el navegador bloquea las pestañas, permite las ventanas emergentes para este sitio y vuelve a pulsar.",
     nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
@@ -728,6 +739,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
+    fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them all in your shopping agent at once.",haul_open:"Open all",haul_opened:(n)=>`Opening ${n} →`,haul_hint:"If your browser blocks the tabs, allow pop-ups for this site and click again.",
     nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -891,18 +903,41 @@ document.querySelectorAll(".brand").forEach(b=>b.addEventListener("click",e=>{ i
   if(inicio) inicio.addEventListener("click",e=>{ if(location.pathname==="/"){ e.preventDefault(); scrollTo({top:0,behavior:"smooth"}); document.querySelector("header").classList.remove("navopen"); } });
 }
 
-/* ver favoritos */
-$("#fav").onclick=()=>{
-  const items=[...FAVS].map(id=>CACHE[id]).filter(Boolean);
-  document.getElementById("catalogo").scrollIntoView({behavior:"smooth"});
-  $("#more").style.display="none";
-  if(!items.length){ $("#grid").innerHTML=`<div class="empty" style="grid-column:1/-1">${t("fav_empty")}</div>`; $("#count").textContent=`0 ${t("favs")}`; $("#activeFilters").innerHTML=""; return; }
-  $("#grid").innerHTML=items.map(cardHtml).join(""); bindCards($("#grid"));
-  $("#count").textContent=`${items.length} ${t("favs")}`; $("#empty").style.display="none";
-  $("#activeFilters").innerHTML=`<span class="active-filter">${ic("heart",13,1.9)} ${t("favs_f")} <button data-clear="fav">${ic("x",13,2.2)}</button></span> <button class="active-filter" id="shareFavs" style="cursor:pointer">${ic("link",13,1.9)} ${t("share_favs")}</button>`;
-  const cl=$("#activeFilters").querySelector("[data-clear]"); if(cl) cl.onclick=()=>{ state.q=""; load(true); };
-  const sf=$("#shareFavs"); if(sf) sf.onclick=shareFavs;
-};
+/* ver favoritos: página propia (/favoritos) */
+$("#fav").onclick=()=>{ location.href="/favoritos"; };
+async function enterFavs(){
+  const hero=document.querySelector(".hero"); if(hero)hero.style.display="none";
+  ["#homeMain","#exploreMain","#pageView"].forEach(s=>{ const el=$(s); if(el)el.style.display="none"; });
+  $("#favView").style.display="block";
+  document.title=(LANG==="en"?"Favorites — CNFinds":"Favoritos — CNFinds");
+  scrollTo(0,0);
+  await renderFavs();
+}
+async function renderFavs(){
+  const ids=[...FAVS], grid=$("#favGrid"), tb=$("#favToolbar"), emp=$("#favEmpty");
+  if(!ids.length){ grid.innerHTML=""; tb.innerHTML=""; emp.style.display="block"; emp.textContent=t("fav_empty"); return; }
+  let items=[]; try{ const d=await (await fetch("/api/products?ids="+ids.join(",")+"&limit=100")).json(); items=d.items||[]; }catch{}
+  items.forEach(it=>CACHE[it.id]=it);
+  if(!items.length){ grid.innerHTML=""; tb.innerHTML=""; emp.style.display="block"; emp.textContent=t("fav_empty"); return; }
+  emp.style.display="none";
+  grid.innerHTML=items.map(cardHtml).join(""); bindCards(grid);
+  const agents=Object.entries(items[0].links||{});
+  const opts=agents.map(([k,l])=>`<option value="${k}">${esc(l.name)}</option>`).join("");
+  tb.innerHTML=`<span style="font-weight:700;font-size:15px">${items.length} ${t("favs")}</span>
+    <select id="haulAgent" class="sort" style="margin-left:auto">${opts}</select>
+    <button class="go" id="haulOpen" style="height:42px;padding:0 18px;border:0;border-radius:14px;color:#fff;font-weight:600;cursor:pointer">${ic("arrow",15,2)} ${t("haul_open")}</button>
+    <button id="favShare" style="height:42px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font-weight:600;cursor:pointer">${ic("link",15,1.9)} ${t("share_favs")}</button>`;
+  $("#haulOpen").onclick=()=>openHaul(items);
+  $("#favShare").onclick=shareFavs;
+}
+function openHaul(items){
+  const ag=$("#haulAgent").value;
+  const list=items.map(p=>({id:p.id,url:p.links&&p.links[ag]&&p.links[ag].url})).filter(x=>x.url);
+  if(!list.length) return;
+  list.forEach(x=>{ track(x.id,ag); window.open(x.url,"_blank","noopener"); });
+  const b=$("#haulOpen"); const o=b.innerHTML; b.innerHTML=`${ic("arrow",15,2)} ${t("haul_opened")(list.length)}`; setTimeout(()=>{ b.innerHTML=o; },2200);
+  if(!$("#haulHint")){ $("#favToolbar").insertAdjacentHTML("beforeend",`<div id="haulHint" style="flex-basis:100%;font-size:12.5px;color:var(--muted);margin-top:2px">${t("haul_hint")}</div>`); }
+}
 function shareFavs(){
   const ids=[...FAVS]; if(!ids.length) return;
   const url=location.origin+"/?favs="+ids.join(",");
@@ -1469,10 +1504,12 @@ applyLang();
 renderSocial();
 const EXPLORING=location.pathname==="/productos";
 const TOOLS=location.pathname==="/herramientas";
+const FAVSVIEW=location.pathname==="/favoritos";
 const PAGEVIEW=["/cupones","/ayuda","/coupons","/help"].includes(location.pathname);
-if(!EXPLORING&&!TOOLS&&!PAGEVIEW){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
+if(!EXPLORING&&!TOOLS&&!PAGEVIEW&&!FAVSVIEW){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
 if(EXPLORING){ enterExplore(); }
 else if(TOOLS){ document.body.dataset.view="tools"; document.title=(LANG==="en"?"AI Tools — CNFinds":"Herramientas IA — CNFinds"); scrollTo(0,0); }
+else if(FAVSVIEW){ enterFavs(); }
 else if(PAGEVIEW){ const hero=document.querySelector(".hero"); if(hero)hero.style.display="none"; const hm=$("#homeMain"); if(hm)hm.style.display="none"; $("#pageView").style.display="block"; scrollTo(0,0); }
 else { const sp=new URLSearchParams(location.search);
   const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }

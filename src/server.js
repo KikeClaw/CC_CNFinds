@@ -1273,8 +1273,13 @@ const server = createServer((req, res) => {
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
-    if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos" || u.pathname === "/herramientas") {
+    if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos" || u.pathname === "/herramientas" || u.pathname === "/favoritos") {
       let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
+      if (u.pathname === "/favoritos") { // página personal (localStorage): no indexar
+        const en = reqLang(req) === "en";
+        page = page.replace(/<title>[\s\S]*?<\/title>/, `<title>${en ? "Favorites" : "Favoritos"} — CNFinds</title>`)
+          .replace("</head>", `<meta name="robots" content="noindex">\n</head>`);
+      }
       if (u.pathname === "/herramientas") {
         const en = reqLang(req) === "en";
         const tt = en ? "AI Tools — link converter, AI QC, shipping calculator | CNFinds" : "Herramientas IA — conversor de enlaces, QC con IA, calculadora de envío | CNFinds";
