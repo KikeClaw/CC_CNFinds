@@ -11,7 +11,8 @@ const eur = (p) => (p == null ? "—" : "€" + Number(p).toFixed(2));
 const th = (u, w = 500, h = 500) => {
   if (!u) return "";
   if (/geilicdn|weidian/.test(u)) return `${u}.webp?w=${w}&h=${h}&cp=1`;
-  if (/sheets-images-rt/.test(u)) return u.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
+  // Google bloquea el embebido cross-origin (CORP same-site) → vía nuestro proxy.
+  if (/sheets-images-rt/.test(u)) return "/img?u=" + encodeURIComponent(u.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`));
   return u;
 };
 export const slug = (s) => encodeURIComponent(String(s));

@@ -55,11 +55,45 @@ try {
 // Miniatura optimizada servida por el CDN de Weidian (webp + resize al vuelo).
 function thumb(url, w = 500, h = 500) {
   if (!url) return null;
-  // geilicdn/Weidian aceptan el transform .webp?w=..&h=..&cp=1; Google
-  // (sheets-images-rt) usa el sufijo =wNNN; otros hosts se sirven tal cual.
+  // geilicdn/Weidian aceptan el transform .webp?w=..&h=..&cp=1.
+  if (/geilicdn|weidian/.test(url)) return `${url}.webp?w=${w}&h=${h}&cp=1`;
+  // Google (sheets-images-rt) sirve las imágenes con Cross-Origin-Resource-Policy:
+  // same-site, así que el NAVEGADOR se niega a embeberlas desde nuestro dominio
+  // (aunque un fetch de servidor sí funcione → tarjetas en blanco). Las servimos
+  // por nuestro proxy /img, que sí puede descargarlas y las reenvía desde nuestro
+  // origen. Pedimos el ancho ya reducido para no mover megas de más.
+  if (/sheets-images-rt/.test(url)) return "/img?u=" + encodeURIComponent(url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`));
+  return url;
+}
+
+// Variante DIRECTA (sin pasar por /img): la usan los consumidores de servidor
+// —sanador de fotos, QC con IA, email del boletín— que necesitan una URL absoluta
+// y a los que la CORP del navegador no afecta.
+function imgDirect(url, w = 500, h = 500) {
+  if (!url) return null;
   if (/geilicdn|weidian/.test(url)) return `${url}.webp?w=${w}&h=${h}&cp=1`;
   if (/sheets-images-rt/.test(url)) return url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
   return url;
+}
+
+// Proxy de imagen: SOLO para los hosts de la lista blanca (evita convertirnos en
+// un proxy abierto/SSRF). Cachea fuerte: la imagen no cambia para una URL dada.
+const IMG_ALLOW = /^https:\/\/docs\.google\.com\/sheets-images-rt\//;
+async function handleImgProxy(req, res, u) {
+  const target = u.searchParams.get("u") || "";
+  if (!IMG_ALLOW.test(target)) { res.writeHead(400, { "Content-Type": "text/plain" }); return res.end("bad url"); }
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 10000);
+    let r;
+    try { r = await fetch(target, { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA } }); }
+    finally { clearTimeout(to); }
+    const ct = r.headers.get("content-type") || "";
+    if (!r.ok || !/^image\//.test(ct)) { res.writeHead(502, { "Content-Type": "text/plain" }); return res.end("upstream"); }
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.writeHead(200, { "Content-Type": ct, "Content-Length": buf.length, "Cache-Control": "public, max-age=2592000, immutable" });
+    res.end(buf);
+  } catch { res.writeHead(504, { "Content-Type": "text/plain" }); res.end("timeout"); }
 }
 
 // Limpieza ligera del nombre crudo (sin IA): colapsa espacios y quita ruido tipo
@@ -266,7 +300,8 @@ function handleAdminDigest(req, res) {
     if (!r) return '<td style="width:50%"></td>';
     const nm = esc(r.clean_title || tidyName(r.name));
     const pr = r.price_eur != null ? "€" + Number(r.price_eur).toFixed(2) : "";
-    return `<td style="padding:8px;width:50%;vertical-align:top"><a href="${base}/producto/${r.id}" style="text-decoration:none;color:#111"><img src="${thumb(r.image_url, 400, 400)}" width="240" style="width:100%;max-width:240px;border-radius:10px" alt="${nm}"><div style="font-weight:600;font-size:14px;margin-top:6px">${nm}</div><div style="color:#777;font-size:13px">${pr}</div></a></td>`;
+    const src = thumb(r.image_url, 400, 400); // relativa si va por /img → absolutiza para el email
+    return `<td style="padding:8px;width:50%;vertical-align:top"><a href="${base}/producto/${r.id}" style="text-decoration:none;color:#111"><img src="${src.startsWith("/") ? base + src : src}" width="240" style="width:100%;max-width:240px;border-radius:10px" alt="${nm}"><div style="font-weight:600;font-size:14px;margin-top:6px">${nm}</div><div style="color:#777;font-size:13px">${pr}</div></a></td>`;
   };
   let table = "";
   for (let i = 0; i < rows.length; i += 2) table += `<tr>${cell(rows[i])}${cell(rows[i + 1])}</tr>`;
@@ -410,7 +445,7 @@ function startHealJob() {
           const to = setTimeout(() => ctrl.abort(), 9000);
           let res;
           try {
-            res = await fetch(thumb(r.image_url), { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA, "Referer": ref, "Range": "bytes=0-1" } });
+            res = await fetch(imgDirect(r.image_url), { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA, "Referer": ref, "Range": "bytes=0-1" } });
           } finally { clearTimeout(to); }
           try { await res.body?.cancel?.(); } catch {}
           const good = (res.status === 200 || res.status === 206) && /image\//.test(res.headers.get("content-type") || "");
@@ -1076,7 +1111,7 @@ function startQcJob(ids) {
           if (r) {
             // thumb() aplica el transform correcto según el host (geilicdn .webp,
             // Google =wNNN, otros tal cual). Antes se añadía .webp a todo.
-            let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => thumb(u, 700, 700)).filter(Boolean); } catch {}
+            let imgs = []; try { imgs = JSON.parse(r.images).slice(0, 4).map((u) => imgDirect(u, 700, 700)).filter(Boolean); } catch {}
             if (imgs.length) {
               const out = await qcRetry(imgs, r.clean_title || tidyName(r.name));
               upd.run(out.qc_score, JSON.stringify({ summary: out.qc_summary, summary_en: out.qc_summary_en, flags: out.flags }), pid);
@@ -1198,6 +1233,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/convert") return handleConvert(res, u.searchParams);
     if (u.pathname === "/api/ai-search") { if (!rateLimit(req, res, "ais", 30, 3600e3)) return; return void handleAiSearch(res, u.searchParams); }
     if (u.pathname === "/api/ai-fit") { if (!rateLimit(req, res, "fit", 20, 3600e3)) return; return void handleAiFit(res, u.searchParams); }
+    if (u.pathname === "/img") return void handleImgProxy(req, res, u);
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---

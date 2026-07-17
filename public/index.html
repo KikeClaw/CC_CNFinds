@@ -968,7 +968,7 @@ function applyAndScroll(){ load(true); document.getElementById("catalogo").scrol
 
 /* modal */
 /* geilicdn/Weidian: transform .webp?w=..; Google (sheets-images-rt): sufijo =wNNN; resto: tal cual */
-function imgv(u,w){ if(!u) return ''; if(/geilicdn|weidian/.test(u)) return u+'.webp?w='+w+'&h='+w+'&cp=1'; if(/sheets-images-rt/.test(u)) return u.replace(/=w\d+(-h\d+)?$/,'=w'+w); return u; }
+function imgv(u,w){ if(!u) return ''; if(/geilicdn|weidian/.test(u)) return u+'.webp?w='+w+'&h='+w+'&cp=1'; /* Google bloquea el embebido cross-origin (CORP) -> por nuestro proxy */ if(/sheets-images-rt/.test(u)) return '/img?u='+encodeURIComponent(u.replace(/=w\d+(-h\d+)?$/,'=w'+w)); return u; }
 function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=imgv(u,820); document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
 /* alerta de bajada de precio (captura) */
 function priceAlertHtml(p){
