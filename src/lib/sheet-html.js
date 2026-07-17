@@ -8,6 +8,9 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const PRICE_RE = /[$€]\s?(\d{1,5}(?:[.,]\d{1,2})?)/;
 // Hosts de imagen inestables (imágenes "en celda" de Google que caducan → 403).
 const BAD_IMG = /googleusercontent\.com|docsubipk/i;
+// El htmlview trae <script> con JS de la propia hoja (switchToSheet(...), etc.).
+// Si no lo quitamos, ese código acaba colándose como "nombre" del producto.
+const looksLikeCode = (s) => /switchToSheet|function\s*\(|\);|\{|\}|=>/.test(s || "");
 const isNoise = (s) => /^(link|image|imagen|price|precio|name|nombre|qc)$/i.test((s || "").trim());
 
 // Los <a> de Sheets envuelven la URL real en google.com/url?q=<ENCODED>.
@@ -30,6 +33,8 @@ export async function fetchSheetHtml(sheetId, gid, { timeoutMs = 30000 } = {}) {
     if (!res.ok) throw new Error(`htmlview HTTP ${res.status}`);
     html = await res.text();
   } finally { clearTimeout(to); }
+  // Fuera el JS/CSS de la hoja: si no, su código acaba como "nombre" de producto.
+  html = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
 
   const out = [];
   const seen = new Set();
@@ -58,11 +63,11 @@ export async function fetchSheetHtml(sheetId, gid, { timeoutMs = 30000 } = {}) {
       for (let j = Math.max(0, i - 3); j <= Math.min(cells.length - 1, i + 3); j++) {
         const m = cells[j].text.match(PRICE_RE); if (m) { price = parseFloat(m[1].replace(",", ".")); break; }
       }
-      // nombre (texto no-ruido más cercano a la izquierda)
+      // nombre (texto no-ruido más cercano a la izquierda; nunca código)
       let name = null;
       for (let j = i; j >= Math.max(0, i - 4); j--) {
         const t = cells[j].text;
-        if (t && t.length > 3 && !isNoise(t) && !PRICE_RE.test(t)) { name = t.slice(0, 140); break; }
+        if (t && t.length > 3 && !isNoise(t) && !PRICE_RE.test(t) && !looksLikeCode(t)) { name = t.slice(0, 140); break; }
       }
       out.push({ platform: p.platform, itemId: p.itemId, name, price, image });
     }

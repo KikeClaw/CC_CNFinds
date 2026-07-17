@@ -1370,6 +1370,19 @@ function resumeQc() {
   }, 5000);
 }
 
+// Purga los productos que entraron SIN nombre real: nuestro fallback los llamó
+// "weidian-<itemId>" y el etiquetado los "limpió" a "Artículo Weidian <id>".
+// No se pueden buscar ni mostrar (además suelen traer foto muerta). La puerta de
+// calidad de la ingesta ya impide que vuelvan a entrar; esto limpia los previos.
+function purgeJunkProducts() {
+  try {
+    const r = db.prepare(
+      "DELETE FROM products WHERE (name LIKE 'weidian-%' OR name LIKE 'taobao-%' OR name LIKE '1688-%') AND name GLOB '*-[0-9]*'"
+    ).run();
+    if (r.changes) console.log(`Limpieza: ${r.changes} productos sin nombre real eliminados.`);
+  } catch (e) { console.error("purgeJunkProducts:", e.message); }
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -1380,6 +1393,7 @@ async function bootstrap() {
       console.log(`Semilla importada: ${r.added} productos.`);
     }
     normalizeCategories();
+    purgeJunkProducts();
     inferGenders();
     ensureSourcesSeeded(); // siembra la tabla de fuentes con el config la 1ª vez
     // Fotos pendientes: arranca ya y sigue reintentando cada pocos minutos
