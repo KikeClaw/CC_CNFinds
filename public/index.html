@@ -872,7 +872,8 @@ $("#theme").onclick=()=>{ const nx=themeNow()==="dark"?"light":"dark"; document.
 paintTheme();
 $("#fav").innerHTML=ic("heart",18,1.8);
 /* promo: se muestra salvo que el usuario la cerrara antes (recordado) */
-try{ if(!localStorage.getItem("cnf_promo_x")) $("#promo").style.display=""; }catch(e){ $("#promo").style.display=""; }
+/* El banner promo solo tiene sentido en la landing (no en Herramientas/Cupones/…). */
+if(location.pathname==="/"||location.pathname==="/index.html"){ try{ if(!localStorage.getItem("cnf_promo_x")) $("#promo").style.display=""; }catch(e){ $("#promo").style.display=""; } }
 $("#promoX").onclick=()=>{ $("#promo").style.display="none"; try{localStorage.setItem("cnf_promo_x","1");}catch(e){} };
 
 /* menú móvil */
