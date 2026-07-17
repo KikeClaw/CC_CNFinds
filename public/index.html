@@ -60,9 +60,10 @@
   .gr{ color:var(--brand); }
 
   /* logo / wordmark */
-  .brand{ display:inline-flex; align-items:center; gap:11px; font-family:var(--font-d); font-weight:800; font-size:26px; letter-spacing:-.045em; }
-  .brand .mark{ display:inline-grid; place-items:center; filter:drop-shadow(0 4px 10px rgba(0,0,0,.16)); }
-  .brand .mark svg{ width:34px; height:34px; }
+  .brand{ display:inline-flex; align-items:center; gap:12px; font-family:var(--font-d); font-weight:800; font-size:30px; letter-spacing:-.045em; }
+  .brand .mark{ display:inline-grid; place-items:center; filter:drop-shadow(0 4px 12px color-mix(in srgb,var(--brand) 35%,transparent)); transition:transform .2s; }
+  .brand:hover .mark{ transform:rotate(-6deg) scale(1.05); }
+  .brand .mark svg{ width:40px; height:40px; }
   .brand .wm b{ font-weight:800; color:var(--brand); }
 
   /* announcement */
@@ -70,18 +71,20 @@
   .promo .wrap{ display:flex; align-items:center; gap:10px; height:38px; }
   .promo b{ font-weight:700; }
   .promo .code{ border:1px dashed rgba(255,255,255,.55); padding:2px 8px; border-radius:7px; font-weight:600; }
-  .promo .x{ margin-left:auto; opacity:.85; color:#fff; }
+  .promo .x{ margin-left:auto; display:inline-grid; place-items:center; width:26px; height:26px; padding:0; border:none; border-radius:8px; background:rgba(255,255,255,.18); color:#fff; cursor:pointer; transition:background .15s; }
+  .promo .x:hover{ background:rgba(255,255,255,.34); }
 
   /* header */
   header{ position:sticky; top:0; z-index:40; background:color-mix(in srgb,var(--bg) 78%,transparent);
     backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--line2); }
-  .nav{ display:flex; align-items:center; gap:18px; height:64px; }
+  .nav{ display:flex; align-items:center; gap:18px; height:70px; }
   .nav .brand{ flex:1 1 0; }
-  .nav .links{ display:flex; gap:2px; flex:0 0 auto; justify-content:center; }
-  .nav .links a{ padding:9px 15px; border-radius:999px; color:var(--muted); font-size:13.5px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s; }
-  .nav .links a:hover{ background:var(--soft); color:var(--ink); }
-  .nav .links a.nav-cta{ color:var(--brandc); }
-  .nav .links a.nav-cta:hover{ background:var(--brand); color:#fff; }
+  .nav .links{ display:flex; gap:3px; flex:0 0 auto; justify-content:center; background:color-mix(in srgb,var(--soft) 60%,transparent); padding:4px; border-radius:999px; border:1px solid var(--line2); }
+  .nav .links a{ position:relative; padding:8px 15px; border-radius:999px; color:var(--muted); font-size:14px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s,transform .12s; }
+  .nav .links a:hover{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .nav .links a:active{ transform:scale(.96); }
+  .nav .links a.nav-cta{ color:#fff; background:var(--brand); box-shadow:0 3px 10px color-mix(in srgb,var(--brand) 32%,transparent); }
+  .nav .links a.nav-cta:hover{ background:var(--brand); color:#fff; filter:brightness(1.06); box-shadow:0 5px 16px color-mix(in srgb,var(--brand) 42%,transparent); }
   .nav .right{ flex:1 1 0; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
   .seg{ display:flex; background:var(--soft); border-radius:999px; padding:3px; font-size:12.5px; font-weight:500; }
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
@@ -90,8 +93,10 @@
   .iconbtn:hover{ background:var(--soft); }
   .burger{ display:none; }
   @media(max-width:900px){
-    .nav .links{ display:none; position:absolute; top:62px; left:0; right:0; background:var(--bg); border-bottom:1px solid var(--line); flex-direction:column; padding:16px 24px; gap:6px; z-index:39; font-size:15px; }
-    .nav .links a{ padding:11px 14px; }
+    .nav{ height:64px; }
+    .nav .links{ display:none; position:absolute; top:64px; left:0; right:0; background:var(--bg); border:none; border-radius:0; border-bottom:1px solid var(--line); flex-direction:column; padding:16px 24px; gap:6px; z-index:39; font-size:15px; }
+    .nav .links a{ padding:12px 14px; }
+    .nav .links a.nav-cta{ text-align:center; }
     header.navopen .nav .links{ display:flex; }
     .burger{ display:grid; }
     .seg{ display:none; }
@@ -325,10 +330,11 @@
 <header>
   <div class="wrap nav">
     <a class="brand" href="/">
-      <span class="mark"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
-        <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
-        <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
-        <line x1="17.8" y1="17.8" x2="22.6" y2="22.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      <span class="mark"><svg viewBox="0 0 32 32" width="40" height="40" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs>
+        <rect width="32" height="32" rx="9" fill="url(#lg)"/>
+        <path d="M16 5.4c.55 5.5 4.6 9.55 10.1 10.1-5.5.55-9.55 4.6-10.1 10.1-.55-5.5-4.6-9.55-10.1-10.1 5.5-.55 9.55-4.6 10.1-10.1Z" fill="#fff"/>
+        <path d="M24.8 5.6c.14 1.5 1.2 2.56 2.7 2.7-1.5.14-2.56 1.2-2.7 2.7-.14-1.5-1.2-2.56-2.7-2.7 1.5-.14 2.56-1.2 2.7-2.7Z" fill="#fff" opacity=".8"/>
       </svg></span>
       <span class="wm"><b>CN</b>Finds</span>
     </a>
@@ -611,10 +617,10 @@
   <div class="wrap fgrid">
     <div>
       <a class="brand" href="/" style="margin-bottom:14px">
-        <span class="mark"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-          <rect width="32" height="32" rx="9" fill="#ff4d2e"/>
-          <circle cx="13.4" cy="13.4" r="5.6" fill="none" stroke="#fff" stroke-width="2.4"/>
-          <line x1="17.8" y1="17.8" x2="22.6" y2="22.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        <span class="mark"><svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
+          <defs><linearGradient id="lgf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs>
+          <rect width="32" height="32" rx="9" fill="url(#lgf)"/>
+          <path d="M16 5.4c.55 5.5 4.6 9.55 10.1 10.1-5.5.55-9.55 4.6-10.1 10.1-.55-5.5-4.6-9.55-10.1-10.1 5.5-.55 9.55-4.6 10.1-10.1Z" fill="#fff"/>
         </svg></span>
         <span class="wm"><b>CN</b>Finds</span>
       </a>
