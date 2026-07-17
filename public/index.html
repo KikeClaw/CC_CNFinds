@@ -79,7 +79,8 @@
     backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--line2); }
   .nav{ display:flex; align-items:center; gap:18px; height:70px; }
   .nav .brand{ flex:1 1 0; }
-  .nav .links{ display:flex; gap:3px; flex:0 0 auto; justify-content:center; background:color-mix(in srgb,var(--soft) 60%,transparent); padding:4px; border-radius:999px; border:1px solid var(--line2); }
+  .nav .navgroups{ flex:0 0 auto; display:flex; gap:10px; justify-content:center; }
+  .nav .links{ display:flex; gap:3px; justify-content:center; background:color-mix(in srgb,var(--soft) 60%,transparent); padding:4px; border-radius:999px; border:1px solid var(--line2); }
   .nav .links a{ position:relative; padding:8px 13px; border-radius:999px; color:var(--muted); font-size:13.5px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s,transform .12s; }
   .nav .links a:hover{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .nav .links a:active{ transform:scale(.96); }
@@ -97,13 +98,22 @@
   .burger{ display:none; }
   @media(max-width:1024px){
     .nav{ height:64px; }
-    .nav .links{ display:none; position:absolute; top:64px; left:0; right:0; background:var(--bg); border:none; border-radius:0; border-bottom:1px solid var(--line); flex-direction:column; padding:16px 24px; gap:6px; z-index:39; font-size:15px; }
+    .nav .navgroups{ display:none; position:absolute; top:64px; left:0; right:0; background:var(--bg); border-bottom:1px solid var(--line); flex-direction:column; padding:14px 22px; gap:8px; z-index:39; font-size:15px; }
+    .nav .links{ background:none; border:none; border-radius:0; padding:0; flex-direction:column; gap:2px; }
     .nav .links a{ padding:12px 14px; }
-    .nav .links a.nav-cta{ text-align:center; }
-    header.navopen .nav .links{ display:flex; }
+    .nav .links a.nav-cta{ text-align:left; }
+    header.navopen .nav .navgroups{ display:flex; }
     .burger{ display:grid; }
     .seg{ display:none; }
   }
+
+  /* vistas: home (por defecto) · herramientas (/herramientas) */
+  #toolsHead{ display:none; }
+  .tool-only{ display:none; }
+  body[data-view="tools"] .hero{ display:none; }
+  body[data-view="tools"] #toolsHead{ display:block; }
+  body[data-view="tools"] .tool-only{ display:block; }
+  body[data-view="tools"] #homeMain > section:not(.tool-only){ display:none; }
 
   /* hero */
   .hero{ position:relative; overflow:hidden; border-bottom:1px solid var(--line2); }
@@ -343,16 +353,18 @@
       </svg></span>
       <span class="wm"><b>CN</b>Finds</span>
     </a>
-    <div class="links">
-      <a href="/" data-i18n="nav_inicio">Inicio</a>
-      <a href="/productos" class="nav-cta" data-i18n="nav_catalogo">Catálogo</a>
-      <a href="/#categorias" data-i18n="categorias">Categorías</a>
-      <a href="/#marcas" data-i18n="marcas">Marcas</a>
-      <a href="/#fit" data-i18n="fit">Fit IA</a>
-      <a href="/#convertidor" data-i18n="conversor">Conversor</a>
-      <a href="/cupones" data-i18n="nav_cupones">Cupones</a>
-      <a href="/guias" data-i18n="guias">Guías</a>
-      <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
+    <div class="navgroups">
+      <div class="links">
+        <a href="/" data-i18n="nav_inicio">Inicio</a>
+        <a href="/productos" class="nav-cta" data-i18n="nav_catalogo">Catálogo</a>
+        <a href="/#categorias" data-i18n="categorias">Categorías</a>
+        <a href="/#marcas" data-i18n="marcas">Marcas</a>
+      </div>
+      <div class="links">
+        <a href="/herramientas" data-i18n="nav_herramientas">Herramientas</a>
+        <a href="/cupones" data-i18n="nav_cupones">Cupones</a>
+        <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
+      </div>
     </div>
     <div class="right">
       <div class="seg"><span class="on" id="curBtn" role="button" tabindex="0" style="cursor:pointer" title="Cambiar divisa" aria-label="Cambiar divisa">EUR</span><span id="langBtn" role="button" tabindex="0" style="cursor:pointer" title="Language" aria-label="Change language">ES</span></div>
@@ -395,7 +407,11 @@
 </div>
 
 <main class="wrap" id="homeMain">
-  <section id="ia">
+  <div id="toolsHead" style="padding:26px 0 4px">
+    <h1 style="font-family:var(--fd);font-size:34px;margin:0 0 8px;letter-spacing:-.03em" data-i18n="tools_h">Herramientas</h1>
+    <p class="muted" style="max-width:640px;font-size:15px;line-height:1.6;margin:0" data-i18n="tools_sub">Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.</p>
+  </div>
+  <section id="ia" class="tool-only">
     <div class="head"><h2><span class="sq" id="hia"></span><span data-i18n="ia1">Comprar con </span><span class="gr" data-i18n="ia2">superpoderes de IA</span></h2><span class="muted" style="font-size:13px" data-i18n="ia_sub">Lo que nos diferencia</span></div>
     <div class="ia-grid">
       <button class="ia-card" data-ia="nl" style="--cc:#2d7ff9"><div class="ii" id="ia1"></div><div class="it" data-i18n="c_nl_t">Búsqueda en lenguaje natural</div><div class="id" data-i18n="c_nl_d">"Techwear negro por menos de 50€" — la IA lo entiende y filtra por ti.</div><span class="ib"><span data-i18n="c_try">Probar</span> <span class="iba"></span></span></button>
@@ -414,7 +430,7 @@
     </div>
   </section>
 
-  <section id="convertidor">
+  <section id="convertidor" class="tool-only">
     <div class="head"><h2><span class="sq" id="hlink"></span><span data-i18n="conv">Conversor de enlaces</span></h2><span class="muted" style="font-size:13px" data-i18n="conv_sub">Pega un link de Taobao, Weidian, 1688 o de un agente</span></div>
     <div class="conv">
       <span class="sic" id="convIc"></span>
@@ -424,7 +440,7 @@
     <div id="convResult" class="conv-result"></div>
   </section>
 
-  <section id="qccheck">
+  <section id="qccheck" class="tool-only">
     <div class="head"><h2><span class="sq" id="hqc"></span><span data-i18n="qc_title">QC Checker con IA</span></h2><span class="muted" style="font-size:13px" data-i18n="qc_sub">Pega un link y la IA puntúa la calidad de las fotos</span></div>
     <div class="conv">
       <span class="sic" id="qcIc"></span>
@@ -454,7 +470,7 @@
     <div class="grid" id="newfinds"></div>
   </section>
 
-  <section id="fit">
+  <section id="fit" class="tool-only">
     <div class="head"><h2><span class="sq" id="hfit"></span><span data-i18n="fit_title">Arma tu fit con IA</span></h2><span class="muted" style="font-size:13px" data-i18n="fit_sub">Dinos tu presupuesto y montamos un outfit</span></div>
     <div class="conv">
       <span class="sic" id="fitIc"></span>
@@ -465,7 +481,7 @@
     <div id="fitResult" class="conv-result"></div>
   </section>
 
-  <section id="envio">
+  <section id="envio" class="tool-only">
     <div class="head"><h2><span class="sq" id="hship"></span><span data-i18n="ship_title">Calculadora de envío</span></h2><span class="muted" style="font-size:13px" data-i18n="ship_sub">Estima el peso y el coste del envío internacional</span></div>
     <div class="conv" style="flex-wrap:wrap; max-width:840px">
       <span class="sic" id="shipIc"></span>
@@ -477,7 +493,7 @@
     <div id="shipResult" class="conv-result"></div>
   </section>
 
-  <section id="tracker">
+  <section id="tracker" class="tool-only">
     <div class="head"><h2><span class="sq" id="htrack"></span><span data-i18n="track_title">Rastreador de paquetes</span></h2><span class="muted" style="font-size:13px" data-i18n="track_sub">Sigue tu envío en más de 1.000 transportistas</span></div>
     <div class="conv" style="max-width:720px">
       <span class="sic" id="trackIc"></span>
@@ -637,7 +653,7 @@
       <div id="social" style="display:flex;gap:10px;margin-top:12px"></div>
     </div>
     <div><h4 data-i18n="f_shop">Tienda</h4><a href="/productos" data-i18n="f_all">Todos los productos</a><a href="/#categorias" data-i18n="categorias">Categorías</a><a href="/#marcas" data-i18n="marcas">Marcas</a></div>
-    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agentes" data-i18n="f_agents">Agentes</a><a href="/#convertidor" data-i18n="conversor">Conversor</a></div>
+    <div><h4 data-i18n="f_help">Ayuda</h4><a href="/herramientas" data-i18n="nav_herramientas">Herramientas</a><a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a><a href="/cupones" data-i18n="f_coupons">Cupones</a><a href="/agentes" data-i18n="f_agents">Agentes</a></div>
     <div><h4 data-i18n="guias">Guías</h4><a href="/guias" data-i18n="f_all_guides">Todas las guías</a><a href="/guia/como-comprar-en-kakobuy">Cómo comprar en Kakobuy</a><a href="/guia/guia-agentes">Guía de agentes</a><a href="/guia/fotos-qc">Qué son las fotos QC</a></div>
     <div><h4>Legal</h4><a href="/guia/legal">Aviso legal</a><a href="/guia/legal">Privacidad y cookies</a><a href="/guia/legal">Divulgación de afiliación</a><a href="/guia/legal">Marcas</a></div>
   </div>
@@ -657,7 +673,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_inicio:"Inicio",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
+    nav_inicio:"Inicio",nav_herramientas:"Herramientas",tools_h:"Herramientas",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -707,7 +723,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_inicio:"Home",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
+    nav_inicio:"Home",nav_herramientas:"Tools",tools_h:"Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -1446,8 +1462,10 @@ function enterExplore(){
 applyLang();
 renderSocial();
 const EXPLORING=location.pathname==="/productos";
-if(!EXPLORING){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
+const TOOLS=location.pathname==="/herramientas";
+if(!EXPLORING&&!TOOLS){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
 if(EXPLORING){ enterExplore(); }
+else if(TOOLS){ document.body.dataset.view="tools"; document.title=(LANG==="en"?"Tools — CNFinds":"Herramientas — CNFinds"); scrollTo(0,0); }
 else { const sp=new URLSearchParams(location.search);
   const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }
   const ids=(sp.get("favs")||"").split(",").map(x=>parseInt(x,10)).filter(Boolean);

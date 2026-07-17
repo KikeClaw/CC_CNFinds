@@ -918,7 +918,7 @@ function handleSitemap(req, res) {
   const brands = db.prepare("SELECT brand FROM products WHERE brand IS NOT NULL GROUP BY brand HAVING COUNT(*) >= 3").all().map((r) => r.brand);
   const agents = getAgentState().filter((a) => agentMeta(a.id)).map((a) => a.id);
   res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones", "/agentes", "/productos"] }));
+  res.end(sitemapXml(baseUrl(req), { productIds: ids, categories: cats, brands, guides: GUIDES.map((g) => g.slug), agents, pages: ["/ayuda", "/cupones", "/agentes", "/productos", "/herramientas"] }));
 }
 
 // ---- Admin: importador universal ----
@@ -1249,8 +1249,16 @@ const server = createServer((req, res) => {
     if (parts[0] === "producto" && parts[1]) return handleProductPage(req, res, parseInt(parts[1], 10));
     if (parts[0] === "categoria" && parts[1]) return handleListPage(req, res, "categoria", decodeURIComponent(parts[1]));
     if (parts[0] === "marca" && parts[1]) return handleListPage(req, res, "marca", decodeURIComponent(parts[1]));
-    if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos") {
+    if (u.pathname === "/" || u.pathname === "/index.html" || u.pathname === "/productos" || u.pathname === "/herramientas") {
       let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
+      if (u.pathname === "/herramientas") {
+        const en = reqLang(req) === "en";
+        const tt = en ? "Tools — link converter, AI QC, shipping calculator | CNFinds" : "Herramientas — conversor de enlaces, QC con IA, calculadora de envío | CNFinds";
+        const td = en ? "Free tools to buy reps smarter: agent link converter, AI QC photo checker, AI outfit builder, visual search and a shipping cost calculator." : "Herramientas gratis para comprar reps mejor: conversor de enlaces de agente, QC de fotos con IA, armador de outfits, búsqueda visual y calculadora de envío.";
+        page = page.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(tt)}</title>`)
+          .replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(td)}$2`)
+          .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${esc(baseUrl(req))}/herramientas$2`);
+      }
       // SEO real para /productos: título/descr/canónica dinámicos según filtros,
       // grid pre-renderizado (los crawlers ven productos + enlaces internos) y
       // migas de pan (BreadcrumbList). La SPA reemplaza el grid al cargar.

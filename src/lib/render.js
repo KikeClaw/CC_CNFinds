@@ -65,10 +65,13 @@ a{color:inherit;text-decoration:none}h1,h2,h3,.brand{font-family:var(--fd)}
 .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
 header{border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(16px);z-index:10}
 .nav{display:flex;align-items:center;gap:20px;height:60px}
-.brand{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:20px;letter-spacing:-.04em}
-.brand .m{width:28px;height:28px;border-radius:8px;background:var(--brand);display:grid;place-items:center}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.04em}
+.brand .m{width:30px;height:30px;display:inline-grid;place-items:center}
 .brand b{color:var(--brand)}
-.nav .sp{margin-left:auto;color:var(--muted);font-size:13px}
+.shnav{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap}
+.shnav a{padding:8px 12px;border-radius:999px;color:var(--muted);font-size:14px;font-weight:600;white-space:nowrap}
+.shnav a:hover{background:var(--soft);color:var(--ink)}
+.shnav a.on{background:var(--brand);color:#fff}
 .crumb{color:var(--muted);font-size:13px;padding:18px 0 0}.crumb a:hover{color:var(--ink)}
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:34px;padding:22px 0 10px}
 @media(max-width:760px){.prod{grid-template-columns:1fr}}
@@ -135,9 +138,14 @@ ${image ? `<meta property="og:image" content="${esc(image)}"><meta name="twitter
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}`;
 }
 
+const shellNav = (lang) => {
+  const en = lang === "en", lp = en ? "?lang=en" : "";
+  return [[en ? "Home" : "Inicio", "/"], [en ? "Catalog" : "Catálogo", "/productos"], [en ? "Tools" : "Herramientas", "/herramientas"], [en ? "Coupons" : "Cupones", "/cupones" + lp], [en ? "Agents" : "Agentes", "/agentes" + lp], [en ? "Help" : "Ayuda", "/ayuda" + lp]]
+    .map(([t, h]) => `<a href="${h}">${esc(t)}</a>`).join("");
+};
 const shellHeader = (lang) => `<header><div class="wrap nav">
-<a class="brand" href="/"><span class="m"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg></span><span><b>CN</b>Finds</span></a>
-<span class="sp">${esc(tr(lang, "tagline"))}</span></div></header>`;
+<a class="brand" href="/"><span class="m"><svg viewBox="0 0 32 32" width="30" height="30"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#hg)"/><g fill="none" stroke="#fff" stroke-width="3.3" stroke-linecap="round"><path d="M19.24 19.56 A6.6 6.6 0 1 1 21.57 13.81"/><path d="M19.24 19.56 L23.9 25"/></g></svg></span><span><b>CN</b>Finds</span></a>
+<nav class="shnav">${shellNav(lang)}</nav></div></header>`;
 
 const shellFooter = (crumbs, lang) => `<footer><div class="wrap">
 <div class="chips">${crumbs.map((c) => `<a href="${c.href}">${esc(c.label)}</a>`).join("")}</div>
