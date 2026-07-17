@@ -33,6 +33,13 @@ export function rowsToCandidates(rows) {
 // ni mostrar, acaba como "weidian-12345" y la IA lo "limpia" a "Artículo Weidian
 // 12345". Las hojas traen filas así (cabeceras, navegación, celdas con JS…).
 const CODEY = /switchToSheet|function\s*\(|\);|\{|\}|=>/;
+
+// Contenido adulto: las hojas de la comunidad traen a veces pestañas de sex shop.
+// Está fuera del nicho (moda/reps), desentona en la home y puede penalizarte en
+// Google/AdSense. NOTA: la lencería NO se bloquea (es ropa, categoría Underwear).
+const ADULT = /\b(sex[\s-]?toys?|adult[\s-]?toys?|sex[\s-]?products?|dildos?|vibrators?|masturbat\w*|butt[\s-]?plugs?|anal[\s-]?plugs?|condoms?|penis|vagina)\b/i;
+export function isAdult(s) { return ADULT.test(String(s || "")); }
+
 export function usableName(s) {
   const t = String(s || "").trim();
   if (t.length < 4) return false;
@@ -50,6 +57,7 @@ export function dedupe(db, cands) {
   for (const c of cands) {
     if (!c.platform || !c.itemId) continue;
     if (!usableName(c.name)) continue; // fuera las filas sin nombre real
+    if (isAdult(c.name)) continue;     // fuera el sex shop (no es nuestro nicho)
     const key = c.platform + "|" + c.itemId;
     if (seen.has(key)) continue;
     seen.add(key);

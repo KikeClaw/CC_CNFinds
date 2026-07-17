@@ -1380,6 +1380,12 @@ function purgeJunkProducts() {
       "DELETE FROM products WHERE (name LIKE 'weidian-%' OR name LIKE 'taobao-%' OR name LIKE '1688-%') AND name GLOB '*-[0-9]*'"
     ).run();
     if (r.changes) console.log(`Limpieza: ${r.changes} productos sin nombre real eliminados.`);
+    // Sex shop: fuera del nicho (moda/reps). Se filtra en la ingesta; esto quita
+    // los que ya entraron. Se comprueba el nombre CRUDO de la hoja (en inglés).
+    const a = db.prepare(
+      "DELETE FROM products WHERE name LIKE '%sex toy%' OR name LIKE '%adult toy%' OR name LIKE '%sex product%' OR name LIKE '%dildo%' OR name LIKE '%vibrator%' OR name LIKE '%masturbat%' OR name LIKE '%butt plug%'"
+    ).run();
+    if (a.changes) console.log(`Limpieza: ${a.changes} productos de contenido adulto eliminados.`);
   } catch (e) { console.error("purgeJunkProducts:", e.message); }
 }
 
