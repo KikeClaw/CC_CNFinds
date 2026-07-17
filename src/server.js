@@ -17,7 +17,7 @@ import { hasKey, MODELS } from "./lib/ai.js";
 import { nlToFilters } from "./lib/aisearch.js";
 import { buildFit } from "./lib/fit.js";
 import { imageToQuery } from "./lib/visualsearch.js";
-import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, agentLandingPage, agentsComparePage, helpPage, esc } from "./lib/render.js";
+import { productPage, listPage, sitemapXml, articlePage, guidesIndexPage, couponsPage, couponsBody, helpBody, agentLandingPage, agentsComparePage, helpPage, esc } from "./lib/render.js";
 import { GUIDES, guideBySlug } from "./lib/guides.js";
 import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
@@ -851,9 +851,28 @@ function agentsForLang(lang) {
     };
   }).filter(Boolean);
 }
+// Sirve la SPA (index.html) con un cuerpo inyectado en #pageView + título/meta.
+// Así páginas como /cupones y /ayuda mantienen EXACTAMENTE el mismo navbar y footer
+// que el resto del sitio (son vistas de la misma página), en vez de documentos
+// aparte. El contenido va en el HTML servido, así que sigue siendo indexable.
+function serveSpaWithBody(req, res, { body, title, desc, path }) {
+  let page = readFileSync(join(ROOT, "public", "index.html"), "utf8");
+  page = page.replace("<!--PAGEVIEW-->", () => body)
+    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*(")/, `$1${esc(desc)}$2`)
+    .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${esc(baseUrl(req) + path)}$2`)
+    .replace("<!--SEOHUB-->", () => seoHubHtml(reqLang(req)));
+  if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");
+  html(res, page);
+}
 function handleCoupons(req, res) {
-  const lang = reqLang(req);
-  html(res, couponsPage({ agents: agentsForLang(lang), base: baseUrl(req), lang }));
+  const lang = reqLang(req), en = lang === "en";
+  serveSpaWithBody(req, res, {
+    body: couponsBody(agentsForLang(lang), baseUrl(req), lang),
+    title: en ? "Agent coupons & bonuses — Kakobuy, ACBuy & more | CNFinds" : "Cupones y bonos de agentes — Kakobuy, ACBuy y más | CNFinds",
+    desc: en ? "Sign-up bonuses and shipping coupons for the shopping agents we support." : "Bonos de registro y cupones de envío de los agentes de compra que soportamos.",
+    path: "/cupones",
+  });
 }
 function handleAgentsCompare(req, res) {
   const lang = reqLang(req);
@@ -866,8 +885,13 @@ function handleAgentLanding(req, res, id) {
   html(res, agentLandingPage({ agent: a, base: baseUrl(req), lang }));
 }
 function handleHelp(req, res) {
-  const lang = reqLang(req);
-  html(res, helpPage({ guides: GUIDES, base: baseUrl(req), lang }));
+  const lang = reqLang(req), en = lang === "en";
+  serveSpaWithBody(req, res, {
+    body: helpBody(GUIDES, baseUrl(req), lang),
+    title: en ? "Help center — how to buy reps step by step | CNFinds" : "Centro de ayuda — cómo comprar reps paso a paso | CNFinds",
+    desc: en ? "Tools, guides, coupons and FAQ to buy from Taobao/Weidian/1688 through a shopping agent." : "Herramientas, guías, cupones y FAQ para comprar en Taobao/Weidian/1688 a través de un agente.",
+    path: "/ayuda",
+  });
 }
 
 function getProductById(id) {

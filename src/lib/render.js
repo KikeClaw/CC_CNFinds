@@ -298,6 +298,59 @@ ${faqHtml}`;
   return doc({ title, desc, canonical: path, image: items[0] && items[0].image ? th(items[0].image, 800, 800) : undefined, jsonld: [itemList, bc, faqLd], lang }, body, crumbs || []);
 }
 
+// --- Cuerpos auto-contenidos para inyectar en la SPA (mantienen navbar+footer) ---
+// Estilos inline con las variables del sitio, sin depender de clases de la SPA.
+export function couponsBody(agents, base, lang = "es") {
+  const en = lang === "en", lp = en ? "?lang=en" : "";
+  const t = {
+    h: en ? "Agent coupons & welcome bonuses" : "Cupones y bonos de bienvenida",
+    intro: en ? "Sign-up bonuses and shipping coupons for the shopping agents we support. Some links are affiliate links — we may earn a small commission at no extra cost to you." : "Bonos de registro y cupones de envío de los agentes de compra que soportamos. Algunos enlaces son de afiliado: podemos recibir una pequeña comisión sin coste adicional para ti.",
+    signup: en ? "Sign up" : "Registrarse", guide: en ? "Guide" : "Guía",
+    note: en ? "Coupons change often; verify the current offer on the agent's site." : "Los cupones cambian a menudo; verifica la oferta actual en la web del agente.",
+  };
+  const cards = agents.map((a) => `<div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:11px;height:11px;border-radius:11px;background:${AGENT_COLOR[a.id] || "#888"}"></span><b style="font-size:17px">${esc(a.name)}</b>${a.cashback ? `<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brandc)">${esc(a.cashback)}</span>` : ""}</div>
+    ${a.bonus ? `<div style="background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600">🎁 ${esc(a.bonus)}</div>` : ""}
+    ${a.coupons && a.coupons.length ? `<ul style="margin:2px 0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.6">${a.coupons.map((c) => `<li>${c.code ? `<code>${esc(c.code)}</code> — ` : ""}${esc(c.text)}</li>`).join("")}</ul>` : ""}
+    <div style="margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <a href="/agente/${a.id}${lp}" style="border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600">${esc(t.guide)}</a>
+      ${a.signup ? `<a href="${a.signup}" target="_blank" rel="nofollow noopener" style="border:1px solid var(--brand);color:var(--brand);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700">${esc(t.signup)} →</a>` : ""}
+    </div></div>`).join("");
+  return `<div style="padding-top:24px">
+  <div style="color:var(--muted);font-size:13px;margin-bottom:10px"><a href="/${lp}" style="color:var(--muted)">${esc(tr(lang, "home"))}</a> › ${esc(t.h)}</div>
+  <h1 style="font-family:var(--fd);font-size:32px;margin:0 0 8px;letter-spacing:-.03em">${esc(t.h)}</h1>
+  <p style="color:var(--muted);max-width:700px;line-height:1.6;margin:0 0 22px">${esc(t.intro)}</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px">${cards}</div>
+  <p style="color:var(--muted);font-size:13px;margin-top:20px">${esc(t.note)}</p></div>`;
+}
+
+export function helpBody(guides, base, lang = "es") {
+  const en = lang === "en", lp = en ? "?lang=en" : "";
+  const t = {
+    h: en ? "Help center" : "Centro de ayuda",
+    sub: en ? "Everything you need to go from discovery to your doorstep." : "Todo lo que necesitas para pasar del descubrimiento a tu casa.",
+    gH: en ? "In-depth guides" : "Guías a fondo", faqH: en ? "Quick FAQ" : "Preguntas rápidas", all: en ? "All guides →" : "Todas las guías →",
+  };
+  const links = [
+    [en ? "AI Tools" : "Herramientas IA", "/herramientas", en ? "Link converter, AI QC, outfit builder, visual search, shipping calculator." : "Conversor de enlaces, QC con IA, armador de outfits, búsqueda visual y calculadora de envío."],
+    [en ? "Guides" : "Guías", "/guias" + lp, en ? "How to buy, choosing an agent, QC photos, batches, saving money." : "Cómo comprar, elegir agente, fotos QC, batches y ahorrar."],
+    [en ? "Coupons & bonuses" : "Cupones y bonos", "/cupones" + lp, en ? "Welcome bonuses and shipping coupons for every agent." : "Bonos de bienvenida y cupones de envío de cada agente."],
+    [en ? "Agent comparison" : "Comparativa de agentes", "/agentes" + lp, en ? "Compare bonuses, cashback and shipping side by side." : "Compara bonos, cashback y envío en paralelo."],
+  ];
+  const cards = links.map(([tt, h, d]) => `<a href="${h}" style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:block"><b style="font-size:16px">${esc(tt)}</b><div style="color:var(--muted);font-size:13.5px;margin-top:6px;line-height:1.55">${esc(d)}</div></a>`).join("");
+  const gl = guides.slice(0, 8).map((g) => `<a href="/guia/${g.slug}${lp}" style="color:var(--brandc);font-size:14px;display:block;margin:7px 0">${esc(en && g.title_en ? g.title_en : g.title)} →</a>`).join("");
+  const faqs = en
+    ? [["How do I buy?", "Find a product, click a shopping agent — it buys it in China and forwards it to you."], ["Is it safe and legal?", "Buying for personal use is generally fine in most countries; use reputable agents and review QC photos before shipping."], ["What are QC photos?", "Real photos of your item at the agent's warehouse before shipping — review them to avoid surprises."]]
+    : [["¿Cómo compro?", "Busca un producto y pulsa un agente: lo compra en China y te lo reenvía."], ["¿Es seguro y legal?", "Comprar para uso personal no suele perseguirse; usa agentes reputados y revisa las fotos QC antes de enviar."], ["¿Qué son las fotos QC?", "Fotos reales de tu producto en el almacén del agente antes de enviar — revísalas para evitar sorpresas."]];
+  return `<div style="padding-top:24px">
+  <div style="color:var(--muted);font-size:13px;margin-bottom:10px"><a href="/${lp}" style="color:var(--muted)">${esc(tr(lang, "home"))}</a> › ${esc(t.h)}</div>
+  <h1 style="font-family:var(--fd);font-size:32px;margin:0 0 6px;letter-spacing:-.03em">${esc(t.h)}</h1>
+  <p style="color:var(--muted);max-width:680px;line-height:1.6;margin:0 0 22px">${esc(t.sub)}</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:30px">${cards}</div>
+  <h2 style="font-family:var(--fd);font-size:22px;margin:0 0 10px">${esc(t.gH)}</h2>${gl}<a href="/guias${lp}" style="color:var(--brandc);font-size:14px;font-weight:700;display:block;margin-top:8px">${esc(t.all)}</a>
+  <h2 style="font-family:var(--fd);font-size:22px;margin:30px 0 6px">${esc(t.faqH)}</h2>${faqs.map(([q, a]) => `<h3 style="font-size:16px;margin:16px 0 3px">${esc(q)}</h3><p style="color:var(--muted);line-height:1.6;margin:0">${esc(a)}</p>`).join("")}</div>`;
+}
+
 // --- Guías (contenido / SEO) ---
 const gTitle = (g, lang) => (lang === "en" && g.title_en ? g.title_en : g.title);
 const gDesc = (g, lang) => (lang === "en" && g.desc_en ? g.desc_en : g.desc);

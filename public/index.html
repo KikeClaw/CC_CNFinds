@@ -636,6 +636,8 @@
   </div>
 </main>
 
+<main id="pageView" class="wrap" style="display:none"><!--PAGEVIEW--></main>
+
 <footer>
   <div class="wrap fgrid">
     <div>
@@ -1464,9 +1466,11 @@ applyLang();
 renderSocial();
 const EXPLORING=location.pathname==="/productos";
 const TOOLS=location.pathname==="/herramientas";
-if(!EXPLORING&&!TOOLS){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
+const PAGEVIEW=["/cupones","/ayuda","/coupons","/help"].includes(location.pathname);
+if(!EXPLORING&&!TOOLS&&!PAGEVIEW){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
 if(EXPLORING){ enterExplore(); }
-else if(TOOLS){ document.body.dataset.view="tools"; document.title=(LANG==="en"?"Tools — CNFinds":"Herramientas — CNFinds"); scrollTo(0,0); }
+else if(TOOLS){ document.body.dataset.view="tools"; document.title=(LANG==="en"?"AI Tools — CNFinds":"Herramientas IA — CNFinds"); scrollTo(0,0); }
+else if(PAGEVIEW){ const hero=document.querySelector(".hero"); if(hero)hero.style.display="none"; const hm=$("#homeMain"); if(hm)hm.style.display="none"; $("#pageView").style.display="block"; scrollTo(0,0); }
 else { const sp=new URLSearchParams(location.search);
   const uq=sp.get("q"); if(uq){ state.q=uq; const qi=$("#q"); if(qi) qi.value=uq; }
   const ids=(sp.get("favs")||"").split(",").map(x=>parseInt(x,10)).filter(Boolean);
