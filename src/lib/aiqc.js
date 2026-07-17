@@ -20,7 +20,10 @@ const SYSTEM =
   "y 'qc_summary_en' la misma valoracion en ingles. 'flags' = posibles defectos o senales " +
   "de baja calidad (lista corta, vacia si todo ok).";
 
-export async function qcOne(images, name = "", { model = MODELS.smart } = {}) {
+// QC con Haiku (visión) por defecto: es una valoración sencilla (nota + resumen),
+// no compensa el coste de Opus. Se puede forzar otro modelo con AI_MODEL_FAST o
+// pasando { model } desde el llamador.
+export async function qcOne(images, name = "", { model = MODELS.fast } = {}) {
   return structured({
     system: SYSTEM, model, schema: QC_SCHEMA, images, maxTokens: 400,
     prompt: `Producto: ${name}. Evalua la calidad segun estas fotos.`,

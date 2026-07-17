@@ -30,7 +30,7 @@ const rows = db.prepare(
   "SELECT id, name, clean_title, images FROM products WHERE qc_score IS NULL AND images IS NOT NULL ORDER BY hot DESC, id LIMIT ?"
 ).all(limit);
 
-console.log(`QC de ${rows.length} producto(s) con ${MODELS.smart} (vision)...\n`);
+console.log(`QC de ${rows.length} producto(s) con ${MODELS.fast} (vision)...\n`);
 const upd = db.prepare("UPDATE products SET qc_score=?, qc_notes=? WHERE id=?");
 
 for (const r of rows) {
@@ -39,7 +39,7 @@ for (const r of rows) {
   if (!imgs.length) continue;
   try {
     const out = await structured({
-      system: SYSTEM, model: MODELS.smart, schema: SCHEMA, images: imgs, maxTokens: 400,
+      system: SYSTEM, model: MODELS.fast, schema: SCHEMA, images: imgs, maxTokens: 400,
       prompt: `Producto: ${r.clean_title || r.name}. Evalua la calidad segun estas fotos.`,
     });
     upd.run(out.qc_score, JSON.stringify({ summary: out.qc_summary, flags: out.flags }), r.id);
