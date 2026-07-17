@@ -194,10 +194,16 @@ function handleProducts(res, params) {
   const wsql = where.length ? "WHERE " + where.join(" AND ") : "";
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
-  const rows = db.prepare(`
-    SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes
-    FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?
-  `).all(...args, limit, offset);
+  const COLS = "id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes";
+  // diverse=1: mismo orden pero como MUCHO 2 por categoría. Lo usa el escaparate
+  // "Nuevos finds": si la última importación fue toda de una categoría, sin esto
+  // la home enseña 8 productos calcados y parece rota.
+  const rows = params.get("diverse") === "1"
+    ? db.prepare(`SELECT ${COLS} FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY COALESCE(category,'?') ORDER BY ${sort}) rn
+        FROM products ${wsql}
+      ) WHERE rn <= 2 ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset)
+    : db.prepare(`SELECT ${COLS} FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset);
 
   const items = rows.map((r) => {
     let gallery = [];

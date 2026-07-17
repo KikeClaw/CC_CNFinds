@@ -1185,7 +1185,8 @@ $("#trackNum").addEventListener("keydown",e=>{ if(e.key==="Enter") trackPkg(); }
 
 /* nuevos finds */
 async function loadNewFinds(){
-  const d=await (await fetch("/api/products?sort=newest&limit=8")).json();
+  /* diverse=1: máx 2 por categoría, para que el escaparate no lo copen los últimos importados */
+  const d=await (await fetch("/api/products?sort=newest&diverse=1&limit=8")).json();
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#newfinds").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#newfinds"));
 }
