@@ -80,11 +80,14 @@
   .nav{ display:flex; align-items:center; gap:18px; height:70px; }
   .nav .brand{ flex:1 1 0; }
   .nav .links{ display:flex; gap:3px; flex:0 0 auto; justify-content:center; background:color-mix(in srgb,var(--soft) 60%,transparent); padding:4px; border-radius:999px; border:1px solid var(--line2); }
-  .nav .links a{ position:relative; padding:8px 15px; border-radius:999px; color:var(--muted); font-size:14px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s,transform .12s; }
+  .nav .links a{ position:relative; padding:8px 13px; border-radius:999px; color:var(--muted); font-size:13.5px; font-weight:600; letter-spacing:.005em; white-space:nowrap; transition:background .18s,color .18s,transform .12s; }
   .nav .links a:hover{ background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .nav .links a:active{ transform:scale(.96); }
-  .nav .links a.nav-cta{ color:#fff; background:var(--brand); box-shadow:0 3px 10px color-mix(in srgb,var(--brand) 32%,transparent); }
-  .nav .links a.nav-cta:hover{ background:var(--brand); color:#fff; filter:brightness(1.06); box-shadow:0 5px 16px color-mix(in srgb,var(--brand) 42%,transparent); }
+  .nav .links a.nav-cta{ color:var(--brandc); font-weight:700; }
+  .nav .links a.nav-cta:hover{ background:color-mix(in srgb,var(--brand) 12%,transparent); color:var(--brandc); box-shadow:none; }
+  /* solo se pinta de rojo la sección en la que ESTÁS (no en la landing) */
+  .nav .links a.active{ color:#fff; background:var(--brand); box-shadow:0 3px 10px color-mix(in srgb,var(--brand) 30%,transparent); }
+  .nav .links a.active:hover{ background:var(--brand); color:#fff; filter:brightness(1.06); }
   .nav .right{ flex:1 1 0; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
   .seg{ display:flex; background:var(--soft); border-radius:999px; padding:3px; font-size:12.5px; font-weight:500; }
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
@@ -92,7 +95,7 @@
   .iconbtn{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; color:var(--ink); transition:.15s; }
   .iconbtn:hover{ background:var(--soft); }
   .burger{ display:none; }
-  @media(max-width:900px){
+  @media(max-width:1024px){
     .nav{ height:64px; }
     .nav .links{ display:none; position:absolute; top:64px; left:0; right:0; background:var(--bg); border:none; border-radius:0; border-bottom:1px solid var(--line); flex-direction:column; padding:16px 24px; gap:6px; z-index:39; font-size:15px; }
     .nav .links a{ padding:12px 14px; }
@@ -341,6 +344,7 @@
       <span class="wm"><b>CN</b>Finds</span>
     </a>
     <div class="links">
+      <a href="/" data-i18n="nav_inicio">Inicio</a>
       <a href="/productos" class="nav-cta" data-i18n="nav_catalogo">Catálogo</a>
       <a href="/#categorias" data-i18n="categorias">Categorías</a>
       <a href="/#marcas" data-i18n="marcas">Marcas</a>
@@ -653,7 +657,7 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
-    nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
+    nav_inicio:"Inicio",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
     sub:"Explora miles de artículos de las mejores fábricas de China, compara agentes de compra y pasa del descubrimiento a la compra sin fricción.",
@@ -703,7 +707,7 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
-    nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
+    nav_inicio:"Home",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
     sub:"Explore thousands of items from China's best factories, compare shopping agents, and go from discovery to checkout without friction.",
@@ -858,6 +862,12 @@ $("#burger").onclick=()=>{ const h=document.querySelector("header"); const open=
 document.querySelectorAll(".nav .links a").forEach(a=>a.addEventListener("click",()=>document.querySelector("header").classList.remove("navopen")));
 /* Logo/nombre: en la home hace scroll suave arriba; en /productos navega a la home. */
 document.querySelectorAll(".brand").forEach(b=>b.addEventListener("click",e=>{ if(location.pathname==="/"){ e.preventDefault(); scrollTo({top:0,behavior:"smooth"}); } }));
+/* Marca en rojo el enlace de la sección en la que estás (Inicio en la landing). */
+{ const path=location.pathname;
+  document.querySelectorAll(".nav .links a").forEach(a=>{ if(a.getAttribute("href")===path) a.classList.add("active"); });
+  const inicio=document.querySelector('.nav .links a[href="/"]');
+  if(inicio) inicio.addEventListener("click",e=>{ if(location.pathname==="/"){ e.preventDefault(); scrollTo({top:0,behavior:"smooth"}); document.querySelector("header").classList.remove("navopen"); } });
+}
 
 /* ver favoritos */
 $("#fav").onclick=()=>{
