@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff2e63"/></linearGradient></defs>
   <rect width="32" height="32" rx="9" fill="url(#g)"/>
-  <g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round">
-    <path d="M18.3 18.3 A7.5 7.5 0 1 1 18.3 7.7"/>
-    <path d="M18.3 18.3 L22.7 22.7"/>
+  <g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round">
+    <path d="M19.24 19.56 A6.6 6.6 0 1 1 21.57 13.81"/>
+    <path d="M19.24 19.56 L23.9 25"/>
   </g>
 </svg>
