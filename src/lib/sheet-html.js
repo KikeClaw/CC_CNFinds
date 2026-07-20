@@ -74,3 +74,91 @@ export async function fetchSheetHtml(sheetId, gid, { timeoutMs = 30000 } = {}) {
   }
   return out;
 }
+
+// --- Hojas PUBLICADAS (Archivo → Publicar en la web) ---------------------------
+// Usan OTRA URL: /spreadsheets/d/e/<pubId>/pubhtml. El <pubId> (empieza por 2PACX-)
+// NO es el id del /d/<id>/ normal, así que discoverTabs/fetchSheet no valen. El índice
+// /pubhtml lista el gid de cada pestaña; el grid vive en /pubhtml/sheet?gid=<gid>.
+// A diferencia del htmlview normal, aquí una FILA suele ser un producto con VARIOS
+// links de agente (el mismo item en Weidian y en Taobao). Por eso sacamos nombre,
+// precio e imagen a nivel de fila y emitimos un candidato por cada link reconocido.
+export function pubIdFromUrl(url) {
+  const m = /\/spreadsheets\/d\/e\/([a-zA-Z0-9_-]+)/.exec(String(url || ""));
+  return m ? m[1] : null;
+}
+
+// Etiquetas de columna de link (Weidian/Taobao/Kakobuy…): son texto de celda, no el
+// nombre del producto. Se ignoran al elegir el nombre de la fila.
+const AGENT_LABEL = /^(weidian|taobao|1688|kakobuy|allchinabuy|oopbuy|superbuy|hipobuy|mycnbox|mulebuy|litbuy|cssbuy|sugargoo|hoobuy|acbuy|cnfans|joya(goo|buy)|orientdig|lovegobuy|basetao|pandabuy|link|buy|qc|photos?|review|yupoo)$/i;
+// Estas hojas ponen el precio en yuanes (¥). Lo guardamos como EUR aproximado (el
+// precio es orientativo; el real lo fija el agente al comprar).
+const CNY_TO_EUR = 0.13;
+const PUB_PRICE = /([$€])\s?(\d{1,6}(?:[.,]\d{1,2})?)|[￥¥]\s?(\d{1,6}(?:[.,]\d{1,2})?)/;
+function pubPrice(t) {
+  const m = PUB_PRICE.exec(t || "");
+  if (!m) return null;
+  if (m[2]) return parseFloat(m[2].replace(",", "."));                         // $ o €
+  if (m[3]) return Math.round(parseFloat(m[3].replace(",", ".")) * CNY_TO_EUR); // ¥ → EUR
+  return null;
+}
+
+export async function fetchPublishedGids(pubId, { timeoutMs = 30000 } = {}) {
+  const url = `https://docs.google.com/spreadsheets/d/e/${pubId}/pubhtml`;
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": UA } });
+    if (!res.ok) throw new Error(`pubhtml HTTP ${res.status}`);
+    const html = await res.text();
+    return [...new Set((html.match(/gid=(\d+)/g) || []).map((s) => s.slice(4)))];
+  } finally { clearTimeout(to); }
+}
+
+export async function fetchPublishedSheet(pubId, gid, { timeoutMs = 30000 } = {}) {
+  const url = `https://docs.google.com/spreadsheets/d/e/${pubId}/pubhtml/sheet?headers=false&gid=${gid}`;
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), timeoutMs);
+  let html;
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": UA } });
+    if (!res.ok) throw new Error(`pubhtml sheet HTTP ${res.status}`);
+    html = await res.text();
+  } finally { clearTimeout(to); }
+  html = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+
+  const out = [];
+  for (const row of html.split(/<tr\b/i).slice(1)) {
+    const cells = row.split(/<td\b/i).slice(1).map((td) => ({
+      href: (/href="([^"]+)"/i.exec(td) || [])[1],
+      img: (/<img[^>]+src="([^"]+)"/i.exec(td) || [])[1],
+      text: cellText(td),
+    }));
+    // nombre = el texto más largo de la fila que no sea precio, etiqueta de agente ni código
+    let name = null;
+    for (const c of cells) {
+      const t = c.text;
+      if (t && t.length >= 5 && !PUB_PRICE.test(t) && !AGENT_LABEL.test(t) && !looksLikeCode(t)) {
+        if (!name || t.length > name.length) name = t;
+      }
+    }
+    if (name) name = name.slice(0, 140);
+    let price = null;
+    for (const c of cells) { const p = pubPrice(c.text); if (p != null) { price = p; break; } }
+    // Imagen de la fila. En hojas publicadas las <img> docsubipk sí se pueden embeber
+    // (CORP cross-origin) y son la ÚNICA foto de los items de Taobao (que no se
+    // enriquecen), así que aquí NO aplicamos el filtro BAD_IMG.
+    let image = null;
+    for (const c of cells) { if (c.img) { image = c.img.replace(/&amp;/g, "&"); break; } }
+    const seen = new Set();
+    for (const c of cells) {
+      if (!c.href) continue;
+      const p = parseAnyUrl(unwrap(c.href.replace(/&amp;/g, "&")));
+      if (!p) continue;
+      const key = `${p.platform}:${p.itemId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ platform: p.platform, itemId: p.itemId, name, price, image });
+    }
+  }
+  return out;
+}

@@ -23,7 +23,7 @@ import { canonCat, catLabel } from "./lib/categories.js";
 import { agentMeta, signupUrl } from "../config/agents-meta.js";
 import { COMMUNITY_SHEETS, sheetUrl } from "../config/sources.js";
 import { fetchSheetLinks } from "./lib/sheet-api.js";
-import { fetchSheetHtml } from "./lib/sheet-html.js";
+import { fetchSheetHtml, pubIdFromUrl, fetchPublishedGids, fetchPublishedSheet } from "./lib/sheet-html.js";
 import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
@@ -63,6 +63,9 @@ function thumb(url, w = 500, h = 500) {
   // por nuestro proxy /img, que sí puede descargarlas y las reenvía desde nuestro
   // origen. Pedimos el ancho ya reducido para no mover megas de más.
   if (/sheets-images-rt/.test(url)) return "/img?u=" + encodeURIComponent(url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`));
+  // Imágenes "en celda" de hojas PUBLICADAS (lh3.googleusercontent/docsubipk): el
+  // navegador no las embebe (Origin/CORP) pero el fetch de servidor sí → vía /img.
+  if (/googleusercontent\.com\/docsubipk/.test(url)) return "/img?u=" + encodeURIComponent(url.replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${w}`));
   return url;
 }
 
@@ -73,12 +76,13 @@ function imgDirect(url, w = 500, h = 500) {
   if (!url) return null;
   if (/geilicdn|weidian/.test(url)) return `${url}.webp?w=${w}&h=${h}&cp=1`;
   if (/sheets-images-rt/.test(url)) return url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
+  if (/googleusercontent\.com\/docsubipk/.test(url)) return url.replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${w}`);
   return url;
 }
 
 // Proxy de imagen: SOLO para los hosts de la lista blanca (evita convertirnos en
 // un proxy abierto/SSRF). Cachea fuerte: la imagen no cambia para una URL dada.
-const IMG_ALLOW = /^https:\/\/docs\.google\.com\/sheets-images-rt\//;
+const IMG_ALLOW = /^https:\/\/(docs\.google\.com\/sheets-images-rt|lh\d+\.googleusercontent\.com\/docsubipk)\//;
 async function handleImgProxy(req, res, u) {
   const target = u.searchParams.get("u") || "";
   if (!IMG_ALLOW.test(target)) { res.writeHead(400, { "Content-Type": "text/plain" }); return res.end("bad url"); }
@@ -963,6 +967,18 @@ async function gatherCandidates(mode, content) {
     return c;
   }
   if (mode === "sheet") {
+    // Hoja PUBLICADA (/d/e/<pubId>/pubhtml): otra API, se lee entera del grid público
+    // (nombre + precio + foto + links por fila). No pasa por gviz/API/htmlview normal.
+    const pubId = pubIdFromUrl(content);
+    if (pubId) {
+      const gids = await fetchPublishedGids(pubId).catch(() => []);
+      const all = [];
+      for (const gid of (gids.length ? gids : [""])) {
+        let rows; try { rows = await fetchPublishedSheet(pubId, gid); } catch { continue; }
+        all.push(...rows);
+      }
+      return all;
+    }
     const id = sheetIdFromUrl(content);
     if (!id) throw new Error("URL de Google Sheet no válida.");
     let tabs; try { tabs = await discoverTabs(id); } catch { tabs = [{ gid: "0", name: "" }]; }
