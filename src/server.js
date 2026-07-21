@@ -32,6 +32,7 @@ import { PRICE_MIN_EUR, PRICE_MAX_EUR } from "./lib/price.js";
 import { harvestText } from "./lib/harvest.js";
 import { mapColumnsAI, candidatesFromMap } from "./lib/aimap.js";
 import { enrichProduct } from "./lib/enrich.js";
+import { sizeAdvice } from "./lib/aisize.js";
 import { tagOne } from "./lib/aitag.js";
 import { qcOne } from "./lib/aiqc.js";
 
@@ -588,6 +589,36 @@ function handleConvert(res, params) {
 // QC Checker con IA: pega un link -> fotos reales + puntuacion de calidad por vision.
 // Cachea por (plataforma,item) para no repetir coste de IA. Usa el modelo rapido.
 const qcCheckCache = new Map();
+// Asesor de tallas: lee las tallas REALES de la ficha y recomienda sobre ellas.
+async function handleSizeAdvice(req, res) {
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const id = parseInt(body.id, 10);
+  const user = String(body.user || "").trim().slice(0, 300);
+  if (!id) return json(res, 400, { ok: false, error: "Falta 'id'." });
+  if (user.length < 2) return json(res, 200, { ok: false, error: "Dime tu talla habitual (y si quieres, altura y peso)." });
+
+  const p = db.prepare("SELECT id, platform, item_id, name, clean_title, category FROM products WHERE id=?").get(id);
+  if (!p) return json(res, 200, { ok: false, error: "Producto no encontrado." });
+  // Solo Weidian expone los atributos de la ficha; en el resto no hay de dónde leerlas.
+  if (p.platform !== "weidian") {
+    return json(res, 200, { ok: false, kind: "unsupported", error: "Las tallas de este producto no se pueden leer automáticamente (solo Weidian). Mira la tabla de medidas en las fotos del anuncio." });
+  }
+  let en; try { en = await enrichProduct(p.platform, p.item_id, {}); } catch { en = null; }
+  if (!en || !en.ok) return json(res, 200, { ok: false, error: "No pude leer la ficha ahora mismo. Prueba en un minuto." });
+  const sz = en.sizes;
+  if (!sz) return json(res, 200, { ok: false, kind: "none", error: "Este producto no indica tallas en la ficha. Comprueba la tabla de medidas en las fotos." });
+  if (sz.kind === "one") return json(res, 200, { ok: true, kind: "one", sizes: sz.values, advice: "Este producto es de talla única." });
+
+  try {
+    const out = await sizeAdvice({
+      name: p.clean_title || p.name, category: p.category,
+      kind: sz.kind, sizes: sz.values, user,
+    });
+    json(res, 200, { ok: true, kind: sz.kind, sizes: sz.values, ...out });
+  } catch (e) { json(res, 200, { ok: false, error: "La IA no respondió. Inténtalo otra vez." }); }
+}
+
 async function handleQcCheck(req, res) {
   if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
@@ -1380,6 +1411,7 @@ const server = createServer((req, res) => {
     ].join("; "));
     // Rate-limit en endpoints que cuestan IA (evita spam/coste) y de captura.
     if (req.method === "POST" && u.pathname === "/api/visual-search") { if (!rateLimit(req, res, "vis", 15, 3600e3)) return; return void handleVisualSearch(req, res); }
+    if (req.method === "POST" && u.pathname === "/api/size-advice") { if (!rateLimit(req, res, "size", 60, 3600e3)) return; return void handleSizeAdvice(req, res); }
     if (req.method === "POST" && u.pathname === "/api/qc-check") { if (!rateLimit(req, res, "qc", 40, 3600e3)) return; return void handleQcCheck(req, res); }
     if (req.method === "POST" && u.pathname === "/api/subscribe") { if (!rateLimit(req, res, "sub", 10, 60e3)) return; return void handleSubscribe(req, res); }
     if (req.method === "POST" && u.pathname === "/api/track") return void handleTrack(req, res);

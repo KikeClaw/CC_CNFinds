@@ -12,6 +12,7 @@
 // Señal de item CAÍDO: la API responde OK igual para un itemId inventado, pero el
 // resultado llega sin stock y sin fotos. Eso es lo que miramos, no el código.
 import { CNY_TO_EUR, sanePrice } from "./price.js";
+import { pickSizeAxis } from "./sizes.js";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -52,10 +53,13 @@ async function fetchApi(itemId, timeoutMs) {
       if (u && !seen.has(u)) { seen.add(u); images.push(u); }
     }
     const stock = r.itemStock == null ? null : Number(r.itemStock);
+    // Tallas reales de la ficha: sale de la misma respuesta, no cuesta una petición
+    // extra. La usa el asesor de tallas para recomendar sobre lo que existe.
+    const sizes = pickSizeAxis(r.attrList);
     const price = fenToEur(r.itemDiscountLowPrice ?? r.itemOriginalLowPrice);
     // Sin stock Y sin fotos = el item no existe (la API responde OK igualmente).
     const alive = images.length > 0 || stock != null;
-    return { ok: true, status: res.status, alive, images, price, stock, title: r.itemTitle || null };
+    return { ok: true, status: res.status, alive, images, price, stock, sizes, title: r.itemTitle || null };
   } catch (e) {
     // Errores de red (fetch failed / reset / timeout) => reintentables: Weidian
     // throttlea cuando se le pide rapido.
@@ -80,7 +84,7 @@ async function fetchHtml(itemId, timeoutMs) {
     const seen = new Set();
     const images = [];
     for (const m of html.matchAll(IMG_RE)) if (!seen.has(m[0])) { seen.add(m[0]); images.push(m[0]); }
-    return { ok: true, status: res.status, alive: images.length > 0, images, price: null, stock: null };
+    return { ok: true, status: res.status, alive: images.length > 0, images, price: null, stock: null, sizes: null };
   } catch (e) {
     return { retry: true, error: e.name === "AbortError" ? "timeout" : e.message };
   } finally {
@@ -104,11 +108,11 @@ export async function enrichWeidian(itemId, { timeoutMs = 20000, retries = 3 } =
     last = r;
     if (!r.retry) break; // error definitivo: no insistir
   }
-  return { ok: false, alive: null, status: last.status, error: last.error || `HTTP ${last.status}`, images: [], price: null, stock: null };
+  return { ok: false, alive: null, status: last.status, error: last.error || `HTTP ${last.status}`, images: [], price: null, stock: null, sizes: null };
 }
 
 // Enriquecedor por plataforma (por ahora solo weidian; taobao/1688 = futuro).
 export async function enrichProduct(platform, itemId, opts) {
   if (platform === "weidian") return enrichWeidian(itemId, opts);
-  return { ok: false, alive: null, error: `plataforma no soportada: ${platform}`, images: [], price: null, stock: null };
+  return { ok: false, alive: null, error: `plataforma no soportada: ${platform}`, images: [], price: null, stock: null, sizes: null };
 }
