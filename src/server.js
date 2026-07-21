@@ -8,6 +8,7 @@
 import { createServer } from "node:http";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { openDb } from "./lib/db.js";
@@ -94,9 +95,35 @@ function imgDirect(url, w = 500, h = 500) {
 // Proxy de imagen: SOLO para los hosts de la lista blanca (evita convertirnos en
 // un proxy abierto/SSRF). Cachea fuerte: la imagen no cambia para una URL dada.
 const IMG_ALLOW = /^https:\/\/(docs\.google\.com\/sheets-images-rt|lh\d+\.googleusercontent\.com\/docsubipk)\//;
+
+// Caché EN DISCO de las fotos servidas por el proxy.
+//
+// Google rota las URLs de las imágenes incrustadas en una hoja: la misma foto pasa a
+// otra dirección cada poco y la anterior devuelve 400. Sin copia propia, miles de
+// fichas se quedaban en blanco a los pocos días de importarlas — y para los productos
+// de Taobao esa era su ÚNICA foto posible (no se pueden enriquecer desde la fuente).
+//
+// Guardar la copia la primera vez que se pide desengancha el catálogo de esas URLs.
+// Va en el volumen, junto a la base de datos, para sobrevivir a los redespliegues.
+const IMG_CACHE_DIR = process.env.IMG_CACHE_DIR || join(dirname(DB_PATH), "imgcache");
+const cacheName = (url) => createHash("sha1").update(url).digest("hex");
+const EXT_OF = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+
+async function serveCached(res, file, ct) {
+  const buf = await readFile(file);
+  res.writeHead(200, { "Content-Type": ct, "Content-Length": buf.length, "Cache-Control": "public, max-age=31536000, immutable" });
+  res.end(buf);
+}
+
 async function handleImgProxy(req, res, u) {
   const target = u.searchParams.get("u") || "";
   if (!IMG_ALLOW.test(target)) { res.writeHead(400, { "Content-Type": "text/plain" }); return res.end("bad url"); }
+  const base = join(IMG_CACHE_DIR, cacheName(target));
+  // 1) ¿ya la tenemos guardada? Entonces da igual que la URL de Google haya muerto.
+  for (const [ct, ext] of Object.entries(EXT_OF)) {
+    try { return await serveCached(res, `${base}.${ext}`, ct); } catch {}
+  }
+  // 2) Primera vez: descargar, guardar y servir.
   try {
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 10000);
@@ -106,7 +133,15 @@ async function handleImgProxy(req, res, u) {
     const ct = r.headers.get("content-type") || "";
     if (!r.ok || !/^image\//.test(ct)) { res.writeHead(502, { "Content-Type": "text/plain" }); return res.end("upstream"); }
     const buf = Buffer.from(await r.arrayBuffer());
-    res.writeHead(200, { "Content-Type": ct, "Content-Length": buf.length, "Cache-Control": "public, max-age=2592000, immutable" });
+    // Guardar es best-effort: si el disco falla, la imagen igual se sirve.
+    try {
+      await mkdir(IMG_CACHE_DIR, { recursive: true });
+      const ext = EXT_OF[ct.split(";")[0].trim()] || "jpg";
+      const tmp = `${base}.${process.pid}.tmp`;
+      await writeFile(tmp, buf);
+      await rename(tmp, `${base}.${ext}`); // atómico: nunca se sirve un fichero a medias
+    } catch (e) { console.error("imgcache:", e.message); }
+    res.writeHead(200, { "Content-Type": ct, "Content-Length": buf.length, "Cache-Control": "public, max-age=31536000, immutable" });
     res.end(buf);
   } catch { res.writeHead(504, { "Content-Type": "text/plain" }); res.end("timeout"); }
 }
