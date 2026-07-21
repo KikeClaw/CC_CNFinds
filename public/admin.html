@@ -251,6 +251,7 @@ const T={
       ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
     ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
+    st_price:"con precio", src_noprice:"⚠️ Pocos precios válidos: esta hoja no trae precio o lo cotiza raro. Esos productos saldrán con «—» y quedarán fuera del filtro de precio (el barrido de salud los irá corrigiendo desde Weidian).",
     hl_h:"Salud del catálogo", hl_run:"Revisar salud ahora", hl_purge:"Borrar ocultos…",
     hl_counts:(a,s,h,n)=>`Activos: ${a} · Sospechosos: ${s} · Ocultos: ${h} · Sin revisar aún: ${n}`,
     hl_purge_confirm:"Esto BORRA definitivamente los productos ocultos (los que fallaron varias comprobaciones seguidas). No se puede deshacer. ¿Seguir?",
@@ -316,6 +317,7 @@ const T={
       ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
     ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
+    st_price:"with price", src_noprice:"⚠️ Few valid prices: this sheet has no price or quotes it oddly. Those products will show \"—\" and stay out of the price filter (the health sweep will fix them from Weidian over time).",
     hl_h:"Catalog health", hl_run:"Check health now", hl_purge:"Delete hidden…",
     hl_counts:(a,s,h,n)=>`Active: ${a} · Suspect: ${s} · Hidden: ${h} · Not checked yet: ${n}`,
     hl_purge_confirm:"This PERMANENTLY deletes hidden products (those that failed several checks in a row). It cannot be undone. Continue?",
@@ -411,8 +413,10 @@ $("#preview").onclick=async()=>{
       <div class="stat" style="color:var(--ok)"><b>${s.nuevos}</b><span>${t("st_new")}</span></div>
       <div class="stat"><b>${s.existentes}</b><span>${t("st_existing")}</span></div>
       <div class="stat" style="color:${(s.pctFoto??0)>=60?'var(--ok)':(s.pctFoto??0)>=25?'#f59e0b':'var(--brand)'}"><b>${s.pctFoto??0}%</b><span>${t("st_photo")}</span></div>
+      <div class="stat" style="color:${(s.pctPrecio??0)>=60?'var(--ok)':(s.pctPrecio??0)>=25?'#f59e0b':'var(--brand)'}"><b>${s.pctPrecio??0}%</b><span>${t("st_price")}</span></div>
     </div>
     <p class="hint" style="margin-top:2px">${(s.pctFoto??0)>=60?t("src_good"):(s.pctFoto??0)>=25?t("src_meh"):t("src_bad")}</p>
+    ${(s.pctPrecio??0)<50?`<p class="hint" style="margin-top:2px;color:#f59e0b">${t("src_noprice")}</p>`:""}
     <table><thead><tr><th></th><th>${t("th_platform")}</th><th>itemID</th><th>${t("th_name")}</th><th>${t("th_price")}</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="hint">${t("sample_of")(d.sample.length)}</p>
   </div>`;

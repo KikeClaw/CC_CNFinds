@@ -1,7 +1,7 @@
 // Cosecha "ciega al formato": de cualquier fila/texto saca identidades de
 // producto (plataforma + itemID) buscando URLs reconocibles en TODAS las celdas.
 import { parseAnyUrl } from "./parse.js";
-import { parsePriceField } from "./price.js";
+import { parsePriceField, parsePriceText } from "./price.js";
 
 const URL_RE = /https?:\/\/[^\s"'<>)\]]+/gi;
 const PRICE_RE = /(?:€|eur|\$|¥|cny|rmb)?\s?\d+[.,]\d{1,2}/i;
@@ -28,9 +28,15 @@ export function harvestRows(rows) {
       if (!t || /^https?:/i.test(t) || isPrice(t) || /^\d+$/.test(t)) continue;
       if (t.length > nl) { nl = t.length; name = t; }
     }
-    const priceCell = cells.find(isPrice);
+    // Precio: SIEMPRE gana la celda con moneda explícita sobre un número pelado.
+    // Estas hojas ponen las dos juntas —"260" (yuanes, sin símbolo) y "40,00$"— y
+    // quedarse con la primera guardaba ¥260 como €260 (7,5x de más). El número
+    // pelado solo vale si en la fila no hay ninguna celda con moneda.
+    const withCur = cells.filter((c) => parsePriceText(c) != null);
+    const price = withCur.length ? parsePriceText(withCur[0])
+      : (cells.find(isPrice) ? parsePrice(cells.find(isPrice)) : null);
     const image = urls.find(isImageUrl) || null;
-    out.push({ platform: ident.platform, itemId: ident.itemId, name, price: priceCell ? parsePrice(priceCell) : null, image });
+    out.push({ platform: ident.platform, itemId: ident.itemId, name, price, image });
   }
   return out;
 }

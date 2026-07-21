@@ -1025,9 +1025,16 @@ async function handleAdminPreview(req, res) {
     const deduped = dedupeCands(db, cands);
     const nuevos = deduped.filter((c) => c.status === "new").length;
     const conFoto = deduped.filter((c) => c.image).length; // señal de calidad de la fuente
+    const conPrecio = deduped.filter((c) => c.price != null).length;
     json(res, 200, {
       ok: true,
-      stats: { encontrados: cands.length, unicos: deduped.length, nuevos, existentes: deduped.length - nuevos, conFoto, pctFoto: deduped.length ? Math.round(conFoto / deduped.length * 100) : 0 },
+      stats: {
+        encontrados: cands.length, unicos: deduped.length, nuevos, existentes: deduped.length - nuevos,
+        conFoto, pctFoto: deduped.length ? Math.round(conFoto / deduped.length * 100) : 0,
+        // Señal de calidad de precio: si baja mucho, la hoja cotiza raro (o no trae
+        // precio) y sus productos saldrán con "—" en la tarjeta.
+        conPrecio, pctPrecio: deduped.length ? Math.round(conPrecio / deduped.length * 100) : 0,
+      },
       sample: deduped.slice(0, 40).map((c) => ({ platform: c.platform, itemId: c.itemId, name: c.name, price: c.price, status: c.status, image: !!c.image })),
     });
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }

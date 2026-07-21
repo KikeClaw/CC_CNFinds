@@ -11,7 +11,7 @@
 //
 // Señal de item CAÍDO: la API responde OK igual para un itemId inventado, pero el
 // resultado llega sin stock y sin fotos. Eso es lo que miramos, no el código.
-import { CNY_TO_EUR } from "./price.js";
+import { CNY_TO_EUR, sanePrice } from "./price.js";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
@@ -29,7 +29,8 @@ const apiUrl = (itemId) =>
 function fenToEur(fen) {
   if (fen == null || !Number.isFinite(Number(fen))) return null;
   const eur = (Number(fen) / 100) * CNY_TO_EUR;
-  return eur > 0 ? Math.round(eur * 100) / 100 : null;
+  // Cordura: hay fichas con una variante "cebo" a ¥0,60 que daría €0,08.
+  return sanePrice(Math.round(eur * 100) / 100);
 }
 
 async function fetchApi(itemId, timeoutMs) {

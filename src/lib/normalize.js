@@ -1,5 +1,5 @@
 import { DEFAULT_PLATFORM } from "../../config/agents.js";
-import { parsePriceField } from "./price.js";
+import { parsePriceField, parsePriceText } from "./price.js";
 
 // --- Mapeo flexible de columnas ---------------------------------------------
 // Encuentra el indice de la primera cabecera que contiene alguno de los alias.
@@ -145,6 +145,17 @@ export function deriveBrandCategory(name) {
 }
 
 // --- Normalizacion de una fila cruda ----------------------------------------
+// Precio de la fila. La columna PRICE detectada manda, PERO si ahí viene un número
+// pelado y en la misma fila hay una celda con moneda explícita, gana esa: estas hojas
+// ponen las dos juntas ("260" en yuanes y al lado "40,00$"), y quedarse con la pelada
+// guardaba ¥260 como €260 (7,5x de más). Regla genérica: moneda explícita > número.
+function priceForRow(cells, cols) {
+  const col = cols.price >= 0 ? cells[cols.price] : null;
+  if (col != null && parsePriceText(col) != null) return parsePriceText(col); // ya trae moneda
+  for (const c of cells) { const p = parsePriceText(c); if (p != null) return p; }
+  return parsePrice(col);
+}
+
 // Devuelve un producto canonico o null si la fila no es valida (sin itemId).
 export function normalizeRow(cells, cols) {
   // Colapsa saltos de linea y espacios multiples ("LV\nBag" -> "LV Bag").
@@ -153,7 +164,7 @@ export function normalizeRow(cells, cols) {
   if (!itemId) return null; // sin itemId no hay producto
 
   const platform = normalizePlatform(cols.platform >= 0 ? cells[cols.platform] : null);
-  const price = parsePrice(cols.price >= 0 ? cells[cols.price] : null);
+  const price = priceForRow(cells, cols);
   const imageRaw = cols.image >= 0 ? (cells[cols.image] || "").trim() : "";
   // Solo aceptamos imagen si es una URL http (la Sheet suele traer =IMAGE(), no exportable).
   const image = /^https?:\/\//i.test(imageRaw) ? imageRaw : null;
