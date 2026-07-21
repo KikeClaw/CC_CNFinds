@@ -8,9 +8,22 @@
 // producto (Taobao/Weidian/1688/agente) crea un candidato, intentando emparejar
 // nombre y precio de celdas cercanas (dentro del "bloque" de la fila).
 import { parseAnyUrl } from "./parse.js";
+import { parsePriceText, PRICE_RE } from "./price.js";
 
-const PRICE_RE = /(?:€|US\$|\$)\s?(\d{1,5}(?:[.,]\d{1,2})?)/;
 const isNoise = (s) => /^(link|image|imagen|price|precio|name|nombre|qc|na)$/i.test((s || "").trim());
+
+// Índices vecinos por CERCANÍA al link (i, i+1, i-1, …). Estas hojas colocan varios
+// productos por fila, así que recorrer la ventana de izquierda a derecha emparejaba
+// el precio del bloque ANTERIOR.
+function nearIdx(i, len, span = 3) {
+  const out = [];
+  if (i >= 0 && i < len) out.push(i);
+  for (let d = 1; d <= span; d++) {
+    if (i + d < len) out.push(i + d);
+    if (i - d >= 0) out.push(i - d);
+  }
+  return out;
+}
 
 function hrefFromFormula(f) {
   if (!f) return null;
@@ -69,11 +82,12 @@ export async function fetchSheetLinks(sheetId, apiKey, { timeoutMs = 40000 } = {
           const key = `${parsed.platform}:${parsed.itemId}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          // precio: celda con símbolo de moneda en la ventana [i-3, i+3]
+          // precio: celda con moneda más cercana al link (ver nearIdx). El parseo
+          // central convierte $ y ¥ a euros, que es lo que guarda la DB.
           let price = null;
-          for (let j = Math.max(0, i - 3); j <= Math.min(cells.length - 1, i + 3); j++) {
+          for (const j of nearIdx(i, cells.length)) {
             const fv = cells[j] && cells[j].formattedValue;
-            if (fv) { const m = fv.match(PRICE_RE); if (m) { price = parseFloat(m[1].replace(",", ".")); break; } }
+            if (fv) { const p = parsePriceText(fv); if (p != null) { price = p; break; } }
           }
           // nombre: texto no-ruido más cercano a la izquierda (dentro del bloque)
           let name = null;

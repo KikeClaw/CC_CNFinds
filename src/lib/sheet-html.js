@@ -3,33 +3,12 @@
 // el grid con las <img> (fotos de producto) y los <a> (links) ya renderizados.
 // Así sacamos foto + link + nombre + precio SIN API key y SIN scrapear Weidian.
 import { parseAnyUrl } from "./parse.js";
+import { parsePriceText, PRICE_RE } from "./price.js";
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
-// Precio en celda. Las hojas de la comunidad lo escriben de todas las formas:
-// "$6.92", "€ 6.92", pero también "6,92$" (símbolo DETRÁS y coma decimal, muy común
-// en las hojas europeas/chinas) y "￥480" en yuanes. Aceptamos las tres.
-const PRICE_RE = /[$€￥¥]\s?\d{1,6}(?:[.,]\d{1,2})?|\d{1,6}(?:[.,]\d{1,2})?\s?[$€￥¥]/;
-// Guardamos SIEMPRE euros (la columna es price_eur). Muchas hojas cotizan en dólares
-// o yuanes, así que convertimos. Tipos aproximados: el precio de estas hojas es
-// orientativo (el real lo fija el agente al comprar).
-const USD_TO_EUR = 0.864; // el que usan las propias hojas ($6,92 -> 5,98€)
-const CNY_TO_EUR = 0.13;
-const AMOUNT = /\d{1,6}(?:[.,]\d{1,2})?/;
-const num = (s) => { const m = s.match(AMOUNT); const v = m ? parseFloat(m[0].replace(",", ".")) : NaN; return Number.isFinite(v) ? v : null; };
-
-// Estas hojas suelen dar el MISMO precio en varias monedas ("6,92$" y "5,98€"). Si
-// aparece el euro lo usamos tal cual (exacto); si no, convertimos desde $ o ¥.
-function parsePrice(text) {
-  const hits = String(text || "").match(new RegExp(PRICE_RE, "g")) || [];
-  if (!hits.length) return null;
-  const eur = hits.find((h) => h.includes("€"));
-  if (eur) return num(eur);
-  const cny = hits.find((h) => /[￥¥]/.test(h));
-  if (cny) { const v = num(cny); return v == null ? null : Math.round(v * CNY_TO_EUR); }
-  const usd = hits.find((h) => h.includes("$"));
-  if (usd) { const v = num(usd); return v == null ? null : Math.round(v * USD_TO_EUR * 100) / 100; }
-  return null;
-}
+// Precio: parseo centralizado (monedas, símbolo delante/detrás, coma decimal) en
+// price.js — aquí escaneamos celdas sueltas, así que exigimos moneda explícita.
+const parsePrice = parsePriceText;
 // Hosts de imagen inestables (imágenes "en celda" de Google que caducan → 403).
 const BAD_IMG = /googleusercontent\.com|docsubipk/i;
 // El htmlview trae <script> con JS de la propia hoja (switchToSheet(...), etc.).

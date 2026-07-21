@@ -1,4 +1,5 @@
 import { DEFAULT_PLATFORM } from "../../config/agents.js";
+import { parsePriceField } from "./price.js";
 
 // --- Mapeo flexible de columnas ---------------------------------------------
 // Encuentra el indice de la primera cabecera que contiene alguno de los alias.
@@ -80,11 +81,12 @@ export function mapColumns(headers) {
 }
 
 // --- Parsers de campo --------------------------------------------------------
+// Columna de precio ya identificada: delega en el parseo central, que reconoce la
+// moneda ("$19.99", "EUR 3.96", "￥480") y convierte a euros. Un número pelado se
+// asume ya en euros. Antes se cogía el número a secas, así que las hojas en dólares
+// entraban ~16% infladas y las de yuanes por las nubes.
 export function parsePrice(raw) {
-  if (!raw) return null;
-  const m = String(raw).match(/(\d+(?:[.,]\d+)?)/);
-  if (!m) return null;
-  return parseFloat(m[1].replace(",", "."));
+  return parsePriceField(raw);
 }
 
 // itemId = solo digitos. Descarta valores demasiado cortos para ser reales.

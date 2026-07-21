@@ -1,13 +1,16 @@
 // Cosecha "ciega al formato": de cualquier fila/texto saca identidades de
 // producto (plataforma + itemID) buscando URLs reconocibles en TODAS las celdas.
 import { parseAnyUrl } from "./parse.js";
+import { parsePriceField } from "./price.js";
 
 const URL_RE = /https?:\/\/[^\s"'<>)\]]+/gi;
 const PRICE_RE = /(?:€|eur|\$|¥|cny|rmb)?\s?\d+[.,]\d{1,2}/i;
 
 const extractUrls = (s) => { const out = []; let m; URL_RE.lastIndex = 0; while ((m = URL_RE.exec(s))) out.push(m[0]); return out; };
 const isPrice = (s) => PRICE_RE.test(s);
-const parsePrice = (s) => { const m = String(s).match(/(\d+[.,]\d{1,2})/); return m ? parseFloat(m[1].replace(",", ".")) : null; };
+// La celda ya pasó por isPrice(), así que aquí un número pelado sí es precio; el
+// parseo central se encarga de la moneda ($ y ¥ se convierten a euros).
+const parsePrice = (s) => parsePriceField(s);
 const isImageUrl = (u) => /geilicdn|\.(jpe?g|png|webp)(\?|$)/i.test(u);
 
 // Filas (array 2D) -> candidatos. Nombre/precio/imagen por heurística.
