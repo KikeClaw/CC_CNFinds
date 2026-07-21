@@ -9,9 +9,20 @@ const PLAT_FROM_SHOPTYPE = {
 
 const isId = (v) => (v && /^\d{6,}$/.test(v) ? v : null);
 
+// Enlaces que NO son una ficha de producto: tienda, colección, perfil de vendedor.
+// Llevan un número largo (el id de la TIENDA), así que sin este filtro acaban
+// entrando como productos fantasma —con nombre de categoría, foto de banner de
+// tienda (vshop…), sin precio y con un enlace que no lleva a ningún sitio.
+const SHOP_URL = /[?&]user_?id=|[?&]shop_?id=|[?&]sellerId=|\.v\.weidian\.com|wfr=vshop|\/shop\b|\/store\b|\/collection\b|\/seller\b/i;
+// Señal de que la URL sí apunta a una ficha concreta. Ojo: nada de un "/detail"
+// suelto — los agentes usan /shop/detail para la página de una TIENDA.
+const HAS_ITEM_ID = /item_?id=|\/item\b|\/offer\//i;
+
 export function parseAnyUrl(input, depth = 0) {
   if (!input || depth > 3) return null;
   const s = String(input).trim();
+  // Tienda/colección sin ficha concreta: no es un producto.
+  if (SHOP_URL.test(s) && !HAS_ITEM_ID.test(s)) return null;
 
   let url;
   try { url = new URL(s); }
@@ -59,7 +70,14 @@ export function parseAnyUrl(input, depth = 0) {
 
   // Genericos
   if (idParam) return { platform: PLAT_FROM_SHOPTYPE[shopType] || "weidian", itemId: idParam };
-  const any = s.match(/(\d{9,})/); // ultimo recurso: id largo suelto
-  if (any) return { platform: "weidian", itemId: any[1] };
+  // Último recurso: un id largo suelto en la URL. Solo si la URL apunta de verdad a
+  // una FICHA (host de marketplace, o ruta de producto de un agente). Antes valía
+  // CUALQUIER URL con un número de 9+ cifras, así que un enlace de seguimiento o de
+  // tienda entraba al catálogo como producto inexistente.
+  const looksLikeItem = /weidian|taobao|tmall|1688/.test(host) || HAS_ITEM_ID.test(s) || /\/(product|goods)\b/i.test(url.pathname);
+  if (looksLikeItem) {
+    const any = s.match(/(\d{9,})/);
+    if (any) return { platform: PLAT_FROM_SHOPTYPE[shopType] || "weidian", itemId: any[1] };
+  }
   return null;
 }

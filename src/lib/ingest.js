@@ -41,11 +41,18 @@ const CODEY = /switchToSheet|function\s*\(|\);|\{|\}|=>/;
 const ADULT = /\b(sex[\s-]?toys?|adult[\s-]?toys?|sex[\s-]?products?|dildos?|vibrators?|masturbat\w*|butt[\s-]?plugs?|anal[\s-]?plugs?|condoms?|penis|vagina|lingerie|lencer[íi]a|babydoll|crotchless)\b/i;
 export function isAdult(s) { return ADULT.test(String(s || "")); }
 
+// Etiquetas de NAVEGACIÓN de la hoja ("Shoes", "Jackets", "Girl", "Accessories"…):
+// son enlaces a otra pestaña o a una colección, no productos. Un producto de verdad
+// trae marca o modelo ("Nike Air Max TN"), no una sola palabra genérica. Se cuelan
+// en la fila de menú que casi todas las hojas ponen arriba.
+const NAV_WORD = /^(girl|boy|kids?|child(ren)?|women|woman|men|man|unisex|toys?|socks?|hats?|caps?|bags?|shoes?|sneakers?|boots?|slides?|jackets?|jerseys?|pants?|trousers?|shorts?|tees?|t-?shirts?|shirts?|hoodies?|sweaters?|sweatshirts?|coats?|vests?|belts?|wallets?|watch(es)?|glasses|sunglasses|accessor(y|ies)|electronics?|perfumes?|jewel(le)?ry|underwear|lingerie|home|new|hot|sale|all|other|más|mas|nuevo|ropa|zapatos|zapatillas|gorras?|bolsos?|relojes?|cinturones?|ni[ñn][ao]s?|mujer|hombre)$/i;
+
 export function usableName(s) {
   const t = String(s || "").trim();
   if (t.length < 4) return false;
   if (CODEY.test(t)) return false;                                  // JS de la hoja
   if (/^\d+$/.test(t)) return false;                                // solo números
+  if (NAV_WORD.test(t)) return false;                               // menú de la hoja
   if (/^(weidian|taobao|1688)-\d+$/i.test(t)) return false;         // nuestro propio fallback
   if (/^(link|image|imagen|price|precio|name|nombre|qc|na|n\/a)$/i.test(t)) return false;
   return true;

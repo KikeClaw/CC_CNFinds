@@ -1666,6 +1666,24 @@ function purgeJunkProducts() {
       "DELETE FROM products WHERE name LIKE '%sex toy%' OR name LIKE '%adult toy%' OR name LIKE '%sex product%' OR name LIKE '%dildo%' OR name LIKE '%vibrator%' OR name LIKE '%masturbat%' OR name LIKE '%butt plug%' OR name LIKE '%lingerie%' OR name LIKE '%babydoll%' OR name LIKE '%crotchless%'"
     ).run();
     if (a.changes) console.log(`Limpieza: ${a.changes} productos fuera de nicho (adulto/lencería) eliminados.`);
+    // Productos FANTASMA: enlaces de tienda/colección que el parser antiguo tomaba
+    // por fichas (cogía cualquier número largo de la URL). Se reconocen por la foto
+    // de banner de tienda (vshop…) o por llevar un nombre que es la etiqueta de un
+    // menú de la hoja ("Girl", "Hats", "Accessories") y ningún precio. El enlace de
+    // esos no lleva a ningún sitio, así que se borran en vez de ocultarse.
+    const NAV = ["girl","boy","boys","kid","kids","children","women","woman","men","man","unisex","toy","toys",
+      "sock","socks","hat","hats","cap","caps","bag","bags","shoe","shoes","sneaker","sneakers","boot","boots",
+      "jacket","jackets","jersey","jerseys","pant","pants","trousers","short","shorts","tee","tees","tshirt",
+      "t-shirt","tshirts","t-shirts","shirt","shirts","hoodie","hoodies","sweater","sweaters","coat","coats",
+      "vest","vests","belt","belts","wallet","wallets","watch","watches","glasses","sunglasses","accessory",
+      "accessories","electronic","electronics","perfume","perfumes","jewelry","jewellery","underwear","home",
+      "new","hot","sale","all","other","zapatos","zapatillas","gorras","bolsos","relojes","ropa","mujer","hombre"];
+    const ph = NAV.map(() => "?").join(",");
+    const g = db.prepare(
+      `DELETE FROM products WHERE image_url LIKE '%vshop%'
+         OR (price_eur IS NULL AND LOWER(TRIM(name)) IN (${ph}))`
+    ).run(...NAV);
+    if (g.changes) console.log(`Limpieza: ${g.changes} productos fantasma (enlaces de tienda/menú) eliminados.`);
   } catch (e) { console.error("purgeJunkProducts:", e.message); }
 }
 
