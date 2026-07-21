@@ -28,6 +28,7 @@ import { parseCsv } from "./lib/csv.js";
 import { fetchSheet } from "./lib/sheet.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
 import { rowsToCandidates, dedupe as dedupeCands, apply as applyCands, sheetIdFromUrl } from "./lib/ingest.js";
+import { PRICE_MIN_EUR, PRICE_MAX_EUR } from "./lib/price.js";
 import { harvestText } from "./lib/harvest.js";
 import { mapColumnsAI, candidatesFromMap } from "./lib/aimap.js";
 import { enrichProduct } from "./lib/enrich.js";
@@ -1247,7 +1248,10 @@ async function handleAdminApply(req, res) {
       if (row) toEnrich.push({ id: row.id, platform: c.platform, item_id: c.itemId });
     }
     const jobId = toEnrich.length ? startEnrichTagJob(toEnrich) : null;
-    json(res, 200, { ok: true, ...r, total: db.prepare("SELECT COUNT(*) c FROM products").get().c, jobId, enriching: toEnrich.length });
+    // Red de seguridad: si la hoja colaba algún precio imposible, se limpia ya —
+    // sin esperar a un reinicio. Se informa para que se vea en la vista previa.
+    const saneados = sanitizePrices();
+    json(res, 200, { ok: true, ...r, total: db.prepare("SELECT COUNT(*) c FROM products").get().c, jobId, enriching: toEnrich.length, saneados });
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }
 }
 
@@ -1633,6 +1637,24 @@ function purgeJunkProducts() {
   } catch (e) { console.error("purgeJunkProducts:", e.message); }
 }
 
+// Precios imposibles que ya están guardados. Los límites de cordura filtran lo que
+// ENTRA, así que no tocan las filas escritas antes de existir (o por una versión
+// anterior del parser): un ¥ leído como €, un "EUR 0.00" de la hoja, o la variante
+// "cebo" de ¥0,60 que Weidian usa de reclamo.
+//
+// Se ponen a NULL en vez de borrar el producto: un precio absurdo engaña al comprador
+// y ensucia el filtro, pero la ficha en sí es buena. Sin precio muestra "—", y el
+// barrido de salud le pone el precio real de la fuente cuando le toque el turno.
+function sanitizePrices() {
+  try {
+    const r = db.prepare(
+      "UPDATE products SET price_eur=NULL WHERE price_eur IS NOT NULL AND (price_eur < ? OR price_eur > ?)"
+    ).run(PRICE_MIN_EUR, PRICE_MAX_EUR);
+    if (r.changes) console.log(`Limpieza: ${r.changes} precios fuera de rango puestos a NULL.`);
+    return r.changes || 0;
+  } catch (e) { console.error("sanitizePrices:", e.message); return 0; }
+}
+
 async function bootstrap() {
   try {
     const count = db.prepare("SELECT COUNT(*) c FROM products").get().c;
@@ -1644,6 +1666,7 @@ async function bootstrap() {
     }
     normalizeCategories();
     purgeJunkProducts();
+    sanitizePrices();
     inferGenders();
     ensureSourcesSeeded(); // siembra la tabla de fuentes con el config la 1ª vez
     // Fotos pendientes: arranca ya y sigue reintentando cada pocos minutos
