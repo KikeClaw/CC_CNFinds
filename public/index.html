@@ -330,6 +330,7 @@
   .ia-card{ text-align:left; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--card-shadow); padding:20px; display:flex; flex-direction:column; gap:10px; transition:.22s cubic-bezier(.2,.7,.3,1); cursor:pointer; font:inherit; color:inherit; }
   .ia-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
   .ia-card.static{ cursor:default; }
+  a.ia-card{ text-decoration:none; }
   .ia-card .ii{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb,var(--cc,#8b5cf6) 14%,transparent); color:var(--cc,#8b5cf6); }
   .ia-card .it{ font-weight:600; font-size:15px; letter-spacing:-.02em; }
   .ia-card .id{ font-size:13px; color:var(--muted); line-height:1.45; }
@@ -445,7 +446,7 @@
     <div class="head"><h2><span class="sq" id="hcomo"></span><span data-i18n="como">Cómo funciona</span></h2><span class="muted" style="font-size:13px" data-i18n="como_sub">De descubrir a comprar, sin fricción</span></div>
     <div class="ia-grid">
       <div class="ia-card static" style="--cc:#2d7ff9"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">1</div><div class="it" data-i18n="st1_t">Busca o descubre</div><div class="id" data-i18n="st1_d">Explora el catálogo, busca en lenguaje natural o sube una foto para encontrar su equivalente.</div></div>
-      <div class="ia-card static" style="--cc:#8b5cf6"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">2</div><div class="it" data-i18n="st2_t">Elige tu agente</div><div class="id" data-i18n="st2_d">Cada producto trae el link del agente (Kakobuy). El agente lo compra en China por ti.</div></div>
+      <div class="ia-card static" style="--cc:#8b5cf6"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">2</div><div class="it" data-i18n="st2_t">Elige tu agente</div><div class="id" data-i18n="st2_d">Comparamos 13 agentes y cada producto trae el link listo para todos. Eliges el que más te convenga y él lo compra en China por ti.</div></div>
       <div class="ia-card static" style="--cc:#16a34a"><div class="ii" style="font-family:var(--font-d);font-weight:800;font-size:18px">3</div><div class="it" data-i18n="st3_t">Recibe en casa</div><div class="id" data-i18n="st3_d">Revisas las fotos QC, pagas el envío internacional al agente y te llega a casa.</div></div>
     </div>
   </section>
@@ -468,6 +469,25 @@
       <button class="go" id="qcBtn" data-i18n="qc_check_btn">Analizar QC</button>
     </div>
     <div id="qcResult" class="conv-result"></div>
+  </section>
+
+  <!-- Por qué nosotros y no una hoja de cálculo. Las herramientas viven en
+       /herramientas (tool-only), así que en la landing el visitante no las veía: aquí se
+       enseñan y se enlazan. Son <a>, no botones, porque los tools están en otra
+       página (los botones de #ia hacen scroll a secciones ocultas en la landing). -->
+  <section id="ventajas">
+    <div class="head">
+      <h2><span class="sq" id="hvent"></span><span data-i18n="vent_1">Más que una </span><span class="gr" data-i18n="vent_2">spreadsheet</span></h2>
+      <span class="muted" style="font-size:13px" data-i18n="vent_sub">Lo que una hoja de cálculo no puede darte</span>
+    </div>
+    <div class="ia-grid">
+      <a class="ia-card" href="/productos" style="--cc:#2d7ff9"><div class="ii" id="v1"></div><div class="it" data-i18n="v_nl_t">Búsqueda en lenguaje natural</div><div class="id" data-i18n="v_nl_d">«Techwear negro por menos de 50€» y la IA te lo filtra. En una hoja te tocaría mirar fila por fila.</div><span class="ib"><span data-i18n="v_go">Ver catálogo</span> <span class="iba"></span></span></a>
+      <a class="ia-card" href="/herramientas" style="--cc:#8b5cf6"><div class="ii" id="v2"></div><div class="it" data-i18n="v_vis_t">Búsqueda por imagen</div><div class="id" data-i18n="v_vis_d">Sube la foto de una prenda que te gusta y encontramos su equivalente. Sin saber cómo se llama.</div><span class="ib"><span data-i18n="v_try">Probar</span> <span class="iba"></span></span></a>
+      <a class="ia-card" href="/productos" style="--cc:#16a34a"><div class="ii" id="v3"></div><div class="it" data-i18n="v_size_t">Asesor de tallas</div><div class="id" data-i18n="v_size_d">Lee las tallas reales de cada ficha y te dice cuál pedir. Y te avisa si ninguna te vale, antes de gastar.</div><span class="ib"><span data-i18n="v_new">Nuevo</span> <span class="iba"></span></span></a>
+      <a class="ia-card" href="/herramientas" style="--cc:#f59e0b"><div class="ii" id="v4"></div><div class="it" data-i18n="v_qc_t">QC con IA antes de comprar</div><div class="id" data-i18n="v_qc_d">La IA puntúa la calidad mirando las fotos reales del producto: logos, costuras y acabado.</div><span class="ib"><span data-i18n="v_try">Probar</span> <span class="iba"></span></span></a>
+      <a class="ia-card" href="/agentes" style="--cc:#ec4899"><div class="ii" id="v5"></div><div class="it" data-i18n="v_ag_t">13 agentes comparados</div><div class="id" data-i18n="v_ag_d">Cada producto trae el enlace listo para los 13. Comparas comisión y envío, y eliges tú.</div><span class="ib"><span data-i18n="v_cmp">Comparar</span> <span class="iba"></span></span></a>
+      <a class="ia-card" href="/productos" style="--cc:#0891b2"><div class="ii" id="v6"></div><div class="it" data-i18n="v_cat_t">Fotos y precios de verdad</div><div class="id" data-i18n="v_cat_d">Miles de fichas con foto y precio comprobado en la fuente. Una hoja solo te da un enlace a ciegas.</div><span class="ib"><span data-i18n="v_go">Ver catálogo</span> <span class="iba"></span></span></a>
+    </div>
   </section>
 
   <section id="categorias">
@@ -705,6 +725,14 @@ let LANG=localStorage.getItem("cnf_lang")|| ((navigator.language||"es").slice(0,
 document.documentElement.lang=LANG;
 const T={
   es:{ productos:"Productos",categorias:"Categorías",marcas:"Marcas",fit:"Fit IA",conversor:"Conversor",guias:"Guías",
+    vent_1:"Más que una ",vent_2:"spreadsheet",vent_sub:"Lo que una hoja de cálculo no puede darte",
+    v_nl_t:"Búsqueda en lenguaje natural",v_nl_d:"«Techwear negro por menos de 50€» y la IA te lo filtra. En una hoja te tocaría mirar fila por fila.",
+    v_vis_t:"Búsqueda por imagen",v_vis_d:"Sube la foto de una prenda que te gusta y encontramos su equivalente. Sin saber cómo se llama.",
+    v_size_t:"Asesor de tallas",v_size_d:"Lee las tallas reales de cada ficha y te dice cuál pedir. Y te avisa si ninguna te vale, antes de gastar.",
+    v_qc_t:"QC con IA antes de comprar",v_qc_d:"La IA puntúa la calidad mirando las fotos reales del producto: logos, costuras y acabado.",
+    v_ag_t:"13 agentes comparados",v_ag_d:"Cada producto trae el enlace listo para los 13. Comparas comisión y envío, y eliges tú.",
+    v_cat_t:"Fotos y precios de verdad",v_cat_d:"Miles de fichas con foto y precio comprobado en la fuente. Una hoja solo te da un enlace a ciegas.",
+    v_go:"Ver catálogo",v_try:"Probar",v_cmp:"Comparar",v_new:"Nuevo",
     size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
     nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
@@ -735,7 +763,7 @@ const T={
     c_fit_t:"Armador de fits con IA",c_fit_d:"Dinos tu presupuesto y montamos un outfit completo y coherente.",
     c_qc_t:"QC con IA + catálogo limpio",c_qc_d:"Puntuación de calidad por visión y fichas normalizadas automáticamente.",c_hood:"Bajo el capó",
     st1_t:"Busca o descubre",st1_d:"Explora el catálogo, busca en lenguaje natural o sube una foto para encontrar su equivalente.",
-    st2_t:"Elige tu agente",st2_d:"Cada producto trae el link del agente (Kakobuy). El agente lo compra en China por ti.",
+    st2_t:"Elige tu agente",st2_d:"Comparamos 13 agentes y cada producto trae el link listo para todos. Eliges el que más te convenga y él lo compra en China por ti.",
     st3_t:"Recibe en casa",st3_d:"Revisas las fotos QC, pagas el envío internacional al agente y te llega a casa.",
     ai_analyzing:"Analizando la imagen con IA…",ai_na:"IA no disponible",net_err:"Error de red",no_results:"Sin resultados",
     conv_placeholder:'Ej: techwear negro por menos de 50€ con buena calidad',ai_search_tag:"Búsqueda IA",
@@ -756,6 +784,14 @@ const T={
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
     tip_cam:"Buscar con la cámara",tip_gallery:"Buscar por imagen (galería)",tip_ai:"Búsqueda con IA (lenguaje natural)",tip_search:"Buscar" },
   en:{ productos:"Products",categorias:"Categories",marcas:"Brands",fit:"AI Fit",conversor:"Converter",guias:"Guides",
+    vent_1:"More than a ",vent_2:"spreadsheet",vent_sub:"What a spreadsheet can't give you",
+    v_nl_t:"Natural language search",v_nl_d:"«Black techwear under 50€» and the AI filters it for you. In a sheet you'd scan row by row.",
+    v_vis_t:"Image search",v_vis_d:"Upload a photo of something you like and we find its match. No need to know its name.",
+    v_size_t:"Size advisor",v_size_d:"Reads each listing's real sizes and tells you which to order. And warns you if none fit, before you spend.",
+    v_qc_t:"AI quality check",v_qc_d:"The AI scores quality from the product's real photos: logos, stitching and finish.",
+    v_ag_t:"13 agents compared",v_ag_d:"Every product carries a ready link for all 13. Compare fees and shipping, and pick yourself.",
+    v_cat_t:"Real photos and prices",v_cat_d:"Thousands of listings with a photo and a price verified at the source. A sheet just gives you a blind link.",
+    v_go:"Browse catalog",v_try:"Try it",v_cmp:"Compare",v_new:"New",
     size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
     nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
@@ -786,7 +822,7 @@ const T={
     c_fit_t:"AI outfit builder",c_fit_d:"Tell us your budget and we'll build a complete, coherent outfit.",
     c_qc_t:"AI QC + clean catalog",c_qc_d:"Vision-based quality scoring and automatically normalized listings.",c_hood:"Under the hood",
     st1_t:"Search or discover",st1_d:"Browse the catalog, search in natural language or upload a photo to find its match.",
-    st2_t:"Choose your agent",st2_d:"Every product carries the agent link (Kakobuy). The agent buys it in China for you.",
+    st2_t:"Choose your agent",st2_d:"We compare 13 agents and every product carries a ready link for each one. Pick the one that suits you and they buy it in China for you.",
     st3_t:"Get it at home",st3_d:"Review the QC photos, pay the agent for international shipping and it ships to you.",
     ai_analyzing:"Analyzing the image with AI…",ai_na:"AI unavailable",net_err:"Network error",no_results:"No results",
     conv_placeholder:'e.g. black techwear under €50 with good quality',ai_search_tag:"AI search",
@@ -1419,6 +1455,8 @@ document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySel
 $("#hia").innerHTML=ic("sparkles",21,1.9); $("#hia").style.color="#8b5cf6";
 $("#hcomo").innerHTML=ic("layers",21,1.9); $("#hcomo").style.color="#2d7ff9";
 [["ia1","search"],["ia2","image"],["ia3","sparkles"],["ia4","shield"]].forEach(([id,name])=>{ const el=$("#"+id); if(el) el.innerHTML=ic(name,22,1.8); });
+const hv=$("#hvent"); if(hv){ hv.innerHTML=ic("sparkles",21,1.9); hv.style.color="#16a34a"; }
+[["v1","search"],["v2","camera"],["v3","shirt"],["v4","shield"],["v5","layers"],["v6","grid"]].forEach(([id,name])=>{ const el=$("#"+id); if(el) el.innerHTML=ic(name,22,1.8); });
 document.querySelectorAll(".ia-card .iba").forEach(e=>e.innerHTML=ic("arrow",12,2));
 document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   const k=c.dataset.ia;
