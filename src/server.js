@@ -237,14 +237,18 @@ function handleProducts(res, params) {
 
   const total = db.prepare(`SELECT COUNT(*) c FROM products ${wsql}`).get(...args).c;
   const COLS = "id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes";
-  // diverse=1: mismo orden pero como MUCHO 2 por categoría. Lo usa el escaparate
-  // "Nuevos finds": si la última importación fue toda de una categoría, sin esto
-  // la home enseña 8 productos calcados y parece rota.
+  // diverse=1: como MUCHO 2 por categoría Y 2 por marca. Lo usa el escaparate
+  // "Nuevos finds". Con solo la categoría no bastaba: una importación grande de una
+  // marca colaba 5 variantes de color del mismo modelo (repartidas entre calzado,
+  // sudaderas y camisetas), y el escaparate seguía pareciendo roto. Limitar también
+  // por marca es lo que consigue que se vean productos de verdad distintos.
   const rows = params.get("diverse") === "1"
     ? db.prepare(`SELECT ${COLS} FROM (
-        SELECT *, ROW_NUMBER() OVER (PARTITION BY COALESCE(category,'?') ORDER BY ${sort}) rn
+        SELECT *,
+          ROW_NUMBER() OVER (PARTITION BY COALESCE(category,'?') ORDER BY ${sort}) rnc,
+          ROW_NUMBER() OVER (PARTITION BY COALESCE(LOWER(brand),'?') ORDER BY ${sort}) rnb
         FROM products ${wsql}
-      ) WHERE rn <= 2 ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset)
+      ) WHERE rnc <= 2 AND rnb <= 2 ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset)
     : db.prepare(`SELECT ${COLS} FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset);
 
   const items = rows.map((r) => {
