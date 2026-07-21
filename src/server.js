@@ -54,14 +54,20 @@ try {
     setAgentState(r.id, { code: r.code || undefined, enabled: !!r.enabled });
 } catch {}
 
+// Ruta base de una foto de geilicdn: sin query y sin el ".webp" del transform, para
+// poder reconstruirlo sin duplicarlo.
+const geiliBase = (u) => String(u).split("?")[0].replace(/\.webp$/i, "");
+
 // Miniatura optimizada servida por el CDN de Weidian (webp + resize al vuelo).
 function thumb(url, w = 500, h = 500) {
   if (!url) return null;
   // geilicdn/Weidian aceptan el transform .webp?w=..&h=..&cp=1, pero SOLO sobre la
-  // ruta limpia: algunas fotos (las "open…") ya vienen con su propia query
-  // (?w=400&h=400) y pegarle el transform detrás creaba dos query strings seguidas
-  // -> 404 y tarjeta en blanco. Nos quedamos con la parte anterior al "?".
-  if (/geilicdn|weidian/.test(url)) return `${url.split("?")[0]}.webp?w=${w}&h=${h}&cp=1`;
+  // ruta LIMPIA. Las hojas guardan la URL de muchas formas: unas tal cual, otras ya
+  // con su propia query (?w=400&h=400) y otras con el transform entero puesto
+  // (.jpg.webp?w=800...). Sin normalizar salían ".jpg?w=400&h=400.webp?..." o
+  // ".jpg.webp.webp?..." -> 404 y tarjeta en blanco. Se reconstruye desde la ruta
+  // base para que aplicarlo dos veces dé el mismo resultado.
+  if (/geilicdn|weidian/.test(url)) return `${geiliBase(url)}.webp?w=${w}&h=${h}&cp=1`;
   // Google (sheets-images-rt) sirve las imágenes con Cross-Origin-Resource-Policy:
   // same-site, así que el NAVEGADOR se niega a embeberlas desde nuestro dominio
   // (aunque un fetch de servidor sí funcione → tarjetas en blanco). Las servimos
@@ -79,7 +85,7 @@ function thumb(url, w = 500, h = 500) {
 // y a los que la CORP del navegador no afecta.
 function imgDirect(url, w = 500, h = 500) {
   if (!url) return null;
-  if (/geilicdn|weidian/.test(url)) return `${url.split("?")[0]}.webp?w=${w}&h=${h}&cp=1`;
+  if (/geilicdn|weidian/.test(url)) return `${geiliBase(url)}.webp?w=${w}&h=${h}&cp=1`;
   if (/sheets-images-rt/.test(url)) return url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
   if (/googleusercontent\.com\/docsubipk/.test(url)) return url.replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${w}`);
   return url;
