@@ -8,7 +8,7 @@
 import { createServer } from "node:http";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename, access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { openDb } from "./lib/db.js";
@@ -55,6 +55,12 @@ try {
     setAgentState(r.id, { code: r.code || undefined, enabled: !!r.enabled });
 } catch {}
 
+// Fotos servidas por Google (hoja normal o publicada). Se piden SIEMPRE a este ancho
+// para que cada foto tenga una única entrada en el caché de disco.
+const IMG_PROXY_W = 800;
+const isGoogleImg = (u) => /sheets-images-rt|googleusercontent\.com\/docsubipk/.test(u || "");
+const googleImg = (u) => String(u).replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${IMG_PROXY_W}`);
+
 // Ruta base de una foto de geilicdn: sin query y sin el ".webp" del transform, para
 // poder reconstruirlo sin duplicarlo.
 const geiliBase = (u) => String(u).split("?")[0].replace(/\.webp$/i, "");
@@ -74,10 +80,11 @@ function thumb(url, w = 500, h = 500) {
   // (aunque un fetch de servidor sí funcione → tarjetas en blanco). Las servimos
   // por nuestro proxy /img, que sí puede descargarlas y las reenvía desde nuestro
   // origen. Pedimos el ancho ya reducido para no mover megas de más.
-  if (/sheets-images-rt/.test(url)) return "/img?u=" + encodeURIComponent(url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`));
-  // Imágenes "en celda" de hojas PUBLICADAS (lh3.googleusercontent/docsubipk): el
-  // navegador no las embebe (Origin/CORP) pero el fetch de servidor sí → vía /img.
-  if (/googleusercontent\.com\/docsubipk/.test(url)) return "/img?u=" + encodeURIComponent(url.replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${w}`));
+  // Imágenes de Google (hoja normal o publicada): el navegador no las embebe
+  // (CORP/Origin), así que van por /img. SIEMPRE al mismo ancho, ignorando el que
+  // pida quien llama: la URL es la clave del caché en disco, y pedir la misma foto a
+  // 500 y a 820 guardaría dos copias de lo mismo. 800 se ve bien en tarjeta y ficha.
+  if (isGoogleImg(url)) return "/img?u=" + encodeURIComponent(googleImg(url));
   return url;
 }
 
@@ -87,8 +94,7 @@ function thumb(url, w = 500, h = 500) {
 function imgDirect(url, w = 500, h = 500) {
   if (!url) return null;
   if (/geilicdn|weidian/.test(url)) return `${geiliBase(url)}.webp?w=${w}&h=${h}&cp=1`;
-  if (/sheets-images-rt/.test(url)) return url.replace(/=w\d+(?:-h\d+)?$/, `=w${w}`);
-  if (/googleusercontent\.com\/docsubipk/.test(url)) return url.replace(/=[sw]\d+(?:-[wh]\d+)*$/, `=w${w}`);
+  if (isGoogleImg(url)) return googleImg(url);
   return url;
 }
 
@@ -115,34 +121,48 @@ async function serveCached(res, file, ct) {
   res.end(buf);
 }
 
+// ¿Está ya en disco? Devuelve {file, ct} o null.
+async function cacheHit(url) {
+  const base = join(IMG_CACHE_DIR, cacheName(url));
+  for (const [ct, ext] of Object.entries(EXT_OF)) {
+    try { await access(`${base}.${ext}`); return { file: `${base}.${ext}`, ct }; } catch {}
+  }
+  return null;
+}
+
+// Descarga y guarda. Devuelve {buf, ct} o null si el origen no dio una imagen.
+async function cacheStore(url, timeoutMs = 10000) {
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), timeoutMs);
+  let r;
+  try { r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA } }); }
+  finally { clearTimeout(to); }
+  const ct = (r.headers.get("content-type") || "").split(";")[0].trim();
+  if (!r.ok || !/^image\//.test(ct)) return null;
+  const buf = Buffer.from(await r.arrayBuffer());
+  // Guardar es best-effort: si el disco falla, la imagen igual se sirve.
+  try {
+    await mkdir(IMG_CACHE_DIR, { recursive: true });
+    const base = join(IMG_CACHE_DIR, cacheName(url));
+    const tmp = `${base}.${process.pid}.tmp`;
+    await writeFile(tmp, buf);
+    await rename(tmp, `${base}.${EXT_OF[ct] || "jpg"}`); // atómico: nunca se sirve un fichero a medias
+  } catch (e) { console.error("imgcache:", e.message); }
+  return { buf, ct };
+}
+
 async function handleImgProxy(req, res, u) {
   const target = u.searchParams.get("u") || "";
   if (!IMG_ALLOW.test(target)) { res.writeHead(400, { "Content-Type": "text/plain" }); return res.end("bad url"); }
-  const base = join(IMG_CACHE_DIR, cacheName(target));
   // 1) ¿ya la tenemos guardada? Entonces da igual que la URL de Google haya muerto.
-  for (const [ct, ext] of Object.entries(EXT_OF)) {
-    try { return await serveCached(res, `${base}.${ext}`, ct); } catch {}
-  }
+  const hit = await cacheHit(target);
+  if (hit) { try { return await serveCached(res, hit.file, hit.ct); } catch {} }
   // 2) Primera vez: descargar, guardar y servir.
   try {
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 10000);
-    let r;
-    try { r = await fetch(target, { signal: ctrl.signal, headers: { "User-Agent": HEAL_UA } }); }
-    finally { clearTimeout(to); }
-    const ct = r.headers.get("content-type") || "";
-    if (!r.ok || !/^image\//.test(ct)) { res.writeHead(502, { "Content-Type": "text/plain" }); return res.end("upstream"); }
-    const buf = Buffer.from(await r.arrayBuffer());
-    // Guardar es best-effort: si el disco falla, la imagen igual se sirve.
-    try {
-      await mkdir(IMG_CACHE_DIR, { recursive: true });
-      const ext = EXT_OF[ct.split(";")[0].trim()] || "jpg";
-      const tmp = `${base}.${process.pid}.tmp`;
-      await writeFile(tmp, buf);
-      await rename(tmp, `${base}.${ext}`); // atómico: nunca se sirve un fichero a medias
-    } catch (e) { console.error("imgcache:", e.message); }
-    res.writeHead(200, { "Content-Type": ct, "Content-Length": buf.length, "Cache-Control": "public, max-age=31536000, immutable" });
-    res.end(buf);
+    const got = await cacheStore(target);
+    if (!got) { res.writeHead(502, { "Content-Type": "text/plain" }); return res.end("upstream"); }
+    res.writeHead(200, { "Content-Type": got.ct, "Content-Length": got.buf.length, "Cache-Control": "public, max-age=31536000, immutable" });
+    res.end(got.buf);
   } catch { res.writeHead(504, { "Content-Type": "text/plain" }); res.end("timeout"); }
 }
 
@@ -1334,6 +1354,55 @@ async function handleAdminApply(req, res) {
   } catch (e) { json(res, 200, { ok: false, error: e.message }); }
 }
 
+// --- Precarga del caché de imágenes ------------------------------------------
+// El caché del proxy guarda la foto la primera vez que ALGUIEN la mira. Con un
+// catálogo de decenas de miles de fichas y poco tráfico, la mayoría no se mira nunca
+// — y las URLs de Google caducan en horas. Así que hay que bajarlas nosotros: si no,
+// la foto se pierde antes de que nadie la pida (y en los productos de Taobao se
+// pierde para siempre, porque no hay otra fuente).
+//
+// Va en tandas, con poca concurrencia, para no castigar a Google ni al disco.
+const IMGCACHE_BATCH = parseInt(process.env.IMGCACHE_BATCH || "300", 10);
+let imgCacheRunning = false;
+
+async function cacheImagesBatch(limit = IMGCACHE_BATCH) {
+  if (imgCacheRunning) return { skipped: true };
+  imgCacheRunning = true;
+  const stats = { seen: 0, cached: 0, already: 0, dead: 0 };
+  try {
+    const rows = db.prepare(`
+      SELECT image_url FROM products
+      WHERE image_url IS NOT NULL
+        AND (image_url LIKE '%sheets-images-rt%' OR image_url LIKE '%docsubipk%')
+      LIMIT ?`).all(limit * 3); // de más: muchas ya estarán cacheadas
+    // Clave de caché = la MISMA url que pedirá el navegador (ancho unificado).
+    const urls = [...new Set(rows.map((r) => googleImg(r.image_url)))];
+    let idx = 0;
+    const worker = async () => {
+      while (idx < urls.length && stats.cached < limit) {
+        const url = urls[idx++];
+        stats.seen++;
+        if (await cacheHit(url)) { stats.already++; continue; }
+        try { (await cacheStore(url)) ? stats.cached++ : stats.dead++; }
+        catch { stats.dead++; }
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+  } catch (e) { console.error("cacheImagesBatch:", e.message); }
+  finally { imgCacheRunning = false; }
+  if (stats.cached || stats.dead) console.log(`Caché de fotos: +${stats.cached} guardadas, ${stats.already} ya estaban, ${stats.dead} caídas.`);
+  return stats;
+}
+
+async function handleAdminCacheImages(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  const pend = db.prepare(`
+    SELECT COUNT(*) c FROM products WHERE image_url IS NOT NULL
+      AND (image_url LIKE '%sheets-images-rt%' OR image_url LIKE '%docsubipk%')`).get().c;
+  const stats = await cacheImagesBatch();
+  json(res, 200, { ok: true, ...stats, totalGoogle: pend });
+}
+
 function handleAdminJob(req, res, id) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   const job = jobs.get(id);
@@ -1480,6 +1549,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/sources/delete" && req.method === "POST") return void handleAdminSourceDelete(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/heal-photos") return void handleAdminHealPhotos(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/cache-images") return void handleAdminCacheImages(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/health") return void handleAdminHealth(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/purge-hidden") return void handleAdminPurgeHidden(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
@@ -1775,6 +1845,10 @@ async function bootstrap() {
     if (AUTO_TAG) { resumeTagging(); setInterval(resumeTagging, 8 * 60e3).unref?.(); }
     // QC automático por lotes: enciende las insignias "★ QC x/10" poco a poco.
     if (AUTO_QC) { resumeQc(); setInterval(resumeQc, 15 * 60e3).unref?.(); }
+    // Caché de fotos: baja las imágenes de Google a disco. Es carrera contra reloj
+    // (sus URLs caducan en horas), así que arranca ya y sigue en tandas cortas.
+    cacheImagesBatch().catch(() => {});
+    setInterval(() => cacheImagesBatch().catch(() => {}), 4 * 60e3).unref?.();
     // Barrido de salud rotatorio: cada vuelta revisa una tanda de los productos
     // menos comprobados, oculta los que ya no existen y corrige precios/fotos.
     if (AUTO_HEALTH) {

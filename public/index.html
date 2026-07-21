@@ -1121,7 +1121,16 @@ function applyAndScroll(){ load(true); document.getElementById("catalogo").scrol
 
 /* modal */
 /* geilicdn/Weidian: transform .webp?w=..; Google (sheets-images-rt): sufijo =wNNN; resto: tal cual */
-function imgv(u,w){ if(!u) return ''; if(/geilicdn|weidian/.test(u)) return u+'.webp?w='+w+'&h='+w+'&cp=1'; /* Google bloquea el embebido cross-origin (CORP) -> por nuestro proxy */ if(/sheets-images-rt/.test(u)) return '/img?u='+encodeURIComponent(u.replace(/=w\d+(-h\d+)?$/,'=w'+w)); return u; }
+/* Misma lógica que thumb() en el servidor. geilicdn: el transform va sobre la ruta
+   LIMPIA (algunas fotos ya vienen con ?w=..&h=.. o con el .webp puesto, y pegárselo
+   otra vez da 404). Google: por nuestro proxy —el navegador no las embebe (CORP)— y
+   siempre al mismo ancho, porque la URL es la clave del caché en disco. */
+function imgv(u,w){
+  if(!u) return '';
+  if(/geilicdn|weidian/.test(u)) return String(u).split('?')[0].replace(/\.webp$/i,'')+'.webp?w='+w+'&h='+w+'&cp=1';
+  if(/sheets-images-rt|googleusercontent\.com\/docsubipk/.test(u)) return '/img?u='+encodeURIComponent(String(u).replace(/=[sw]\d+(-[wh]\d+)*$/,'=w800'));
+  return u;
+}
 function setMain(u,el){ const m=document.getElementById('mMain'); if(m) m.src=imgv(u,820); document.querySelectorAll('.mthumbs img').forEach(x=>x.classList.remove('on')); if(el) el.classList.add('on'); }
 /* alerta de bajada de precio (captura) */
 function priceAlertHtml(p){
