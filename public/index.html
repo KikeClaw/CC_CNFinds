@@ -327,6 +327,13 @@
 
   /* showcase IA */
   .ia-grid{ display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); }
+  /* La rejilla normal usa auto-fill: mete las columnas que quepan. Con 6 tarjetas eso
+     deja una huérfana en cuanto el número de columnas no divide a 6 (en pantalla
+     ancha salían 5 + 1). Fijando 3 columnas quedan siempre 2 filas iguales, y las
+     tarjetas ganan ancho para que el texto no se apelotone. */
+  .ia-grid.g3{ grid-template-columns:repeat(3,1fr); }
+  @media(max-width:900px){ .ia-grid.g3{ grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:560px){ .ia-grid.g3{ grid-template-columns:1fr; } }
   .ia-card{ text-align:left; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--card-shadow); padding:20px; display:flex; flex-direction:column; gap:10px; transition:.22s cubic-bezier(.2,.7,.3,1); cursor:pointer; font:inherit; color:inherit; }
   .ia-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow); border-color:transparent; }
   .ia-card.static{ cursor:default; }
@@ -480,7 +487,7 @@
       <h2><span class="sq" id="hvent"></span><span data-i18n="vent_1">Más que una </span><span class="gr" data-i18n="vent_2">spreadsheet</span></h2>
       <span class="muted" style="font-size:13px" data-i18n="vent_sub">Lo que una hoja de cálculo no puede darte</span>
     </div>
-    <div class="ia-grid">
+    <div class="ia-grid g3">
       <a class="ia-card" href="/productos" style="--cc:#2d7ff9"><div class="ii" id="v1"></div><div class="it" data-i18n="v_nl_t">Búsqueda en lenguaje natural</div><div class="id" data-i18n="v_nl_d">«Techwear negro por menos de 50€» y la IA te lo filtra. En una hoja te tocaría mirar fila por fila.</div><span class="ib"><span data-i18n="v_go">Ver catálogo</span> <span class="iba"></span></span></a>
       <a class="ia-card" href="/herramientas" style="--cc:#8b5cf6"><div class="ii" id="v2"></div><div class="it" data-i18n="v_vis_t">Búsqueda por imagen</div><div class="id" data-i18n="v_vis_d">Sube la foto de una prenda que te gusta y encontramos su equivalente. Sin saber cómo se llama.</div><span class="ib"><span data-i18n="v_try">Probar</span> <span class="iba"></span></span></a>
       <a class="ia-card" href="/productos" style="--cc:#16a34a"><div class="ii" id="v3"></div><div class="it" data-i18n="v_size_t">Asesor de tallas</div><div class="id" data-i18n="v_size_d">Lee las tallas reales de cada ficha y te dice cuál pedir. Y te avisa si ninguna te vale, antes de gastar.</div><span class="ib"><span data-i18n="v_new">Nuevo</span> <span class="iba"></span></span></a>
