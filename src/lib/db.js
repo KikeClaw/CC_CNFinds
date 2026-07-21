@@ -43,6 +43,11 @@ export function openDb(path) {
     clean_title: "TEXT", clean_title_en: "TEXT", model_name: "TEXT", colorway: "TEXT", gender: "TEXT",
     tags: "TEXT", ai_description: "TEXT", ai_description_en: "TEXT", qc_score: "INTEGER", qc_notes: "TEXT",
     enrich_tries: "INTEGER", // intentos de enriquecer foto (para reintentar sin quedarse clavado)
+    // Salud del catálogo: fallos SEGUIDOS al comprobar que el item sigue vivo. Un
+    // 403/timeout suele ser throttling, no un producto caído, así que solo se oculta
+    // tras varios fallos y el contador se reinicia en cuanto responde bien.
+    health_fails: "INTEGER",
+    price_source: "TEXT", // 'sheet' | 'weidian' (precio real de la fuente)
   };
   for (const [name, type] of Object.entries(aiCols)) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);
@@ -92,10 +97,15 @@ export function upsertProduct(db, p, source, now) {
       name       = excluded.name,
       brand      = COALESCE(excluded.brand, products.brand),
       category   = COALESCE(excluded.category, products.category),
-      price_eur  = COALESCE(excluded.price_eur, products.price_eur),
+      -- El precio de la hoja NO pisa uno traído de la fuente (price_source='weidian'):
+      -- ese es el real y actual; el de la hoja lo tecleó un curador hace meses.
+      price_eur  = CASE WHEN products.price_source = 'weidian' THEN products.price_eur
+                        ELSE COALESCE(excluded.price_eur, products.price_eur) END,
       image_url  = COALESCE(products.image_url, excluded.image_url),
       hot        = MAX(products.hot, excluded.hot),
+      -- Reaparece en la hoja => vuelve al catálogo y se re-evalúa su salud.
       status     = 'active',
+      health_fails = 0,
       last_seen  = excluded.last_seen
   `);
   // Historial de precios: precio anterior antes del upsert (si existía).

@@ -74,6 +74,18 @@
   </div>
 
   <div class="card" style="margin-top:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="hl_h">Salud del catálogo</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="ghost" id="runHealth" data-i18n="hl_run" style="padding:8px 14px;font-size:13px">Revisar salud ahora</button>
+        <button class="ghost" id="purgeHidden" data-i18n="hl_purge" style="padding:8px 14px;font-size:13px">Borrar ocultos…</button>
+      </div>
+    </div>
+    <p class="hint" style="margin:6px 0 0" data-i18n="hl_hint" data-i18n-html="1">Comprueba en la fuente que los productos <b>siguen existiendo</b>, y de paso corrige el <b>precio real</b> y las fotos que falten. Va por tandas rotatorias (los menos revisados primero), así que el coste no crece con el catálogo. <b>Nunca borra solo</b>: tras varios fallos seguidos oculta el producto, y si vuelve a estar vivo se reactiva. Automático con <code>AUTO_HEALTH</code>.</p>
+    <div id="healthOut" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="gd_h">Guía rápida (orden recomendado)</h2>
     <p class="hint" style="margin-bottom:8px" data-i18n="gd_sub">Todo el proceso, paso a paso. Cada bloque de abajo corresponde a un paso.</p>
     <ol id="guide" class="guide"></ol>
@@ -239,6 +251,14 @@ const T={
       ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
     ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
+    hl_h:"Salud del catálogo", hl_run:"Revisar salud ahora", hl_purge:"Borrar ocultos…",
+    hl_counts:(a,s,h,n)=>`Activos: ${a} · Sospechosos: ${s} · Ocultos: ${h} · Sin revisar aún: ${n}`,
+    hl_purge_confirm:"Esto BORRA definitivamente los productos ocultos (los que fallaron varias comprobaciones seguidas). No se puede deshacer. ¿Seguir?",
+    hl_purged:(n)=>`Borrados ${n} productos ocultos.`,
+    ph_health:"Revisando salud",
+    d_alive:(n)=>`${n} vivos`, d_priced:(n)=>`${n} precios corregidos`, d_photo:(n)=>`${n} fotos recuperadas`,
+    d_suspect:(n)=>`${n} sospechosos`, d_hidden:(n)=>`${n} ocultados`, d_revived:(n)=>`${n} revividos`,
+    d_skipped:(n)=>`${n} sin comprobar (throttling o plataforma no soportada)`,
     imp_help_h:"Cómo cargar una hoja y qué significan los números",
     imp_help:"<b>Pasos:</b> elige <b>Fuente → Google Sheet (URL)</b>, pega la URL y pulsa <b>Previsualizar</b> (descubre todas las pestañas solo, no necesitas el gid). Revisa los números y pulsa <b>Añadir al catálogo</b>. Las fotos, el etiquetado IA y el QC se lanzan solos en segundo plano.<br><br><b>Qué significan los números:</b><br>• <b>Encontrados</b>: links crudos (cada producto sale ~4 veces, una por agente).<br>• <b>Únicos</b>: productos reales tras deduplicar.<br>• <b>Nuevos</b>: los que se añadirán. <b>Existentes</b>: ya los tienes → solo se refrescan.<br>• <b>% con foto</b>: calidad de la fuente (cuanto más alto, mejor).<br><br><b>Nunca duplica:</b> deduplica por <code>plataforma|item_id</code>; los repetidos se actualizan, no se re-crean. Re-cargar es seguro.<br><br><b>Para crecer de verdad:</b> las hojas de agente (Kakobuy, CNFans, Sugargoo…) son <b>~97% los mismos productos</b> con distinto link — cargar otra añade casi nada. Sube el catálogo con <b>familias/curadores distintos</b> o mirando <b>Ver demanda</b> (lo que la gente busca y no tienes). Si <b>Nuevos = 0</b>, esa hoja ya está cargada.",
     src_good:"✅ Buena fuente: mucha foto, merece la pena.", src_meh:"⚠️ Fuente regular: pocas fotos; los sin foto se ocultarán.", src_bad:"❌ Casi sin fotos: aporta poco (se ocultarán del catálogo).",
@@ -296,6 +316,14 @@ const T={
       ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
     ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
+    hl_h:"Catalog health", hl_run:"Check health now", hl_purge:"Delete hidden…",
+    hl_counts:(a,s,h,n)=>`Active: ${a} · Suspect: ${s} · Hidden: ${h} · Not checked yet: ${n}`,
+    hl_purge_confirm:"This PERMANENTLY deletes hidden products (those that failed several checks in a row). It cannot be undone. Continue?",
+    hl_purged:(n)=>`Deleted ${n} hidden products.`,
+    ph_health:"Checking health",
+    d_alive:(n)=>`${n} alive`, d_priced:(n)=>`${n} prices fixed`, d_photo:(n)=>`${n} photos recovered`,
+    d_suspect:(n)=>`${n} suspect`, d_hidden:(n)=>`${n} hidden`, d_revived:(n)=>`${n} revived`,
+    d_skipped:(n)=>`${n} skipped (throttling or unsupported platform)`,
     imp_help_h:"How to load a sheet and what the numbers mean",
     imp_help:"<b>Steps:</b> pick <b>Source → Google Sheet (URL)</b>, paste the URL and hit <b>Preview</b> (it discovers every tab on its own, no gid needed). Check the numbers and hit <b>Add to catalog</b>. Photos, AI tagging and QC run on their own in the background.<br><br><b>What the numbers mean:</b><br>• <b>Found</b>: raw links (each product appears ~4×, one per agent).<br>• <b>Unique</b>: real products after dedup.<br>• <b>New</b>: what will be added. <b>Existing</b>: already yours → just refreshed.<br>• <b>% with photo</b>: source quality (higher is better).<br><br><b>Never duplicates:</b> dedup is by <code>platform|item_id</code>; repeats are updated, not re-created. Re-loading is safe.<br><br><b>To actually grow:</b> agent sheets (Kakobuy, CNFans, Sugargoo…) are <b>~97% the same products</b> with different links — loading another adds almost nothing. Grow with <b>different families/curators</b> or via <b>View demand</b> (what people search for that you lack). If <b>New = 0</b>, that sheet is already loaded.",
     src_good:"✅ Good source: lots of photos, worth it.", src_meh:"⚠️ So-so source: few photos; the ones without will be hidden.", src_bad:"❌ Almost no photos: adds little (they'll be hidden from the catalog).",
@@ -410,12 +438,21 @@ async function pollJob(id,line,onDone){
     if(!d.ok){ line.textContent=t("job_read_err"); return; }
     const j=d.job;
     if(j.status==="running"){
-      const ph=j.phase==="qc"?t("ph_qc"):(j.phase==="etiquetado"?t("ph_tag"):(j.phase==="scan"?t("ph_scan"):t("ph_photo")));
+      const ph=j.phase==="qc"?t("ph_qc"):(j.phase==="etiquetado"?t("ph_tag"):(j.phase==="scan"?t("ph_scan"):(j.phase==="health"?t("ph_health"):t("ph_photo"))));
       line.textContent=`⏳ ${ph} ${j.done}/${j.total}…`;
       setTimeout(()=>pollJob(id,line,onDone),2000);
     } else {
       line.style.color="var(--ok)";
       const parts=[]; if(j.removed) parts.push(t("d_removed")(j.removed)); if(j.withImage) parts.push(t("d_withImage")(j.withImage)); if(j.dead&&!j.removed) parts.push(t("d_dead")(j.dead)); if(j.tagged) parts.push(t("d_tagged")(j.tagged)); if(j.scored) parts.push(t("d_scored")(j.scored));
+      if(j.phase==="health"){ parts.length=0;
+        if(j.alive) parts.push(t("d_alive")(j.alive));
+        if(j.priced) parts.push(t("d_priced")(j.priced));
+        if(j.photo) parts.push(t("d_photo")(j.photo));
+        if(j.suspect) parts.push(t("d_suspect")(j.suspect));
+        if(j.hidden) parts.push(t("d_hidden")(j.hidden));
+        if(j.revived) parts.push(t("d_revived")(j.revived));
+        if(j.skipped) parts.push(t("d_skipped")(j.skipped));
+      }
       line.textContent=t("done_prefix")+(parts.join(" · ")||t("nothing"));
       if(onDone) onDone();
     }
@@ -658,6 +695,27 @@ $("#healPhotos").onclick=async()=>{
   const line=document.createElement("p"); line.className="msg"; line.style.marginTop="10px"; line.textContent=`⏳ ${t("ph_scan")} 0/${d.total}…`;
   $("#retryOut").innerHTML=""; $("#retryOut").appendChild(line);
   pollJob(d.jobId,line,()=>setTimeout(loadStatus,800));
+};
+
+/* Salud del catálogo: barrido rotatorio (vivo/caído + precio real + fotos) */
+$("#runHealth").onclick=async()=>{
+  if(!$("#token").value){ alert(t("st_hint")); return; }
+  const b=$("#runHealth"); b.disabled=true; const o=b.textContent; b.textContent=t("launching");
+  let d; try{ d=await (await fetch("/api/admin/health",{method:"POST",headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false,error:t("err")}; }
+  b.disabled=false; b.textContent=o;
+  if(!d.ok){ $("#healthOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  const c=d.counts||{};
+  $("#healthOut").innerHTML=`<p class="hint" style="margin:0 0 8px">${t("hl_counts")(c.active||0,c.suspect||0,c.hidden||0,c.nunca||0)}</p>`;
+  const line=document.createElement("p"); line.className="msg"; line.textContent=`⏳ ${t("ph_health")} 0/…`;
+  $("#healthOut").appendChild(line);
+  pollJob(d.jobId,line,()=>setTimeout(loadStatus,800));
+};
+/* Borrado DEFINITIVO de los ocultos (solo manual, con confirmación) */
+$("#purgeHidden").onclick=async()=>{
+  if(!$("#token").value){ alert(t("st_hint")); return; }
+  if(!confirm(t("hl_purge_confirm"))) return;
+  let d; try{ d=await (await fetch("/api/admin/purge-hidden",{method:"POST",headers:{"x-admin-token":$("#token").value}})).json(); }catch{ d={ok:false,error:t("err")}; }
+  $("#healthOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok)">${t("hl_purged")(d.removed||0)}</p>`:`<p class="msg err">${d.error||t("err")}</p>`;
 };
 
 applyLang(); renderGuide();

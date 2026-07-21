@@ -168,7 +168,7 @@ function handleCategories(res) {
     FROM products GROUP BY category ORDER BY count DESC
   `).all();
   const total = db.prepare("SELECT COUNT(*) c FROM products").get().c;
-  const withImg = db.prepare("SELECT COUNT(*) c FROM products WHERE image_url IS NOT NULL").get().c;
+  const withImg = db.prepare("SELECT COUNT(*) c FROM products WHERE image_url IS NOT NULL AND status <> 'hidden'").get().c;
   const categories = rows.map((r) => ({
     ...r, label_en: catLabel(r.category, "en"), label_es: catLabel(r.category, "es"),
   }));
@@ -204,7 +204,9 @@ function parseFilters(params) {
 // facetas: las categorías se cuentan ignorando la selección de categoría, y las
 // marcas ignorando la de marca — así marcar una opción no vacía su propia lista.
 function buildWhere(f, exclude = {}) {
-  const where = [], args = [];
+  // 'hidden' = el barrido de salud lo dio por caído tras varios fallos seguidos. No
+  // se borra: si vuelve a estar vivo (o reaparece en una hoja) se reactiva solo.
+  const where = ["status <> 'hidden'"], args = [];
   if (f.q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${f.q}%`, `%${f.q}%`, `%${f.q}%`, `%${f.q}%`); }
   if (!exclude.cat && f.cats.length) { where.push(`category IN (${f.cats.map(() => "?").join(",")})`); args.push(...f.cats); }
   if (!exclude.brand && f.brands.length) { where.push(`brand IN (${f.brands.map(() => "?").join(",")})`); args.push(...f.brands); }
@@ -298,7 +300,7 @@ function handleAdminSubscribers(req, res) {
 function handleAdminDigest(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado" });
   const subs = db.prepare("SELECT COUNT(*) c FROM subscribers").get().c;
-  const rows = db.prepare("SELECT id, clean_title, name, price_eur, image_url FROM products WHERE image_url IS NOT NULL AND clean_title IS NOT NULL ORDER BY id DESC LIMIT 12").all();
+  const rows = db.prepare("SELECT id, clean_title, name, price_eur, image_url FROM products WHERE image_url IS NOT NULL AND status <> 'hidden' AND clean_title IS NOT NULL ORDER BY id DESC LIMIT 12").all();
   const base = baseUrl(req);
   const cell = (r) => {
     if (!r) return '<td style="width:50%"></td>';
@@ -545,7 +547,7 @@ function handleSuggest(res, params) {
   const likeArgs = tokens.map((t) => `%${t}%`);
   const rows = db.prepare(`
     SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes, (${scoreExpr}) AS sc
-    FROM products WHERE image_url IS NOT NULL AND (${scoreExpr}) > 0
+    FROM products WHERE image_url IS NOT NULL AND status <> 'hidden' AND (${scoreExpr}) > 0
     ORDER BY sc DESC, hot DESC, price_eur DESC LIMIT 12
   `).all(...likeArgs, ...likeArgs);
   const items = rows.map((r) => {
@@ -914,7 +916,7 @@ function getProductById(id) {
 }
 function relatedProducts(p) {
   return db.prepare(
-    "SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE id<>? AND image_url IS NOT NULL AND (brand=? OR category=?) ORDER BY (brand=?) DESC, hot DESC LIMIT 8"
+    "SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE id<>? AND image_url IS NOT NULL AND status <> 'hidden' AND (brand=? OR category=?) ORDER BY (brand=?) DESC, hot DESC LIMIT 8"
   ).all(p.id, p.brand, p.category, p.brand)
     .map((r) => ({ id: r.id, name: r.clean_title || tidyName(r.name), brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
 }
@@ -1213,6 +1215,102 @@ function handleAdminJob(req, res, id) {
   json(res, 200, { ok: true, job });
 }
 
+// --- Barrido de salud del catálogo -------------------------------------------
+// ROTATORIO: cada pasada revisa los N productos con last_checked más antiguo, así el
+// catálogo entero se recicla cada X días y el coste NO crece aunque el catálogo sí.
+//
+// Nunca borra. Un fallo puede ser throttling de Weidian, no un producto caído, así
+// que se necesitan varios fallos SEGUIDOS para ocultar; y basta una respuesta buena
+// para revivirlo. Borrar es decisión tuya, desde el panel.
+//
+// De paso aprovecha la misma llamada para traer el PRECIO REAL y la foto que falte.
+const HEALTH_BATCH = parseInt(process.env.HEALTH_BATCH || "120", 10);
+const HEALTH_MAX_FAILS = parseInt(process.env.HEALTH_MAX_FAILS || "3", 10);
+
+function startHealthJob(limit = HEALTH_BATCH) {
+  const rows = db.prepare(`
+    SELECT id, platform, item_id, image_url, price_eur, status, health_fails
+    FROM products
+    ORDER BY last_checked IS NOT NULL, last_checked ASC
+    LIMIT ?`).all(limit);
+  const id = "job_" + (++jobSeq);
+  const job = {
+    id, total: rows.length, done: 0, phase: "health", status: "running",
+    alive: 0, suspect: 0, hidden: 0, revived: 0, priced: 0, photo: 0, skipped: 0,
+  };
+  jobs.set(id, job);
+  if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
+
+  const okStmt = db.prepare("UPDATE products SET status='active', health_fails=0, last_checked=? WHERE id=?");
+  const failStmt = db.prepare("UPDATE products SET status=?, health_fails=?, last_checked=? WHERE id=?");
+  const touchStmt = db.prepare("UPDATE products SET last_checked=? WHERE id=?");
+  const priceStmt = db.prepare("UPDATE products SET price_eur=?, price_source='weidian' WHERE id=?");
+  const imgStmt = db.prepare("UPDATE products SET image_url=?, images=? WHERE id=?");
+
+  (async () => {
+    let idx = 0;
+    const worker = async () => {
+      while (idx < rows.length) {
+        const r = rows[idx++];
+        const now = new Date().toISOString();
+        try {
+          // Solo Weidian sabe decirnos si el ITEM sigue vivo. Para el resto, las
+          // fotos rotas ya las cubre "Quitar fotos rotas"; aquí solo rotamos.
+          if (r.platform !== "weidian") { touchStmt.run(now, r.id); job.skipped++; job.done++; continue; }
+          const en = await enrichProduct("weidian", r.item_id, {});
+          if (!en.ok) {
+            // Throttling / red: NO cuenta como fallo del producto. Se marca revisado
+            // para que la rotación siga y le toque otra vez en la próxima vuelta.
+            touchStmt.run(now, r.id); job.skipped++; job.done++; continue;
+          }
+          if (en.alive) {
+            if (r.status !== "active") job.revived++;
+            okStmt.run(now, r.id);
+            job.alive++;
+            // Precio real de la fuente: pisa al de la hoja (que suele ir desfasado).
+            if (en.price != null && en.price !== r.price_eur) { priceStmt.run(en.price, r.id); job.priced++; }
+            if (!r.image_url && en.images.length) { imgStmt.run(en.images[0], JSON.stringify(en.images.slice(0, 12)), r.id); job.photo++; }
+          } else {
+            const fails = (r.health_fails || 0) + 1;
+            const st = fails >= HEALTH_MAX_FAILS ? "hidden" : "suspect";
+            failStmt.run(st, fails, now, r.id);
+            st === "hidden" ? job.hidden++ : job.suspect++;
+          }
+        } catch { job.skipped++; }
+        job.done++;
+      }
+    };
+    // Concurrencia baja y pausa con jitter: Weidian throttlea si se le aprieta.
+    await Promise.all([worker(), worker()]);
+    job.status = "done";
+  })().catch((e) => { job.status = "error"; job.error = e.message; });
+  return id;
+}
+
+function handleAdminHealth(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  const jobId = startHealthJob();
+  const c = (q) => { try { return db.prepare(q).get().c; } catch { return 0; } };
+  json(res, 200, {
+    ok: true, jobId,
+    counts: {
+      total: c("SELECT COUNT(*) c FROM products"),
+      active: c("SELECT COUNT(*) c FROM products WHERE status='active'"),
+      suspect: c("SELECT COUNT(*) c FROM products WHERE status='suspect'"),
+      hidden: c("SELECT COUNT(*) c FROM products WHERE status='hidden'"),
+      nunca: c("SELECT COUNT(*) c FROM products WHERE last_checked IS NULL"),
+    },
+  });
+}
+
+// Purga manual: borra DEFINITIVAMENTE los ocultos. Solo a petición tuya.
+function handleAdminPurgeHidden(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let removed = 0;
+  try { removed = db.prepare("DELETE FROM products WHERE status='hidden'").run().changes || 0; } catch {}
+  json(res, 200, { ok: true, removed });
+}
+
 const server = createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://localhost:${PORT}`);
@@ -1255,6 +1353,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/sources/delete" && req.method === "POST") return void handleAdminSourceDelete(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/heal-photos") return void handleAdminHealPhotos(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/health") return void handleAdminHealth(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/purge-hidden") return void handleAdminPurgeHidden(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/apply") return void handleAdminApply(req, res);
     if (u.pathname === "/api/admin/agents" && req.method === "GET") return void handleAdminAgentsGet(req, res);
@@ -1371,6 +1471,11 @@ const AUTO_TAG = String(process.env.AUTO_TAG ?? "on").toLowerCase() !== "off";
 // "★ QC x/10", nuestro diferenciador visible. Más caro que el etiquetado (varias
 // imágenes por producto), así que va en tandas pequeñas. AUTO_QC=off lo apaga.
 const AUTO_QC = String(process.env.AUTO_QC ?? "on").toLowerCase() !== "off";
+// Barrido de salud automático: comprueba que los productos siguen vivos en la fuente
+// y de paso corrige precios y fotos que falten. Es rotatorio (una tanda por vuelta),
+// así que el coste es constante. AUTO_HEALTH=off lo apaga.
+const AUTO_HEALTH = String(process.env.AUTO_HEALTH ?? "on").toLowerCase() !== "off";
+const AUTO_HEALTH_INTERVAL_H = parseFloat(process.env.AUTO_HEALTH_INTERVAL_HOURS || "6");
 const metaGet = (k) => { try { return db.prepare("SELECT val FROM app_meta WHERE key=?").get(k)?.val || null; } catch { return null; } };
 const metaSet = (k, v) => { try { db.prepare("INSERT INTO app_meta (key,val) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET val=excluded.val").run(k, v); } catch {} };
 let autoIngestRunning = false;
@@ -1505,6 +1610,18 @@ async function bootstrap() {
     if (AUTO_TAG) { resumeTagging(); setInterval(resumeTagging, 8 * 60e3).unref?.(); }
     // QC automático por lotes: enciende las insignias "★ QC x/10" poco a poco.
     if (AUTO_QC) { resumeQc(); setInterval(resumeQc, 15 * 60e3).unref?.(); }
+    // Barrido de salud rotatorio: cada vuelta revisa una tanda de los productos
+    // menos comprobados, oculta los que ya no existen y corrige precios/fotos.
+    if (AUTO_HEALTH) {
+      const runHealth = () => {
+        const last = metaGet("last_health_sweep");
+        if (last && (Date.now() - Date.parse(last)) / 36e5 < AUTO_HEALTH_INTERVAL_H) return;
+        metaSet("last_health_sweep", new Date().toISOString());
+        try { startHealthJob(); } catch (e) { console.error("Barrido de salud falló:", e.message); }
+      };
+      setTimeout(runHealth, 90e3).unref?.(); // deja arrancar antes las fotos
+      setInterval(runHealth, 30 * 60e3).unref?.();
+    }
     // Importador automático (si toca): crece el catálogo solo, sin admin.
     if (AUTO_INGEST) {
       autoIngestSources().catch((e) => console.error("Auto-ingest falló:", e.message));
