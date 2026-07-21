@@ -246,7 +246,7 @@ const T={
     auto_h:"Importador automático", auto_hint:'Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.', auto_btn:"Ejecutar importador ahora", auto_started:"Importador lanzado en segundo plano ✓ (mira los logs de Railway)", auto_running:"Ya se está ejecutando ✓",
     st_h:"Estado del catálogo", st_load:"Actualizar", st_retry:"Reintentar fotos", st_retry_ok:"Reintentando %n fotos en segundo plano ✓", st_hint:"Mete tu token y pulsa Actualizar.",
     st_heal:"Quitar fotos rotas", heal_confirm:"Revisará la foto de cada producto y quitará del catálogo los que tengan la imagen MUERTA (error 404). Es reversible: si el producto sigue en una hoja, la próxima importación lo vuelve a añadir con foto buena. ¿Continuar?",
-    st_products:"productos", st_photos:"con foto", st_tagged:"etiquetados", st_qc:"con QC", st_agents:"agentes activos", st_subs:"suscriptores", st_alerts:"alertas de precio", st_demand:"peticiones", st_clicks:"clics de agente", st_lastingest:"Última ingesta automática", st_never:"nunca", st_keys:"Claves", st_gkey:"Google Sheets", st_aikey:"IA (Claude)", st_on:"activa", st_off:"falta",
+    st_products:"productos", st_photos:"con foto", st_tagged:"etiquetados", st_qc:"con QC", st_agents:"agentes activos", st_subs:"suscriptores", st_alerts:"alertas de precio", st_demand:"peticiones", st_clicks:"clics de agente", st_lastingest:"Última ingesta automática", st_never:"nunca", st_keys:"Claves", st_gkey:"Google Sheets", st_aikey:"IA (Claude)", st_on:"activa", st_off:"falta", st_autos:"Automatismos", st_auto_tag:"Etiquetado", st_auto_health:"Salud", st_auto_ingest:"Importador", st_auto_on:"on", st_auto_off:"off",
     gd_h:"Guía rápida (orden recomendado)", gd_sub:"Todo el proceso, paso a paso. Cada bloque de abajo es un paso.",
     gd_steps:[
       ["Token de admin","Mete tu ADMIN_TOKEN aquí arriba (se guarda en tu navegador). Es la llave de este panel."],
@@ -314,7 +314,7 @@ const T={
     auto_h:"Automatic importer", auto_hint:'Ingests the curated community-sheet list on its own (dedup + your codes), periodically, with no action from you. Enable/tune it with the <code>AUTO_INGEST</code> env var on Railway. This button runs it <b>now</b>.', auto_btn:"Run importer now", auto_started:"Importer started in the background ✓ (check Railway logs)", auto_running:"Already running ✓",
     st_h:"Catalog status", st_load:"Refresh", st_retry:"Retry photos", st_retry_ok:"Retrying %n photos in the background ✓", st_hint:"Enter your token and hit Refresh.",
     st_heal:"Remove broken photos", heal_confirm:"This checks every product's photo and removes from the catalog any with a DEAD image (404 error). It's reversible: if the product is still in a sheet, the next import re-adds it with a working photo. Continue?",
-    st_products:"products", st_photos:"with photo", st_tagged:"tagged", st_qc:"with QC", st_agents:"active agents", st_subs:"subscribers", st_alerts:"price alerts", st_demand:"requests", st_clicks:"agent clicks", st_lastingest:"Last auto-ingest", st_never:"never", st_keys:"Keys", st_gkey:"Google Sheets", st_aikey:"AI (Claude)", st_on:"active", st_off:"missing",
+    st_products:"products", st_photos:"with photo", st_tagged:"tagged", st_qc:"with QC", st_agents:"active agents", st_subs:"subscribers", st_alerts:"price alerts", st_demand:"requests", st_clicks:"agent clicks", st_lastingest:"Last auto-ingest", st_never:"never", st_keys:"Keys", st_gkey:"Google Sheets", st_aikey:"AI (Claude)", st_on:"active", st_off:"missing", st_autos:"Automations", st_auto_tag:"Tagging", st_auto_health:"Health", st_auto_ingest:"Importer", st_auto_on:"on", st_auto_off:"off",
     gd_h:"Quick guide (recommended order)", gd_sub:"The whole process, step by step. Each block below is a step.",
     gd_steps:[
       ["Admin token","Enter your ADMIN_TOKEN above (saved in your browser). It's the key to this panel."],
@@ -695,6 +695,8 @@ async function loadStatus(){
   const stat=(n,l)=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`;
   const last=d.lastIngest?new Date(d.lastIngest).toLocaleString():t("st_never");
   const tag=(ok)=>`<span class="st-tag ${ok?'st-ok':'st-no'}">${ok?t("st_on"):t("st_off")}</span>`;
+  // Los automatismos no "faltan" cuando estan apagados: son on/off a proposito.
+  const tagA=(ok)=>`<span class="st-tag ${ok?'st-ok':'st-no'}">${ok?t("st_auto_on"):t("st_auto_off")}</span>`;
   el.innerHTML=`<div class="st-grid">
     ${stat(d.products,t("st_products"))}
     ${stat(`${d.withImage} · ${pct(d.withImage,d.products)}`,t("st_photos"))}
@@ -706,7 +708,8 @@ async function loadStatus(){
     ${stat(d.requests,t("st_demand"))}
     ${stat(d.clicks,t("st_clicks"))}
   </div>
-  <p class="hint" style="margin-top:12px">${t("st_lastingest")}: <b>${last}</b> · ${t("st_keys")}: ${t("st_gkey")} ${tag(d.hasGoogleKey)} · ${t("st_aikey")} ${tag(d.hasAiKey)}</p>`;
+  <p class="hint" style="margin-top:12px">${t("st_lastingest")}: <b>${last}</b> · ${t("st_keys")}: ${t("st_gkey")} ${tag(d.hasGoogleKey)} · ${t("st_aikey")} ${tag(d.hasAiKey)}</p>
+  <p class="hint" style="margin-top:6px">${t("st_autos")}: QC ${tagA(d.autoQc)} · ${t("st_auto_tag")} ${tagA(d.autoTag)} · ${t("st_auto_health")} ${tagA(d.autoHealth)} · ${t("st_auto_ingest")} ${tagA(d.autoIngest)}</p>`;
 }
 $("#loadStatus").onclick=loadStatus;
 $("#retryPhotos").onclick=async()=>{

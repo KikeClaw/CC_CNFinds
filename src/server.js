@@ -407,7 +407,13 @@ function handleAdminStatus(req, res) {
     requests: one("SELECT COUNT(*) c FROM requests"),
     clicks: one("SELECT COUNT(*) c FROM clicks"),
     lastIngest: metaGet("last_auto_ingest"),
+    // Estado REAL de los automatismos. Se muestran en el panel porque las env vars
+    // solo se apagan con el valor literal "off": puesto "false" o "0" el proceso
+    // seguiría encendido y desde Railway (que oculta los valores) no se nota.
     autoIngest: AUTO_INGEST,
+    autoQc: AUTO_QC,
+    autoTag: AUTO_TAG,
+    autoHealth: AUTO_HEALTH,
     hasGoogleKey: !!process.env.GOOGLE_API_KEY,
     hasAiKey: hasKey(),
   });
