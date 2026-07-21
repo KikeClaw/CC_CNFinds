@@ -1177,12 +1177,42 @@ function startQcJob(ids) {
   return id;
 }
 
+// Candidatos a QC: con fotos y sin puntuar todavía.
+const QC_PENDING = "qc_score IS NULL AND images IS NOT NULL AND image_url IS NOT NULL";
+
 async function handleAdminQcAll(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
-  const ids = db.prepare("SELECT id FROM products WHERE qc_score IS NULL AND images IS NOT NULL AND image_url IS NOT NULL").all().map((r) => r.id);
+  const ids = db.prepare(`SELECT id FROM products WHERE ${QC_PENDING}`).all().map((r) => r.id);
   const jobId = ids.length ? startQcJob(ids) : null;
   json(res, 200, { ok: true, count: ids.length, jobId });
+}
+
+// QC SOLO a los productos que la gente mira de verdad.
+//
+// El QC es con visión (4 fotos por producto), así que puntuar el catálogo entero
+// cuesta bastante y la mayoría de fichas casi nadie las visita. Aquí ordenamos por
+// intención de compra real —clics en links de agente— y en segundo lugar por los
+// destacados y los más recientes, para que el presupuesto vaya a las fichas que
+// generan tráfico y comisión (y que son las que enseñan estrellas en Google).
+async function handleAdminQcPopular(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  let body = {}; try { body = await readBody(req); } catch {}
+  const limit = Math.min(Math.max(parseInt(body.limit || "300", 10) || 300, 1), 5000);
+  const rows = db.prepare(`
+    SELECT p.id, (SELECT COUNT(*) FROM clicks c WHERE c.product_id = p.id) AS clicks
+    FROM products p
+    WHERE ${QC_PENDING}
+    ORDER BY clicks DESC, p.hot DESC, p.id DESC
+    LIMIT ?`).all(limit);
+  const ids = rows.map((r) => r.id);
+  const jobId = ids.length ? startQcJob(ids) : null;
+  json(res, 200, {
+    ok: true, count: ids.length, jobId,
+    conClics: rows.filter((r) => r.clicks > 0).length,
+    pendientes: db.prepare(`SELECT COUNT(*) c FROM products WHERE ${QC_PENDING}`).get().c,
+  });
 }
 
 async function handleAdminDelete(req, res) {
@@ -1369,6 +1399,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/job") return void handleAdminJob(req, res, u.searchParams.get("id"));
     if (req.method === "POST" && u.pathname === "/api/admin/tag-all") return void handleAdminTagAll(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/qc-all") return void handleAdminQcAll(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/qc-popular") return void handleAdminQcPopular(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/product-delete") return void handleAdminDelete(req, res);
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");

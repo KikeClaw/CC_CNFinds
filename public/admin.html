@@ -152,8 +152,16 @@
 
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="qc_h">QC con IA (visión)</h2>
-    <p class="hint" style="margin-bottom:14px" data-i18n="qc_hint" data-i18n-html="1">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.</p>
-    <button class="primary" id="qcAll" data-i18n="qc_btn">Analizar QC del catálogo</button>
+    <p class="hint" style="margin-bottom:14px" data-i18n="qc_hint" data-i18n-html="1">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b> (4 fotos por producto), así que es <b>con diferencia lo más caro</b> del sistema. La nota alimenta la insignia «★ QC» y las <b>estrellas en Google</b>.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="primary" id="qcPopular" data-i18n="qc_pop_btn">QC solo a los más vistos</button>
+      <label class="hint" style="display:flex;align-items:center;gap:6px;margin:0">
+        <span data-i18n="qc_pop_n">Cuántos</span>
+        <input id="qcLimit" type="number" min="1" max="5000" value="300" style="width:90px;padding:8px 10px" />
+      </label>
+      <button class="ghost" id="qcAll" data-i18n="qc_btn" style="padding:10px 16px">Analizar todo el catálogo</button>
+    </div>
+    <p class="hint" style="margin-top:8px" data-i18n="qc_pop_hint" data-i18n-html="1">Recomendado: prioriza por <b>clics reales en agentes</b> (intención de compra), luego destacados y recientes. Pone las estrellas donde generan tráfico y comisión, en vez de pagar por fichas que casi nadie visita.</p>
     <div id="qcOut"></div>
   </div>
 
@@ -227,7 +235,7 @@ const T={
     preview:"Previsualizar", apply:"Añadir al catálogo", applying:"Añadiendo…", analyzing:"Analizando…",
     launching:"Lanzando…",
     tag_h:"Etiquetado con IA", tag_hint:'Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.', tag_btn:"Etiquetar catálogo con IA",
-    qc_h:"QC con IA (visión)", qc_hint:'Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.', qc_btn:"Analizar QC del catálogo",
+    qc_h:"QC con IA (visión)", qc_hint:'Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.', qc_btn:"Analizar todo el catálogo",
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
     subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
@@ -252,6 +260,8 @@ const T={
     ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
     st_price:"con precio", src_noprice:"⚠️ Pocos precios válidos: esta hoja no trae precio o lo cotiza raro. Esos productos saldrán con «—» y quedarán fuera del filtro de precio (el barrido de salud los irá corrigiendo desde Weidian).",
+    qc_pop_btn:"QC solo a los más vistos", qc_pop_n:"Cuántos",
+    qc_pop_sel:(n,c,p)=>`Seleccionados ${n} (${c} con clics reales) · quedan ${p} sin QC en total.`,
     hl_h:"Salud del catálogo", hl_run:"Revisar salud ahora", hl_purge:"Borrar ocultos…",
     hl_counts:(a,s,h,n)=>`Activos: ${a} · Sospechosos: ${s} · Ocultos: ${h} · Sin revisar aún: ${n}`,
     hl_purge_confirm:"Esto BORRA definitivamente los productos ocultos (los que fallaron varias comprobaciones seguidas). No se puede deshacer. ¿Seguir?",
@@ -293,7 +303,7 @@ const T={
     preview:"Preview", apply:"Add to catalog", applying:"Adding…", analyzing:"Analyzing…",
     launching:"Launching…",
     tag_h:"AI tagging", tag_hint:'Generates <b>clean titles, brand, color and tags</b> for untagged products. Improves search (also in Spanish!) and SEO.', tag_btn:"Tag catalog with AI",
-    qc_h:"AI QC (vision)", qc_hint:'Scores quality (1-10) by analyzing each product\'s real photos. Uses the <b>vision</b> model: slower and pricier than tagging.', qc_btn:"Analyze catalog QC",
+    qc_h:"AI QC (vision)", qc_hint:'Scores quality (1-10) by analyzing each product\'s real photos. Uses the <b>vision</b> model: slower and pricier than tagging.', qc_btn:"Analyze whole catalog",
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
     subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
@@ -318,6 +328,8 @@ const T={
     ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
     st_price:"with price", src_noprice:"⚠️ Few valid prices: this sheet has no price or quotes it oddly. Those products will show \"—\" and stay out of the price filter (the health sweep will fix them from Weidian over time).",
+    qc_pop_btn:"QC most-viewed only", qc_pop_n:"How many",
+    qc_pop_sel:(n,c,p)=>`Selected ${n} (${c} with real clicks) · ${p} still un-scored in total.`,
     hl_h:"Catalog health", hl_run:"Check health now", hl_purge:"Delete hidden…",
     hl_counts:(a,s,h,n)=>`Active: ${a} · Suspect: ${s} · Hidden: ${h} · Not checked yet: ${n}`,
     hl_purge_confirm:"This PERMANENTLY deletes hidden products (those that failed several checks in a row). It cannot be undone. Continue?",
@@ -484,6 +496,21 @@ $("#qcAll").onclick=async()=>{
   if(!d.jobId){ $("#qcOut").innerHTML=`<p class="msg" style="color:var(--ok)">${t("qc_alldone")}</p>`; return; }
   const line=document.createElement("p"); line.className="msg"; line.textContent=t("qcing")(d.count);
   $("#qcOut").innerHTML=""; $("#qcOut").appendChild(line); pollJob(d.jobId,line);
+};
+
+/* QC solo a los más vistos: prioriza por clics de agente (intención de compra) */
+$("#qcPopular").onclick=async()=>{
+  const b=$("#qcPopular"); b.disabled=true; const o=b.textContent; b.textContent=t("launching");
+  const limit=parseInt($("#qcLimit").value,10)||300;
+  let d; try{
+    d=await (await fetch("/api/admin/qc-popular",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({limit})})).json();
+  }catch{ d={ok:false,error:t("err")}; }
+  b.disabled=false; b.textContent=o;
+  if(!d.ok){ $("#qcOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; return; }
+  if(!d.jobId){ $("#qcOut").innerHTML=`<p class="msg" style="color:var(--ok)">${t("qc_alldone")}</p>`; return; }
+  $("#qcOut").innerHTML=`<p class="hint" style="margin:0 0 8px">${t("qc_pop_sel")(d.count,d.conClics,d.pendientes)}</p>`;
+  const line=document.createElement("p"); line.className="msg"; line.textContent=t("qcing")(d.count);
+  $("#qcOut").appendChild(line); pollJob(d.jobId,line);
 };
 
 /* borrar producto */
