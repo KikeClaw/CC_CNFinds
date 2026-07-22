@@ -1175,8 +1175,17 @@ async function gatherCandidates(mode, content) {
     for (const t of tabs) {
       let csv; try { csv = await fetchSheet(id, t.gid); } catch { continue; }
       const cands = rowsToCandidates(parseCsv(csv));
-      const cat = cleanCategory(t.name || "");
-      for (const c of cands) if (!c.category && cat) c.category = cat;
+      // La PESTAÑA como categoría: si su nombre mapea a una categoría real
+      // (canonCat != "Other" — "Shoes","Bolsos","Sneakers"…), es autoritativa y se
+      // fija (cat_locked) para que la IA no la pise. Si es "HOT SALE"/una marca/etc.,
+      // no mapea → la dejamos libre para que la deduzca la IA/visión.
+      const rawCat = cleanCategory(t.name || "");
+      const tabCat = rawCat ? canonCat(rawCat) : null;
+      const locked = tabCat && tabCat !== "Other";
+      for (const c of cands) {
+        if (locked) { c.category = tabCat; c.catLocked = true; }
+        else if (!c.category && rawCat) c.category = rawCat;
+      }
       all.push(...cands);
     }
     // 2) HIPERVÍNCULOS (hojas tipo cnnewfinds) vía Sheets API, si hay clave.
@@ -1278,11 +1287,11 @@ function startEnrichTagJob(items, opts = {}) {
       job.phase = "etiquetado"; job.done = 0;
       for (const it of items) {
         try {
-          const r = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL").get(it.id);
+          const r = db.prepare("SELECT name, category, price_eur, cat_locked FROM products WHERE id=? AND clean_title IS NULL").get(it.id);
           if (r) {
             const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
             db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?")
-              .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), it.id);
+              .run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, r.cat_locked ? r.category : canonCat(out.category), JSON.stringify(out.tags || []), it.id);
             job.tagged++;
           }
         } catch {}
@@ -1299,7 +1308,7 @@ function startTagJob(ids) {
   const job = { id, total: ids.length, done: 0, tagged: 0, withImage: 0, dead: 0, phase: "etiquetado", status: "running" };
   jobs.set(id, job);
   if (jobs.size > 40) jobs.delete(jobs.keys().next().value);
-  const sel = db.prepare("SELECT name, category, price_eur FROM products WHERE id=? AND clean_title IS NULL");
+  const sel = db.prepare("SELECT name, category, price_eur, cat_locked FROM products WHERE id=? AND clean_title IS NULL");
   const upd = db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?");
   // Un reintento tras una breve espera absorbe límites de tasa puntuales sin
   // saltarse el producto (si aun así falla, queda sin etiquetar y se reintenta
@@ -1316,7 +1325,7 @@ function startTagJob(ids) {
           const r = sel.get(pid);
           if (r) {
             const out = await tagRetry({ name: r.name, category: r.category, price: r.price_eur });
-            upd.run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, canonCat(out.category), JSON.stringify(out.tags || []), pid);
+            upd.run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, r.cat_locked ? r.category : canonCat(out.category), JSON.stringify(out.tags || []), pid);
             job.tagged++;
           }
         } catch {}
@@ -1347,8 +1356,8 @@ async function handleAdminRetagSample(req, res) {
   const q = String(body.q || "").trim().slice(0, 60);
   const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 60); // tope 60: es una muestra
   const rows = q
-    ? db.prepare("SELECT id, name, category, price_eur, model_name FROM products WHERE clean_title IS NOT NULL AND (name LIKE ? OR clean_title LIKE ?) ORDER BY id LIMIT ?").all(`%${q}%`, `%${q}%`, limit)
-    : db.prepare("SELECT id, name, category, price_eur, model_name FROM products WHERE clean_title IS NOT NULL ORDER BY RANDOM() LIMIT ?").all(limit);
+    ? db.prepare("SELECT id, name, category, price_eur, model_name, cat_locked FROM products WHERE clean_title IS NOT NULL AND (name LIKE ? OR clean_title LIKE ?) ORDER BY id LIMIT ?").all(`%${q}%`, `%${q}%`, limit)
+    : db.prepare("SELECT id, name, category, price_eur, model_name, cat_locked FROM products WHERE clean_title IS NOT NULL ORDER BY RANDOM() LIMIT ?").all(limit);
   if (!rows.length) return json(res, 200, { ok: true, retagged: 0, failed: 0, cost_est_usd: 0, samples: [] });
   const upd = db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?");
   const samples = []; let done = 0, failed = 0, idx = 0;
@@ -1357,7 +1366,7 @@ async function handleAdminRetagSample(req, res) {
       const r = rows[idx++];
       try {
         const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
-        const cat = canonCat(out.category);
+        const cat = r.cat_locked ? r.category : canonCat(out.category); // no pisar la categoría de pestaña
         upd.run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, cat, JSON.stringify(out.tags || []), r.id);
         samples.push({ id: r.id, name: (out.clean_title || r.name).slice(0, 50),
           before: { model: r.model_name || "—", cat: r.category || "—" }, after: { model: out.model_name || "—", cat } });

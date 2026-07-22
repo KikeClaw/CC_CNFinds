@@ -90,6 +90,7 @@ export function apply(db, cands, source) {
       upsertProduct(db, {
         platform: c.platform, item_id: c.itemId, name, brand: extractBrand(name),
         category: c.category || null, price_eur: c.price ?? null, image_url: c.image || null, hot: 0,
+        cat_locked: c.catLocked ? 1 : 0,
       }, source, now);
       before ? updated++ : added++;
     }

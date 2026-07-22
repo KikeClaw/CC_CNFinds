@@ -13,6 +13,7 @@
 import { fetchSheet } from "./lib/sheet.js";
 import { parseCsv } from "./lib/csv.js";
 import { discoverTabs, cleanCategory } from "./lib/tabs.js";
+import { canonCat } from "./lib/categories.js";
 import { detectHeaderBlocks, normalizeRow } from "./lib/normalize.js";
 import { openDb, upsertProduct, countProducts } from "./lib/db.js";
 import { buildLinks, AFFILIATE_CODES, isPlaceholder } from "../config/agents.js";
@@ -26,8 +27,14 @@ function banner(t) {
 
 // Procesa una pestana: descarga, detecta cabecera+bloques, normaliza y dedup.
 async function processTab(tab) {
-  const category = cleanCategory(tab.name);
-  const isHot = /hot\s*sale/i.test(category) || /hot\s*sale/i.test(tab.name);
+  const rawCat = cleanCategory(tab.name);
+  // Pestaña -> categoría canónica. Si mapea a una real (no "Other"), es autoritativa
+  // y se fija (cat_locked) para que la IA no la pise. Si no ("HOT SALE", una marca…),
+  // se deja libre para la IA.
+  const tabCat = rawCat ? canonCat(rawCat) : null;
+  const locked = tabCat && tabCat !== "Other";
+  const category = locked ? tabCat : rawCat;
+  const isHot = /hot\s*sale/i.test(rawCat) || /hot\s*sale/i.test(tab.name);
 
   const csv = await fetchSheet(SHEET_ID, tab.gid);
   const rows = parseCsv(csv);
@@ -51,6 +58,7 @@ async function processTab(tab) {
       // Categoria autoritaria = pestana. En HOT SALE dejamos la heuristica del
       // nombre (para items que solo viven ahi) y marcamos hot.
       p.category = isHot ? p.category : category;
+      p.cat_locked = (!isHot && locked) ? 1 : 0;
       p.hot = isHot ? 1 : 0;
 
       const key = `${p.platform}|${p.item_id}`;

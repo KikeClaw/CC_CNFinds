@@ -49,6 +49,9 @@ export function openDb(path) {
     // tras varios fallos y el contador se reinicia en cuanto responde bien.
     health_fails: "INTEGER",
     price_source: "TEXT", // 'sheet' | 'weidian' (precio real de la fuente)
+    // Categoría FIJADA por la pestaña de la hoja (p.ej. tab "Shoes"): es una fuente
+    // fiable, así que la IA/visión NO la sobrescriben. 0 = libre (la pone/pisa la IA).
+    cat_locked: "INTEGER",
   };
   for (const [name, type] of Object.entries(aiCols)) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE products ADD COLUMN ${name} ${type}`);
@@ -106,13 +109,17 @@ export function openDb(path) {
 export function upsertProduct(db, p, source, now) {
   const stmt = db.prepare(`
     INSERT INTO products
-      (platform, item_id, name, brand, category, price_eur, image_url, hot, status, source, first_seen, last_seen)
+      (platform, item_id, name, brand, category, price_eur, image_url, hot, cat_locked, status, source, first_seen, last_seen)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
     ON CONFLICT(platform, item_id) DO UPDATE SET
       name       = excluded.name,
       brand      = COALESCE(excluded.brand, products.brand),
-      category   = COALESCE(excluded.category, products.category),
+      -- Categoría de pestaña (cat_locked) manda; si no, se conserva la ya fijada; si no, se rellena.
+      category   = CASE WHEN excluded.cat_locked=1 THEN excluded.category
+                        WHEN products.cat_locked=1 THEN products.category
+                        ELSE COALESCE(excluded.category, products.category) END,
+      cat_locked = MAX(COALESCE(products.cat_locked,0), COALESCE(excluded.cat_locked,0)),
       -- El precio de la hoja NO pisa uno traído de la fuente (price_source='weidian'):
       -- ese es el real y actual; el de la hoja lo tecleó un curador hace meses.
       price_eur  = CASE WHEN products.price_source = 'weidian' THEN products.price_eur
@@ -129,7 +136,7 @@ export function upsertProduct(db, p, source, now) {
   try { const r = db.prepare("SELECT price_eur FROM products WHERE platform=? AND item_id=?").get(p.platform, p.item_id); if (r) prevPrice = r.price_eur; } catch {}
   const info = stmt.run(
     p.platform, p.item_id, p.name, p.brand, p.category,
-    p.price_eur, p.image_url, p.hot ? 1 : 0, source, now, now
+    p.price_eur, p.image_url, p.hot ? 1 : 0, p.cat_locked ? 1 : 0, source, now, now
   );
   // Registra un punto de historial si es nuevo o si el precio cambió.
   try {
