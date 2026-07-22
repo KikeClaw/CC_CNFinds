@@ -34,7 +34,11 @@ export const AFFILIATE_CODES = {
 };
 
 export function isPlaceholder(code) {
-  return !code || code.startsWith("YOUR_");
+  const c = String(code || "").trim();
+  // Vacío, plantilla, o un marcador que no es un código real (p.ej. "ERROR" cuando
+  // un agente no deja registrarse). Sin esto, un valor así pasaba por código válido
+  // y el enlace salía como "agente que paga" con un id basura → cero comisión.
+  return !c || c.startsWith("YOUR_") || /^(error|n\/?a|none|null|todo|pending|x+)$/i.test(c);
 }
 
 // --- Plataforma canonica -----------------------------------------------------
