@@ -64,7 +64,9 @@ export function dedupe(db, cands) {
   const q = db.prepare("SELECT 1 FROM products WHERE platform=? AND item_id=?");
   for (const c of cands) {
     if (!c.platform || !c.itemId) continue;
-    if (!usableName(c.name)) continue; // fuera las filas sin nombre real
+    // Los volcados de links (noName) no traen nombre y lo pone el enriquecimiento
+    // después; el resto sí exige nombre real (una fila de hoja sin nombre es basura).
+    if (!c.noName && !usableName(c.name)) continue;
     if (isAdult(c.name)) continue;     // fuera el sex shop (no es nuestro nicho)
     const key = c.platform + "|" + c.itemId;
     if (seen.has(key)) continue;

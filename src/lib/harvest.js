@@ -46,7 +46,10 @@ export function harvestText(text) {
   const out = [], seen = new Set();
   for (const u of extractUrls(String(text || ""))) {
     const p = parseAnyUrl(u);
-    if (p) { const k = p.platform + "|" + p.itemId; if (!seen.has(k)) { seen.add(k); out.push({ platform: p.platform, itemId: p.itemId, name: null, price: null, image: null }); } }
+    // noName: un volcado de links no trae nombre. Sin esto, dedupe los descartaba
+    // TODOS (usableName(null)=false) y este modo importaba siempre 0. El nombre real
+    // lo pone luego el enriquecimiento de Weidian (título de la ficha).
+    if (p) { const k = p.platform + "|" + p.itemId; if (!seen.has(k)) { seen.add(k); out.push({ platform: p.platform, itemId: p.itemId, name: null, price: null, image: null, noName: true }); } }
   }
   return out;
 }

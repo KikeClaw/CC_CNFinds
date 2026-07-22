@@ -199,8 +199,12 @@ function json(res, code, data) {
 // Protege sobre todo los endpoints que cuestan dinero (IA) de spam/abuso.
 const rlBuckets = new Map();
 function clientIp(req) {
+  // El valor ÚLTIMO de X-Forwarded-For es el que añade nuestro proxy (Railway) con
+  // la IP real que vio — no es falsificable. El primero lo pone el cliente y puede
+  // inventárselo en cada petición para saltarse los límites de las APIs de IA.
   const xff = req.headers["x-forwarded-for"];
-  return (xff ? String(xff).split(",")[0].trim() : "") || req.socket?.remoteAddress || "?";
+  const parts = xff ? String(xff).split(",").map((s) => s.trim()).filter(Boolean) : [];
+  return parts[parts.length - 1] || req.socket?.remoteAddress || "?";
 }
 function rateLimit(req, res, key, max, windowMs) {
   const now = Date.now();
@@ -788,7 +792,11 @@ async function handleAiFit(res, params) {
     const out = await buildFit(budget, style, items);
     const byId = new Map(items.map((p) => [p.id, p]));
     const picks = (out.picks || []).map((p) => ({ ...byId.get(p.id), reason: p.reason })).filter((p) => p.id);
-    json(res, 200, { ok: true, budget, summary: out.summary, total_estimate: out.total_estimate, picks });
+    // El total lo calculamos NOSOTROS con los precios reales del catálogo. La IA da
+    // un total que a veces se inventa (y prometía "dentro de presupuesto" con picks
+    // que lo triplicaban). over_budget avisa al usuario en vez de mentirle.
+    const total = Math.round(picks.reduce((s, p) => s + (p.price_eur || 0), 0) * 100) / 100;
+    json(res, 200, { ok: true, budget, summary: out.summary, total_estimate: total, over_budget: budget ? total > budget : false, picks });
   } catch (e) {
     json(res, 200, { ok: false, error: e.message });
   }
@@ -1067,7 +1075,14 @@ function handleProductPage(req, res, id) {
   html(res, productPage(p, relatedProducts(p), baseUrl(req), reqLang(req)));
 }
 function handleListPage(req, res, kind, name) {
-  if (kind === "categoria") name = canonCat(name); // resuelve URLs con categoría cruda/antigua
+  if (kind === "categoria") {
+    const canon = canonCat(name);
+    // canonCat mapea CUALQUIER texto no reconocido a "Other" (categoría poblada), así
+    // que /categoria/basura devolvía un 200 (soft-404). Solo servimos la categoría si
+    // el nombre era de verdad una categoría; si cayó en "Other" por descarte, 404.
+    if (canon === "Other" && !/^(other|otros?)$/i.test(name.trim())) return html(res, "<h1>404</h1>", 404);
+    name = canon;
+  }
   const col = kind === "marca" ? "brand" : "category";
   const rows = db.prepare(
     `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${col}=? ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
@@ -1204,8 +1219,13 @@ function startEnrichTagJob(items, opts = {}) {
           const res = await enrichProduct(it.platform, it.item_id, {});
           const now = new Date().toISOString();
           if (res.ok && res.images.length) {
-            db.prepare("UPDATE products SET image_url=?, images=?, last_checked=?, enrich_tries=COALESCE(enrich_tries,0)+1 WHERE id=?")
-              .run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, it.id);
+            // Si el producto entró sin nombre real (volcado de links -> "weidian-123"),
+            // le ponemos el título de la ficha; el etiquetado IA lo limpia después.
+            const t = (res.title || "").replace(/\s+/g, " ").trim().slice(0, 140);
+            db.prepare(
+              "UPDATE products SET image_url=?, images=?, last_checked=?, enrich_tries=COALESCE(enrich_tries,0)+1, " +
+              "name = CASE WHEN ?<>'' AND (name LIKE 'weidian-%' OR name LIKE 'taobao-%' OR name LIKE '1688-%') AND name GLOB '*-[0-9]*' THEN ? ELSE name END WHERE id=?"
+            ).run(res.images[0], JSON.stringify(res.images.slice(0, 12)), now, t, t, it.id);
             job.withImage++;
           } else {
             // marca el intento (fallo o 200 sin fotos). El contador evita clavarse:
@@ -1692,7 +1712,8 @@ const server = createServer((req, res) => {
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");
   } catch (e) {
-    json(res, 500, { error: e.message });
+    console.error("500:", e.message); // el detalle al log, no al cliente (evita filtrar rutas/SQL)
+    json(res, 500, { error: "internal error" });
   }
 });
 

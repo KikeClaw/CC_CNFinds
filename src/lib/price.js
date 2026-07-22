@@ -29,7 +29,7 @@ function amountOf(s) {
 
 function toEur(v, cur) {
   if (v == null) return null;
-  if (cur === "cny") return Math.round(v * CNY_TO_EUR);
+  if (cur === "cny") return Math.round(v * CNY_TO_EUR * 100) / 100; // 2 decimales, como $ y FEN
   if (cur === "usd") return Math.round(v * USD_TO_EUR * 100) / 100;
   return v; // ya en euros (o moneda desconocida: se asume euros)
 }

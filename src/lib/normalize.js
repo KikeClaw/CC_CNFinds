@@ -152,7 +152,15 @@ export function deriveBrandCategory(name) {
 function priceForRow(cells, cols) {
   const col = cols.price >= 0 ? cells[cols.price] : null;
   if (col != null && parsePriceText(col) != null) return parsePriceText(col); // ya trae moneda
-  for (const c of cells) { const p = parsePriceText(c); if (p != null) return p; }
+  // Fallback con moneda explícita, pero SOLO dentro de las columnas de ESTE bloque.
+  // Las hojas W2C ponen 2-3 bloques de producto en paralelo por fila; escanear la
+  // fila entera hacía que un producto heredara el precio (convertido) del vecino.
+  const idx = [cols.name, cols.price, cols.id, cols.platform, cols.image].filter((i) => i >= 0);
+  if (idx.length) {
+    for (let i = Math.min(...idx); i <= Math.max(...idx); i++) {
+      const p = parsePriceText(cells[i]); if (p != null) return p;
+    }
+  }
   return parsePrice(col);
 }
 
