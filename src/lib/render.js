@@ -124,18 +124,23 @@ footer .t{color:var(--muted);font-size:12px;line-height:1.6}
 .guide .tip{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--muted)}
 `;
 
-function head({ title, desc, canonical, image, jsonld, lang = "es" }) {
+function head({ title, desc, canonical, image, jsonld, lang = "es", ogType = "website" }) {
+  const esUrl = canonical;
   const enUrl = canonical + (canonical.includes("?") ? "&" : "?") + "lang=en";
+  // El canonical debe ser AUTO-REFERENCIAL por idioma: la página servida en inglés
+  // (?lang=en) tiene que canonicalizar a su propia URL EN, no a la española. Si no,
+  // Google trata todo el inglés como duplicado del español y no lo indexa.
+  const selfCanonical = lang === "en" ? enUrl : esUrl;
   return `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
-<link rel="canonical" href="${esc(canonical)}">
-<link rel="alternate" hreflang="es" href="${esc(canonical)}">
+<link rel="canonical" href="${esc(selfCanonical)}">
+<link rel="alternate" hreflang="es" href="${esc(esUrl)}">
 <link rel="alternate" hreflang="en" href="${esc(enUrl)}">
-<link rel="alternate" hreflang="x-default" href="${esc(canonical)}">
-<meta property="og:type" content="website"><meta property="og:locale" content="${lang === "en" ? "en_US" : "es_ES"}"><meta property="og:title" content="${esc(title)}">
-<meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(canonical)}">
-${image ? `<meta property="og:image" content="${esc(image)}"><meta name="twitter:card" content="summary_large_image">` : ""}
+<link rel="alternate" hreflang="x-default" href="${esc(esUrl)}">
+<meta property="og:type" content="${ogType}"><meta property="og:locale" content="${lang === "en" ? "en_US" : "es_ES"}"><meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(selfCanonical)}">
+${image ? `<meta property="og:image" content="${esc(image)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(image)}">` : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>${CSS}</style>
@@ -187,7 +192,10 @@ export function productPage(p, related, base, lang = "es") {
     brand: p.brand ? { "@type": "Brand", name: p.brand } : undefined,
     description: aiDesc || undefined,
     offers: { "@type": "Offer", priceCurrency: "EUR", price: p.price_eur ?? undefined, availability: "https://schema.org/InStock", url: canonical },
-    ...(p.qc_score ? { aggregateRating: { "@type": "AggregateRating", ratingValue: p.qc_score, bestRating: 10, ratingCount: 1 } } : {}),
+    // Sin aggregateRating: la nota QC es NUESTRA valoración interna, no reseñas de
+    // usuarios. Marcarla como AggregateRating (ratingCount:1) es "rating auto-servido"
+    // que Google penaliza (acción manual "ratings not from users") y además se vería
+    // como ~2 estrellas (4/10). La insignia ★ QC sigue en la página, sin schema.
   };
   const en = lang === "en";
   const bonusTxt = (l) => (l.bonus ? (en ? l.bonus.en || l.bonus.es : l.bonus.es) : "");
@@ -238,7 +246,7 @@ ${related.length ? `<section><h2 class="h2">${esc(tr(lang, "related"))}${en ? " 
 })();
 </script>`;
   const bc = breadcrumbLd(base, [...crumbs.map((c) => ({ name: c.label, href: c.href })), { name: pName }]);
-  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld: [jsonld, bc], lang }, body, crumbs);
+  return doc({ title, desc, canonical, image: imgs[0] ? th(imgs[0], 800, 800) : undefined, jsonld: [jsonld, bc], lang, ogType: "product" }, body, crumbs);
 }
 
 // --- Landing de listado (categoria / marca) ---
@@ -377,7 +385,7 @@ export function articlePage(guide, base, lang = "es") {
 <div class="crumb"><a href="/${lp}">${esc(tr(lang, "home"))}</a> › <a href="/guias${lp}">${esc(tr(lang, "guides"))}</a> › ${esc(title)}</div>
 <article class="guide"><h1>${esc(title)}</h1>${gBody(guide, lang)}</article>
 ${relatedHtml}`;
-  return doc({ title: `${title} | CNFinds`, desc: gDesc(guide, lang), canonical, jsonld, lang }, body, [{ href: "/guias" + lp, label: tr(lang, "guides") }, { href: "/" + lp, label: tr(lang, "home") }]);
+  return doc({ title: `${title} | CNFinds`, desc: gDesc(guide, lang), canonical, jsonld, lang, ogType: "article" }, body, [{ href: "/guias" + lp, label: tr(lang, "guides") }, { href: "/" + lp, label: tr(lang, "home") }]);
 }
 
 export function guidesIndexPage(guides, base, lang = "es") {
