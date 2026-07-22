@@ -1660,6 +1660,11 @@ const server = createServer((req, res) => {
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
     if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
+    // PNG rasterizados: og:image (WhatsApp/iMessage no renderizan SVG) e iconos PWA.
+    if (u.pathname === "/og.png") return void serveStatic(res, "og.png", "image/png");
+    if (u.pathname === "/apple-touch-icon.png") return void serveStatic(res, "apple-touch-icon.png", "image/png");
+    if (u.pathname === "/icon-192.png") return void serveStatic(res, "icon-192.png", "image/png");
+    if (u.pathname === "/icon-512.png") return void serveStatic(res, "icon-512.png", "image/png");
     if (u.pathname === "/manifest.webmanifest") return void serveStatic(res, "manifest.webmanifest", "application/manifest+json");
     if (u.pathname === "/sw.js") return void serveStatic(res, "sw.js", "application/javascript; charset=utf-8");
     if (u.pathname === "/api/categories") return handleCategories(res);
