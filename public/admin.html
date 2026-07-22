@@ -259,7 +259,7 @@ const T={
       ["Medir ingresos","Mira <b>Ver analítica</b> (clics por agente = tu comisión). Exporta <b>suscriptores</b> y <b>alertas de precio</b> a tu proveedor de email para campañas."],
     ],
     st_found:"encontrados", st_unique:"únicos", st_new:"nuevos", st_existing:"ya en catálogo", st_photo:"con foto",
-    st_price:"con precio", src_noprice:"⚠️ Pocos precios válidos: esta hoja no trae precio o lo cotiza raro. Esos productos saldrán con «—» y quedarán fuera del filtro de precio (el barrido de salud los irá corrigiendo desde Weidian).",
+    st_price:"con precio", cost_tag:(n,c)=>`Coste IA estimado: ~$${c} · etiquetar ${n} productos nuevos con IA (Haiku, pago único). Los ya existentes no gastan. El QC va aparte y está en off.`, src_noprice:"⚠️ Pocos precios válidos: esta hoja no trae precio o lo cotiza raro. Esos productos saldrán con «—» y quedarán fuera del filtro de precio (el barrido de salud los irá corrigiendo desde Weidian).",
     qc_pop_btn:"QC solo a los más vistos", qc_pop_n:"Cuántos",
     qc_pop_sel:(n,c,p)=>`Seleccionados ${n} (${c} con clics reales) · quedan ${p} sin QC en total.`,
     hl_h:"Salud del catálogo", hl_run:"Revisar salud ahora", hl_purge:"Borrar ocultos…",
@@ -327,7 +327,7 @@ const T={
       ["Measure revenue","Check <b>View analytics</b> (agent clicks = your commission). Export <b>subscribers</b> and <b>price alerts</b> to your email provider for campaigns."],
     ],
     st_found:"found", st_unique:"unique", st_new:"new", st_existing:"already in catalog", st_photo:"with photo",
-    st_price:"with price", src_noprice:"⚠️ Few valid prices: this sheet has no price or quotes it oddly. Those products will show \"—\" and stay out of the price filter (the health sweep will fix them from Weidian over time).",
+    st_price:"with price", cost_tag:(n,c)=>`Estimated AI cost: ~$${c} · tagging ${n} new products with AI (Haiku, one-off). Existing ones cost nothing. QC is separate and off.`, src_noprice:"⚠️ Few valid prices: this sheet has no price or quotes it oddly. Those products will show \"—\" and stay out of the price filter (the health sweep will fix them from Weidian over time).",
     qc_pop_btn:"QC most-viewed only", qc_pop_n:"How many",
     qc_pop_sel:(n,c,p)=>`Selected ${n} (${c} with real clicks) · ${p} still un-scored in total.`,
     hl_h:"Catalog health", hl_run:"Check health now", hl_purge:"Delete hidden…",
@@ -381,6 +381,10 @@ $("#mode").onchange=()=>{ modeUI(); $("#apply").style.display="none"; $("#out").
 
 /* Fuentes curadas de la comunidad (hojas por agente). Rellenan la URL y ponen modo sheet.
    Se importan con TUS códigos de afiliado (el importador regenera los links). */
+// Coste de etiquetar un producto con IA (Haiku, solo texto). Medido: ~$25 por
+// ~15.500 productos = ~$0,0016 c/u. Solo aplica a los NUEVOS (los ya etiquetados no
+// se reprocesan) y solo si el auto-etiquetado está activo. QC no entra: va aparte.
+const TAG_COST=0.0016;
 const COMMUNITY_SOURCES=[
   ["Kakobuy","1ys61I-4I8SyTYxv-YTUQ0TyR--7TTf9y3EGB3r2BYtU"],
   ["Mulebuy","1LjwXEnzeimRvS2wa5UQz8aRQ72kbHKTy-WbjTFu39TQ"],
@@ -429,6 +433,7 @@ $("#preview").onclick=async()=>{
     </div>
     <p class="hint" style="margin-top:2px">${(s.pctFoto??0)>=60?t("src_good"):(s.pctFoto??0)>=25?t("src_meh"):t("src_bad")}</p>
     ${(s.pctPrecio??0)<50?`<p class="hint" style="margin-top:2px;color:#f59e0b">${t("src_noprice")}</p>`:""}
+    <p class="hint" style="margin-top:6px">${t("cost_tag")(s.nuevos||0, (Math.round((s.nuevos||0)*TAG_COST*100)/100).toFixed(2))}</p>
     <table><thead><tr><th></th><th>${t("th_platform")}</th><th>itemID</th><th>${t("th_name")}</th><th>${t("th_price")}</th></tr></thead><tbody>${rows}</tbody></table>
     <p class="hint">${t("sample_of")(d.sample.length)}</p>
   </div>`;
