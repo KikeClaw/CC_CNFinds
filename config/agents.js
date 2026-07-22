@@ -226,7 +226,11 @@ export function buildLinks(platform, itemId) {
     if (!st.enabled && !SHOW_ALL_AGENTS) continue;
     const configured = !isPlaceholder(st.code);
     const code = configured ? st.code : ""; // sin tu código = enlace funcional sin referido
-    list.push({ id: agent.id, configured, data: { name: agent.name, url: agent.buildUrl(platform, itemId, code), configured } });
+    // Sin código, la URL queda con el parámetro de afiliado colgando (…?inviteCode=,
+    // …&ref=). Se ve roto y algún agente lo rechaza, así que quitamos ese parámetro
+    // vacío del final. Con código no aplica (el valor no está vacío).
+    const url = agent.buildUrl(platform, itemId, code).replace(/[?&][^=&?#]+=(?=$|#)/, "");
+    list.push({ id: agent.id, configured, data: { name: agent.name, url, configured } });
   }
   list.sort((a, b) => Number(b.configured) - Number(a.configured)); // los que te pagan, primero
   const out = {};
