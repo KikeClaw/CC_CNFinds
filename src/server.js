@@ -1960,6 +1960,21 @@ function purgeJunkProducts() {
       "DELETE FROM products WHERE (name LIKE 'weidian-%' OR name LIKE 'taobao-%' OR name LIKE '1688-%') AND name GLOB '*-[0-9]*'"
     ).run();
     if (r.changes) console.log(`Limpieza: ${r.changes} productos sin nombre real eliminados.`);
+    // Categorías no-canónicas heredadas (p.ej. "HOT SALE" o nombres de pestaña crudos):
+    // se mapean a la lista canónica. Si el mapeo directo da "Other", se intenta deducir
+    // del nombre (recupera las que llevan el tipo dentro). Gratis; deja los filtros limpios.
+    try {
+      const upc = db.prepare("UPDATE products SET category=? WHERE id=?");
+      let fixedCat = 0;
+      for (const p of db.prepare("SELECT id, name, clean_title, category FROM products WHERE category IS NOT NULL").all()) {
+        const direct = canonCat(p.category);
+        if (direct === p.category) continue; // ya canónica (incluye "Other")
+        let c = direct;
+        if (c === "Other") { const byName = canonCat(p.clean_title || p.name || ""); if (byName !== "Other") c = byName; }
+        upc.run(c, p.id); fixedCat++;
+      }
+      if (fixedCat) console.log(`Limpieza: ${fixedCat} categorías no-canónicas normalizadas.`);
+    } catch (e) { console.error("Normalización de categorías falló:", e.message); }
     // Sex shop y lencería sexy: fuera del nicho (moda/streetwear). Se filtra en la
     // ingesta; esto quita los que ya entraron. Mira el nombre CRUDO de la hoja (inglés).
     const a = db.prepare(
