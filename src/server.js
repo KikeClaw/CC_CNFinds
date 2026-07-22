@@ -1020,6 +1020,41 @@ function getProductById(id) {
     links: enrichLinks(buildLinks(r.platform, r.item_id)),
   };
 }
+// Comparador de vendedores del MISMO modelo. Agrupa por marca+model_name (el
+// diagnóstico dio 74% de grupos con precio ajustado, mediana ratio 1.05). El 3% de
+// grupos "línea" que mezclan productos (p.ej. "Air Force 1" con la colab de LV) se
+// neutraliza con una banda de precio alrededor del producto que se está viendo: solo
+// entran listings a ±40% de su precio, así se comparan cosas realmente equivalentes.
+const SIMILAR_BAND = 0.4;
+function handleSimilar(res, params) {
+  const id = parseInt(params.get("id"), 10);
+  if (!id) return json(res, 400, { ok: false, error: "falta id" });
+  const p = db.prepare("SELECT id, brand, model_name, price_eur FROM products WHERE id=?").get(id);
+  // Sin marca+modelo o sin precio no se puede comparar de forma fiable.
+  if (!p || !p.brand || !p.model_name || !String(p.model_name).trim() || p.price_eur == null) {
+    return json(res, 200, { ok: true, count: 0, items: [] });
+  }
+  const lo = p.price_eur * (1 - SIMILAR_BAND), hi = p.price_eur * (1 + SIMILAR_BAND);
+  const rows = db.prepare(`
+    SELECT id, platform, item_id, name, clean_title, clean_title_en, brand, price_eur, image_url, qc_score
+    FROM products
+    WHERE id <> ? AND status <> 'hidden' AND image_url IS NOT NULL
+      AND price_eur IS NOT NULL AND price_eur BETWEEN ? AND ?
+      AND LOWER(TRIM(brand)) = LOWER(TRIM(?)) AND LOWER(TRIM(model_name)) = LOWER(TRIM(?))
+    ORDER BY price_eur ASC LIMIT 8`).all(id, lo, hi, p.brand, p.model_name);
+  const items = rows.map((r) => ({
+    id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en,
+    price_eur: r.price_eur, thumb: thumb(r.image_url), qc_score: r.qc_score,
+    links: enrichLinks(buildLinks(r.platform, r.item_id)),
+  }));
+  const prices = [p.price_eur, ...items.map((i) => i.price_eur)];
+  json(res, 200, {
+    ok: true, count: items.length,
+    min: Math.min(...prices), max: Math.max(...prices),
+    current: p.price_eur, items,
+  });
+}
+
 function relatedProducts(p) {
   return db.prepare(
     "SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE id<>? AND image_url IS NOT NULL AND status <> 'hidden' AND (brand=? OR category=?) ORDER BY (brand=?) DESC, hot DESC LIMIT 8"
@@ -1614,6 +1649,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/ai-fit") { if (!rateLimit(req, res, "fit", 20, 3600e3)) return; return void handleAiFit(res, u.searchParams); }
     if (u.pathname === "/img") return void handleImgProxy(req, res, u);
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
+    if (u.pathname === "/api/similar") return void handleSimilar(res, u.searchParams);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }

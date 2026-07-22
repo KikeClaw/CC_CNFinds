@@ -280,6 +280,19 @@
   .modal .mprice{ font-family:var(--font-d); font-size:30px; font-weight:700; letter-spacing:-.03em; margin:12px 0; }
   .modal .mcat{ color:var(--muted); font-size:13px; display:inline-flex; gap:6px; align-items:center; }
   .modal .qcbadge{ display:inline-flex; align-items:center; gap:6px; background:color-mix(in srgb,var(--ok,#16a34a) 14%,transparent); color:var(--ok,#16a34a); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:600; margin:2px 0 6px; line-height:1.3; }
+  /* Comparador de vendedores: filas clicables con foto+precio. Lo importante es que
+     de un vistazo se vea "hay más barato" — por eso el ahorro va destacado. */
+  .simbox{ margin:12px 0 6px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:var(--soft,var(--surface)); }
+  .sim-h{ display:flex; align-items:center; gap:7px; font-size:13.5px; flex-wrap:wrap; }
+  .sim-range{ margin-left:auto; color:var(--muted); font-size:12.5px; font-weight:600; }
+  .sim-save{ margin:8px 0 4px; font-size:12.5px; font-weight:700; color:var(--ok,#16a34a); }
+  .sim-row{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:7px 8px; margin-top:6px; border:1px solid var(--line); border-radius:11px; background:var(--card); cursor:pointer; font:inherit; color:inherit; transition:.15s; }
+  .sim-row:hover{ border-color:var(--brand); transform:translateX(2px); }
+  .sim-row img{ width:38px; height:38px; border-radius:8px; object-fit:cover; flex:0 0 auto; background:var(--soft); }
+  .sim-n{ flex:1; font-size:13px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sim-qc{ font-size:11px; font-weight:700; color:var(--ok,#16a34a); }
+  .sim-p{ font-weight:800; font-size:14px; }
+  .sim-more{ margin-top:8px; font-size:12px; color:var(--muted); text-align:center; }
   /* Asesor de tallas: las chips son lo importante — de un vistazo se ve qué tallas
      existen y cuál te toca. La recomendada va en color de marca; la que no existe
      se marca tachada para que se entienda por qué no puedes pedirla. */
@@ -740,7 +753,7 @@ const T={
     v_ag_t:"13 agentes comparados",v_ag_d:"Cada producto trae el enlace listo para los 13. Comparas comisión y envío, y eliges tú.",
     v_cat_t:"Fotos y precios de verdad",v_cat_d:"Miles de fichas con foto y precio comprobado en la fuente. Una hoja solo te da un enlace a ciegas.",
     v_go:"Ver catálogo",v_try:"Probar",v_cmp:"Comparar",v_new:"Nuevo",
-    size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
+    sim_h:(n)=>`Mismo modelo en ${n+1} vendedores`,sim_save:(x)=>`Ahorras hasta ${x} eligiendo el más barato`,sim_more:(n)=>`y ${n} vendedor${n>1?'es':''} más`,size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
     nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
@@ -799,7 +812,7 @@ const T={
     v_ag_t:"13 agents compared",v_ag_d:"Every product carries a ready link for all 13. Compare fees and shipping, and pick yourself.",
     v_cat_t:"Real photos and prices",v_cat_d:"Thousands of listings with a photo and a price verified at the source. A sheet just gives you a blind link.",
     v_go:"Browse catalog",v_try:"Try it",v_cmp:"Compare",v_new:"New",
-    size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
+    sim_h:(n)=>`Same model from ${n+1} sellers`,sim_save:(x)=>`Save up to ${x} by picking the cheapest`,sim_more:(n)=>`and ${n} more seller${n>1?'s':''}`,size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
     nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -1176,6 +1189,7 @@ function openModal(p){
       <h3>${esc(pname(p))}</h3>
       <div class="mcat">${ic("tag",13,1.9)} ${esc(catDisp(p.category||""))}</div>
       <div class="mprice">${eur(p.price_eur)}</div>
+      <div id="simBox"></div>
       ${p.qc_score?`<div class="qcbadge">★ QC ${p.qc_score}/10${(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)?` · ${esc(LANG==="en"?(p.qc_summary_en||p.qc_summary):p.qc_summary)}`:""}</div>`:""}
       <div class="sizebox">
         <div class="sizeh">${ic("shirt",15,1.9)} <b>${t("size_h")}</b></div>
@@ -1191,6 +1205,36 @@ function openModal(p){
       <div class="note">${t("note")}</div>
     </div>`;
   $("#overlay").classList.add("open");
+  loadSimilar(p.id, p.price_eur);
+}
+/* Comparador de vendedores del MISMO modelo (marca+modelo, banda de precio). Le
+   ahorra dinero al comprador y nos da comisión compre a quien compre. Carga aparte
+   para no frenar la apertura del modal; si no hay alternativas, no pinta nada. */
+async function loadSimilar(id, price){
+  const box=$("#simBox"); if(!box) return;
+  let d; try{ d=await (await fetch("/api/similar?id="+id)).json(); }catch{ return; }
+  if(!d.ok || !d.count) return;
+  const cheapest=d.items[0];
+  const save=(price!=null && cheapest.price_eur<price) ? Math.round((price-cheapest.price_eur)*100)/100 : 0;
+  const rows=d.items.slice(0,3).map(it=>`
+    <button class="sim-row" onclick='openById(${it.id})'>
+      <img src="${it.thumb}" alt="" loading="lazy">
+      <span class="sim-n">${esc(LANG==="en"?(it.title_en||it.name):it.name)}</span>
+      ${it.qc_score?`<span class="sim-qc">★${it.qc_score}</span>`:""}
+      <span class="sim-p">${eur(it.price_eur)}</span>
+    </button>`).join("");
+  box.innerHTML=`
+    <div class="simbox">
+      <div class="sim-h">${ic("layers",14,1.9)} <b>${t("sim_h")(d.count)}</b>
+        <span class="sim-range">${eur(d.min)}–${eur(d.max)}</span></div>
+      ${save>0?`<div class="sim-save">${t("sim_save")(eur(save))}</div>`:""}
+      ${rows}
+      ${d.count>3?`<div class="sim-more">${t("sim_more")(d.count-3)}</div>`:""}
+    </div>`;
+}
+/* Abre otro producto por id (desde el comparador) sin recargar la página. */
+async function openById(id){
+  try{ const d=await (await fetch("/api/products?ids="+id)).json(); const p=(d.items||[])[0]; if(p) openModal(p); }catch{}
 }
 /* Asesor de tallas: recomienda sobre las tallas REALES de la ficha (Weidian).
    Lo visual es lo que convence: se pintan todas las tallas disponibles y se
