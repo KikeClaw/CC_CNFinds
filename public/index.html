@@ -325,6 +325,12 @@
   .acmp .row:not(:has(.bn)) .ag{ margin-left:auto; }
   .acmp .row.reco{ border-color:#ff4d2e; box-shadow:0 0 0 1px #ff4d2e inset, var(--card-shadow); }
   .acmp .agbadge{ display:inline-block; background:#ff4d2e; color:#fff; font-size:10px; font-weight:800; line-height:1; padding:3px 6px; border-radius:6px; margin-left:7px; vertical-align:middle; letter-spacing:.01em; }
+  .pwa{ position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:70; display:flex; align-items:center; gap:11px; background:var(--surface2); color:var(--ink); border:1px solid var(--line); box-shadow:0 10px 34px rgba(0,0,0,.20); border-radius:16px; padding:9px 10px 9px 16px; max-width:calc(100vw - 24px); animation:pwaUp .25s ease; }
+  @keyframes pwaUp{ from{ opacity:0; transform:translate(-50%,10px);} to{ opacity:1; transform:translate(-50%,0);} }
+  .pwa-ic{ color:#ff4d2e; flex:none; }
+  .pwa-txt{ font-size:14px; font-weight:600; letter-spacing:-.01em; }
+  .pwa-btn{ background:#ff4d2e; color:#fff; border:0; font-weight:700; font-size:13px; padding:8px 15px; border-radius:11px; cursor:pointer; white-space:nowrap; }
+  .pwa-x{ background:transparent; border:0; cursor:pointer; color:var(--muted); font-size:15px; line-height:1; padding:5px 6px; flex:none; }
   /* alerta de precio */
   .paband{ margin-top:16px; }
   .pa-open{ display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:13px; font-weight:600; color:var(--brandc); background:none; border:1px dashed var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; }
@@ -382,6 +388,14 @@
     <a href="/cupones" style="color:#fff;text-decoration:none"><span data-i18n="promo_text">Bonos de bienvenida y cupones de envío en tus agentes de compra</span> <b data-i18n="promo_cta">Ver cupones →</b></a>
     <button class="x" id="promoX" data-i18n-aria="a_close" aria-label="Cerrar"></button>
   </div>
+</div>
+
+<!-- Instalar como PWA: banner propio, aparece solo si el navegador lo permite -->
+<div class="pwa" id="pwaBanner" hidden>
+  <svg class="pwa-ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
+  <span class="pwa-txt" data-i18n="pwa_title">Instala la app de CNFinds</span>
+  <button class="pwa-btn" id="pwaInstall" data-i18n="pwa_install">Instalar</button>
+  <button class="pwa-x" id="pwaClose" data-i18n-aria="a_close" aria-label="Cerrar">✕</button>
 </div>
 
 <header>
@@ -777,7 +791,7 @@ const T={
     fit_title:"Arma tu fit con IA",fit_sub:"Dinos tu presupuesto y montamos un outfit",armar:"Armar",
     brands:"Marcas populares",brands_sub:"Toca para filtrar",catalogo:"Catálogo",
     s_trending:"Destacados",s_new:"Novedades",s_pa:"Precio: menor a mayor",s_pd:"Precio: mayor a menor",s_name:"Nombre A–Z",
-    ver_agentes:"Ver agentes",elige_agente:"Compara y elige tu agente de compra",cashback:"Cashback de afiliado",more_agents:(n)=>`Ver los ${n} agentes →`,ag_reco:"Recomendado",ag_chosen:"Más elegido",
+    ver_agentes:"Ver agentes",elige_agente:"Compara y elige tu agente de compra",cashback:"Cashback de afiliado",more_agents:(n)=>`Ver los ${n} agentes →`,ag_reco:"Recomendado",ag_chosen:"Más elegido",pwa_title:"Instala la app de CNFinds",pwa_install:"Instalar",
     note:"El precio es orientativo (fábrica). El coste final incluye el envío internacional que gestiona el agente. CNFinds no vende ni procesa pagos.",
     p_count:"productos",noresults:"Sin resultados para tu búsqueda.",loadmore:"Cargar más",
     f_shop:"Tienda",f_all:"Todos los productos",f_all_guides:"Todas las guías",f_legal:"Legal",f_desc:"Tu plataforma para descubrir productos, revisar fotos de calidad y encontrar el mejor agente de compra al mejor precio.",
@@ -836,7 +850,7 @@ const T={
     fit_title:"Build your fit with AI",fit_sub:"Tell us your budget and we'll build an outfit",armar:"Build",
     brands:"Popular brands",brands_sub:"Tap to filter",catalogo:"Catalog",
     s_trending:"Featured",s_new:"New",s_pa:"Price: low to high",s_pd:"Price: high to low",s_name:"Name A–Z",
-    ver_agentes:"View agents",elige_agente:"Compare and choose your shopping agent",cashback:"Affiliate cashback",more_agents:(n)=>`See all ${n} agents →`,ag_reco:"Recommended",ag_chosen:"Most chosen",
+    ver_agentes:"View agents",elige_agente:"Compare and choose your shopping agent",cashback:"Affiliate cashback",more_agents:(n)=>`See all ${n} agents →`,ag_reco:"Recommended",ag_chosen:"Most chosen",pwa_title:"Install the CNFinds app",pwa_install:"Install",
     note:"Price is indicative (factory). Final cost includes international shipping handled by the agent. CNFinds does not sell or process payments.",
     p_count:"products",noresults:"No results for your search.",loadmore:"Load more",
     f_shop:"Shop",f_all:"All products",f_all_guides:"All guides",f_legal:"Legal",f_desc:"Your platform to discover products, review QC photos and find the best shopping agent at the best price.",
@@ -1458,6 +1472,23 @@ if($("#newsEmail")) $("#newsEmail").addEventListener("keydown",e=>{ if(e.key==="
 
 /* PWA: registra el service worker */
 if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{})); }
+
+/* Instalar como PWA: banner propio en vez del que decide el navegador. Solo se muestra
+   si el navegador ofrece instalación (beforeinstallprompt), no está ya instalada, y no
+   lo has descartado antes. iOS Safari no emite el evento, así que allí no aparece. */
+let _pwaEvt=null;
+const _pwaBanner=$("#pwaBanner");
+function pwaHide(){ if(_pwaBanner) _pwaBanner.hidden=true; }
+function pwaMaybeShow(){
+  if(!_pwaBanner || !_pwaEvt) return;
+  if(localStorage.getItem("pwa_dismissed")) return;
+  if(matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
+  _pwaBanner.hidden=false;
+}
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); _pwaEvt=e; pwaMaybeShow(); });
+addEventListener("appinstalled",()=>{ _pwaEvt=null; localStorage.setItem("pwa_dismissed","1"); pwaHide(); });
+if($("#pwaInstall")) $("#pwaInstall").onclick=async()=>{ if(!_pwaEvt) return; _pwaEvt.prompt(); try{ await _pwaEvt.userChoice; }catch(_){} _pwaEvt=null; pwaHide(); };
+if($("#pwaClose")) $("#pwaClose").onclick=()=>{ localStorage.setItem("pwa_dismissed","1"); pwaHide(); };
 
 /* búsqueda visual (galería o CÁMARA -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
