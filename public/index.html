@@ -917,7 +917,7 @@ function renderSocial(){
 }
 // La home muestra solo un teaser (12) del catálogo; "Ver todo" lleva a /productos
 // (el explorador con facetas). Así se llega al footer sin scroll infinito.
-const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:12,total:0,loading:false };
+const state={ q:"",category:"",brand:"",gender:"",sort:"trending",offset:0,limit:15,total:0,loading:false };
 const FAVS=new Set(JSON.parse(localStorage.getItem("cnf_favs")||"[]"));
 function toggleFav(e,el){ e.stopPropagation(); e.preventDefault(); const id=+el.closest(".card").dataset.id; FAVS.has(id)?FAVS.delete(id):FAVS.add(id); localStorage.setItem("cnf_favs",JSON.stringify([...FAVS])); el.classList.toggle("on"); }
 const esc=(s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1104,23 +1104,51 @@ async function loadBrands(){
   $("#brands").querySelectorAll(".bcard").forEach(el=>el.onclick=()=>{ state.brand=state.brand===el.dataset.brand?"":el.dataset.brand; state.category=""; applyAndScroll(); });
 }
 
+/* Rellena SIEMPRE la última fila: mide las columnas reales del grid (auto-fill, que
+   cambian con el ancho) y oculta los "huérfanos" que dejarían una fila a medias.
+   maxRows>0 la limita a ese nº de filas (para los escaparates). Se recalcula al
+   redimensionar. */
+function trimRows(grid, maxRows){
+  if(!grid) return;
+  const kids=[...grid.children].filter(el=>!el.classList.contains("empty"));
+  kids.forEach(el=>el.style.removeProperty("display"));
+  if(kids.length<2) return;
+  const tpl=getComputedStyle(grid).gridTemplateColumns;
+  const cols=(tpl && tpl!=="none") ? tpl.trim().split(/\s+/).length : 1;
+  if(cols<2) return; // 1 columna: no hay huérfanos posibles
+  let rows=Math.floor(kids.length/cols);
+  if(maxRows) rows=Math.min(rows,maxRows);
+  const vis=rows*cols;
+  if(vis<cols) return; // ni una fila completa: se deja tal cual
+  kids.forEach((el,i)=>{ if(i>=vis) el.style.display="none"; });
+}
+function showAllRows(grid){ if(grid) [...grid.children].forEach(el=>el.style.removeProperty("display")); }
+function retrimLanding(){
+  trimRows($("#trending"),3); trimRows($("#recentGrid"),3); trimRows($("#newfinds"),3);
+  const g=$("#grid");
+  if(g){ if(!state.q && state.offset<state.total) trimRows(g,0); else showAllRows(g); }
+}
+let _rowsT; addEventListener("resize",()=>{ clearTimeout(_rowsT); _rowsT=setTimeout(retrimLanding,150); });
+
 /* trending */
 async function loadTrending(){
-  const d=await (await fetch("/api/products?sort=trending&hot=1&limit=10")).json();
+  const d=await (await fetch("/api/products?sort=trending&hot=1&limit=18")).json();
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#trending").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#trending"));
+  trimRows($("#trending"),3);
 }
 /* Vistos recientemente (localStorage): retención para quien vuelve. */
 async function loadRecent(){
   let ids=[]; try{ ids=JSON.parse(localStorage.getItem("cnf_recent")||"[]"); }catch{}
-  ids=ids.filter(Boolean).slice(0,12); if(!ids.length) return;
-  let d; try{ d=await (await fetch("/api/products?ids="+ids.join(",")+"&limit=12")).json(); }catch{ return; }
+  ids=ids.filter(Boolean).slice(0,18); if(!ids.length) return;
+  let d; try{ d=await (await fetch("/api/products?ids="+ids.join(",")+"&limit=18")).json(); }catch{ return; }
   if(!d.items||!d.items.length) return;
   const order=new Map(ids.map((id,i)=>[id,i]));
   d.items.sort((a,b)=>(order.get(a.id)??99)-(order.get(b.id)??99));
   d.items.forEach(it=>CACHE[it.id]=it);
   $("#recentGrid").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#recentGrid"));
   $("#recent").style.display="block";
+  trimRows($("#recentGrid"),3);
 }
 
 /* card */
@@ -1153,6 +1181,8 @@ async function load(reset){
     else { const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign=""; emp.textContent=t("noresults"); }
   } else { $("#empty").style.display="none"; }
   $("#more").style.display=state.offset<state.total?"inline-block":"none";
+  // Última fila siempre llena mientras se navega; al buscar o al agotar, se muestra todo.
+  if(!state.q && state.offset<state.total) trimRows($("#grid"),0); else showAllRows($("#grid"));
   renderFilters(); state.loading=false;
 }
 function renderFilters(){
@@ -1465,10 +1495,16 @@ $("#trackNum").addEventListener("keydown",e=>{ if(e.key==="Enter") trackPkg(); }
 
 /* nuevos finds */
 async function loadNewFinds(){
-  /* diverse=1: máx 2 por categoría, para que el escaparate no lo copen los últimos importados */
-  const d=await (await fetch("/api/products?sort=newest&diverse=1&limit=8")).json();
-  d.items.forEach(it=>CACHE[it.id]=it);
-  $("#newfinds").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#newfinds"));
+  /* diverse=1: máx 2 por categoría. Traemos un pool amplio de novedades y barajamos
+     para que el escaparate ROTE en cada visita (dentro de lo más nuevo), en vez de
+     mostrar siempre los mismos últimos importados. */
+  const d=await (await fetch("/api/products?sort=newest&diverse=1&limit=48")).json();
+  let items=(d.items||[]);
+  for(let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; }
+  items=items.slice(0,18);
+  items.forEach(it=>CACHE[it.id]=it);
+  $("#newfinds").innerHTML=items.map(cardHtml).join(""); bindCards($("#newfinds"));
+  trimRows($("#newfinds"),3);
 }
 
 /* newsletter */
