@@ -1403,6 +1403,46 @@ async function handleAdminCacheImages(req, res) {
   json(res, 200, { ok: true, ...stats, totalGoogle: pend });
 }
 
+// Diagnóstico (solo lectura): ¿es fiable agrupar por marca+modelo para un comparador
+// de vendedores? Mide cuántos productos comparten clave y, sobre todo, la DISPERSIÓN
+// de precio dentro de cada grupo. Un grupo del MISMO modelo tiene precios parecidos;
+// si el rango es enorme (€17–€104), la clave está mezclando modelos distintos y el
+// comparador engañaría. Devuelve también ejemplos para juzgar a ojo.
+function handleAdminModelStats(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  const rows = db.prepare(`
+    SELECT LOWER(TRIM(brand)) b, LOWER(TRIM(model_name)) m, price_eur, clean_title
+    FROM products
+    WHERE brand IS NOT NULL AND model_name IS NOT NULL AND TRIM(model_name) <> '' AND price_eur IS NOT NULL`).all();
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r.b + "|" + r.m;
+    (groups.get(k) || groups.set(k, []).get(k)).push(r);
+  }
+  const multi = [...groups.values()].filter((g) => g.length > 1);
+  // ratio max/min por grupo: 1 = precios idénticos (fiable); alto = mezcla modelos.
+  const ratios = multi.map((g) => { const p = g.map((x) => x.price_eur); return Math.max(...p) / Math.max(0.01, Math.min(...p)); }).sort((a, b) => a - b);
+  const median = ratios.length ? ratios[Math.floor(ratios.length / 2)] : null;
+  const tight = ratios.filter((r) => r <= 1.3).length;   // <=30% de diferencia: mismo producto
+  const wild = ratios.filter((r) => r >= 3).length;       // >=3x: casi seguro mezcla
+  // ejemplos: un grupo "sano" y uno "sospechoso"
+  const sample = (pred) => { const g = multi.find(pred); return g ? { modelo: g[0].b + " / " + g[0].m, n: g.length, precios: g.map((x) => x.price_eur).sort((a, b) => a - b), titulos: [...new Set(g.map((x) => x.clean_title))].slice(0, 4) } : null; };
+  json(res, 200, {
+    ok: true,
+    con_modelo: rows.length,
+    grupos_totales: groups.size,
+    grupos_con_2plus: multi.length,
+    dispersion_precio: {
+      mediana_ratio: median ? Math.round(median * 100) / 100 : null,
+      grupos_precio_ajustado: tight,            // fiables
+      grupos_precio_disparatado: wild,          // mezclan modelos
+      pct_fiables: multi.length ? Math.round(tight / multi.length * 100) : 0,
+    },
+    ejemplo_sano: sample((g) => { const p = g.map((x) => x.price_eur); return Math.max(...p) / Math.max(0.01, Math.min(...p)) <= 1.15 && g.length >= 3; }),
+    ejemplo_sospechoso: sample((g) => { const p = g.map((x) => x.price_eur); return Math.max(...p) / Math.max(0.01, Math.min(...p)) >= 3; }),
+  });
+}
+
 function handleAdminJob(req, res, id) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   const job = jobs.get(id);
@@ -1550,6 +1590,7 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/admin/retry-photos") return void handleAdminRetryPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/heal-photos") return void handleAdminHealPhotos(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/cache-images") return void handleAdminCacheImages(req, res);
+    if (u.pathname === "/api/admin/model-stats") return void handleAdminModelStats(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/health") return void handleAdminHealth(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/purge-hidden") return void handleAdminPurgeHidden(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/preview") return void handleAdminPreview(req, res);
