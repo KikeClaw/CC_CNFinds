@@ -28,6 +28,16 @@
   .ok{background:var(--ok);color:#fff}
   .actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:22px}
+  /* Cabecera de FASE: agrupa las tarjetas por el momento del flujo en el que se usan
+     (crecer -> mejorar -> monetizar -> medir), para que el panel se lea de arriba a
+     abajo como el pipeline real, no como una lista de funciones sueltas. */
+  .phase{display:flex;align-items:baseline;gap:12px;margin:40px 0 4px;padding-bottom:10px;border-bottom:2px solid var(--line)}
+  .phase:first-of-type{margin-top:26px}
+  .phase .pnum{display:grid;place-items:center;width:30px;height:30px;flex:0 0 auto;border-radius:9px;background:var(--brand);color:#fff;font-family:var(--fd);font-weight:800;font-size:15px;align-self:center}
+  .phase h2{font-family:var(--fd);font-size:22px;margin:0;letter-spacing:-.02em}
+  .phase .psub{color:var(--muted);font-size:13px;margin-left:auto;text-align:right}
+  /* Dentro de una fase las tarjetas van más juntas (la separación la marca la fase). */
+  .phase + .card{margin-top:14px}
   .stats{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:14px}
   .stat b{font-family:var(--fd);font-size:24px;display:block}.stat span{font-size:12px;color:var(--muted)}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -62,6 +72,8 @@
   <input id="token" type="password" data-i18n-ph="token_ph" placeholder="tu ADMIN_TOKEN" />
   <div class="hint" data-i18n="token_hint" data-i18n-html="1">Se guarda en tu navegador. Por defecto <code>cnfinds-admin</code> (¡cámbialo con la env var <code>ADMIN_TOKEN</code> en producción!).</div>
 
+
+  <div class="phase"><span class="pnum">•</span><h2>Estado</h2><span class="psub">salud del catálogo de un vistazo</span></div>
   <div class="card" style="margin-top:22px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="st_h">Estado del catálogo</h2>
@@ -74,7 +86,6 @@
     <div id="statusOut"></div>
     <div id="retryOut"></div>
   </div>
-
   <div class="card" style="margin-top:22px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
       <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="hl_h">Salud del catálogo</h2>
@@ -87,12 +98,8 @@
     <div id="healthOut" style="margin-top:10px"></div>
   </div>
 
-  <div class="card" style="margin-top:22px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="gd_h">Guía rápida (orden recomendado)</h2>
-    <p class="hint" style="margin-bottom:8px" data-i18n="gd_sub">Todo el proceso, paso a paso. Cada bloque de abajo corresponde a un paso.</p>
-    <ol id="guide" class="guide"></ol>
-  </div>
-
+  <div class="phase"><span class="pnum">1</span><h2>Crecer</h2><span class="psub">importar productos y gestionar fuentes</span></div>
+  <h2 style="font-family:var(--fd);font-size:20px;margin:18px 0 4px" data-i18n="imp_title">Importar productos</h2>
   <div class="row" style="margin-top:8px">
     <div>
       <label data-i18n="source">Fuente</label>
@@ -123,14 +130,6 @@
   </details>
 
   <div id="out"></div>
-
-  <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="auto_h">Importador automático</h2>
-    <p class="hint" style="margin-bottom:14px" data-i18n="auto_hint" data-i18n-html="1">Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.</p>
-    <button class="primary" id="autoIng" data-i18n="auto_btn">Ejecutar importador ahora</button>
-    <div id="autoIngOut"></div>
-  </div>
-
   <div class="card" style="margin-top:34px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2 style="font-family:var(--fd);font-size:20px;margin:0" data-i18n="srcm_h">Gestor de fuentes</h2>
@@ -144,14 +143,20 @@
     </div>
     <div id="srcList"></div>
   </div>
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="auto_h">Importador automático</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="auto_hint" data-i18n-html="1">Ingiere solo la lista de hojas de la comunidad (dedup + tus códigos), de forma periódica y sin que tengas que hacer nada. Actívalo/ajústalo con la env var <code>AUTO_INGEST</code> en Railway. Este botón lo lanza <b>ahora</b>.</p>
+    <button class="primary" id="autoIng" data-i18n="auto_btn">Ejecutar importador ahora</button>
+    <div id="autoIngOut"></div>
+  </div>
 
+  <div class="phase"><span class="pnum">2</span><h2>Mejorar</h2><span class="psub">enriquecer y limpiar con IA</span></div>
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="tag_h">Etiquetado con IA</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="tag_hint" data-i18n-html="1">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
     <button class="primary" id="tagAll" data-i18n="tag_btn">Etiquetar catálogo con IA</button>
     <div id="tagOut"></div>
   </div>
-
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="qc_h">QC con IA (visión)</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="qc_hint" data-i18n-html="1">Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b> (4 fotos por producto), así que es <b>con diferencia lo más caro</b> del sistema. La nota alimenta la insignia «★ QC» y las <b>estrellas en Google</b>.</p>
@@ -167,16 +172,7 @@
     <div id="qcOut"></div>
   </div>
 
-  <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="del_h">Borrar producto</h2>
-    <p class="hint" style="margin-bottom:12px" data-i18n="del_hint">Elimina un producto por su ID (para curar el catálogo).</p>
-    <div class="row" style="align-items:flex-end">
-      <div><input id="delId" data-i18n-ph="del_ph" placeholder="ID del producto"></div>
-      <div style="flex:none"><button class="ghost" id="delBtn" style="border-color:var(--brand);color:var(--brand)" data-i18n="del_btn">Borrar</button></div>
-    </div>
-    <div id="delOut"></div>
-  </div>
-
+  <div class="phase"><span class="pnum">3</span><h2>Monetizar</h2><span class="psub">tus códigos de afiliado</span></div>
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="ag_h">Agentes y afiliación</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="ag_hint" data-i18n-html="1">Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.</p>
@@ -184,6 +180,19 @@
     <div id="agents"></div>
   </div>
 
+  <div class="phase"><span class="pnum">4</span><h2>Medir</h2><span class="psub">qué convierte y qué falta</span></div>
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="an_h">Analítica de agentes</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="an_hint">Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.</p>
+    <button class="ghost" id="loadAn" data-i18n="an_load">Ver analítica</button>
+    <div id="anOut"></div>
+  </div>
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="rq_h">Demanda (peticiones)</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="rq_hint">Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.</p>
+    <button class="ghost" id="loadRq" data-i18n="rq_load">Ver demanda</button>
+    <div id="rqOut"></div>
+  </div>
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="subs_h">Suscriptores del boletín</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="subs_hint">Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.</p>
@@ -195,14 +204,6 @@
     <div id="subsOut"></div>
     <div id="digestOut"></div>
   </div>
-
-  <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="an_h">Analítica de agentes</h2>
-    <p class="hint" style="margin-bottom:14px" data-i18n="an_hint">Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.</p>
-    <button class="ghost" id="loadAn" data-i18n="an_load">Ver analítica</button>
-    <div id="anOut"></div>
-  </div>
-
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="al_h">Alertas de precio</h2>
     <p class="hint" style="margin-bottom:14px" data-i18n="al_hint">Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.</p>
@@ -213,11 +214,15 @@
     <div id="alOut"></div>
   </div>
 
+  <div class="phase"><span class="pnum">•</span><h2>Puntual</h2><span class="psub">acciones sueltas</span></div>
   <div class="card" style="margin-top:34px">
-    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="rq_h">Demanda (peticiones)</h2>
-    <p class="hint" style="margin-bottom:14px" data-i18n="rq_hint">Qué buscan los usuarios que NO está en el catálogo. Úsalo para priorizar qué añadir.</p>
-    <button class="ghost" id="loadRq" data-i18n="rq_load">Ver demanda</button>
-    <div id="rqOut"></div>
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="del_h">Borrar producto</h2>
+    <p class="hint" style="margin-bottom:12px" data-i18n="del_hint">Elimina un producto por su ID (para curar el catálogo).</p>
+    <div class="row" style="align-items:flex-end">
+      <div><input id="delId" data-i18n-ph="del_ph" placeholder="ID del producto"></div>
+      <div style="flex:none"><button class="ghost" id="delBtn" style="border-color:var(--brand);color:var(--brand)" data-i18n="del_btn">Borrar</button></div>
+    </div>
+    <div id="delOut"></div>
   </div>
 </div>
 
@@ -272,7 +277,7 @@ const T={
     d_alive:(n)=>`${n} vivos`, d_priced:(n)=>`${n} precios corregidos`, d_photo:(n)=>`${n} fotos recuperadas`,
     d_suspect:(n)=>`${n} sospechosos`, d_hidden:(n)=>`${n} ocultados`, d_revived:(n)=>`${n} revividos`,
     d_skipped:(n)=>`${n} sin comprobar (throttling o plataforma no soportada)`,
-    imp_help_h:"Cómo cargar una hoja y qué significan los números",
+    imp_title:"Importar productos", imp_help_h:"Cómo cargar una hoja y qué significan los números",
     imp_help:"<b>Pasos:</b> elige <b>Fuente → Google Sheet (URL)</b>, pega la URL y pulsa <b>Previsualizar</b> (descubre todas las pestañas solo, no necesitas el gid). Revisa los números y pulsa <b>Añadir al catálogo</b>. Las fotos, el etiquetado IA y el QC se lanzan solos en segundo plano.<br><br><b>Qué significan los números:</b><br>• <b>Encontrados</b>: links crudos (cada producto sale ~4 veces, una por agente).<br>• <b>Únicos</b>: productos reales tras deduplicar.<br>• <b>Nuevos</b>: los que se añadirán. <b>Existentes</b>: ya los tienes → solo se refrescan.<br>• <b>% con foto</b>: calidad de la fuente (cuanto más alto, mejor).<br><br><b>Nunca duplica:</b> deduplica por <code>plataforma|item_id</code>; los repetidos se actualizan, no se re-crean. Re-cargar es seguro.<br><br><b>Para crecer de verdad:</b> las hojas de agente (Kakobuy, CNFans, Sugargoo…) son <b>~97% los mismos productos</b> con distinto link — cargar otra añade casi nada. Sube el catálogo con <b>familias/curadores distintos</b> o mirando <b>Ver demanda</b> (lo que la gente busca y no tienes). Si <b>Nuevos = 0</b>, esa hoja ya está cargada.",
     src_good:"✅ Buena fuente: mucha foto, merece la pena.", src_meh:"⚠️ Fuente regular: pocas fotos; los sin foto se ocultarán.", src_bad:"❌ Casi sin fotos: aporta poco (se ocultarán del catálogo).",
     srcm_h:"Gestor de fuentes", srcm_reload:"Actualizar", srcm_hint:"Las hojas que alimentan el catálogo. Añade, activa/desactiva o quita — el importador automático recorre solo las activas. Prioriza hojas con % con foto alto.",
@@ -340,7 +345,7 @@ const T={
     d_alive:(n)=>`${n} alive`, d_priced:(n)=>`${n} prices fixed`, d_photo:(n)=>`${n} photos recovered`,
     d_suspect:(n)=>`${n} suspect`, d_hidden:(n)=>`${n} hidden`, d_revived:(n)=>`${n} revived`,
     d_skipped:(n)=>`${n} skipped (throttling or unsupported platform)`,
-    imp_help_h:"How to load a sheet and what the numbers mean",
+    imp_title:"Import products", imp_help_h:"How to load a sheet and what the numbers mean",
     imp_help:"<b>Steps:</b> pick <b>Source → Google Sheet (URL)</b>, paste the URL and hit <b>Preview</b> (it discovers every tab on its own, no gid needed). Check the numbers and hit <b>Add to catalog</b>. Photos, AI tagging and QC run on their own in the background.<br><br><b>What the numbers mean:</b><br>• <b>Found</b>: raw links (each product appears ~4×, one per agent).<br>• <b>Unique</b>: real products after dedup.<br>• <b>New</b>: what will be added. <b>Existing</b>: already yours → just refreshed.<br>• <b>% with photo</b>: source quality (higher is better).<br><br><b>Never duplicates:</b> dedup is by <code>platform|item_id</code>; repeats are updated, not re-created. Re-loading is safe.<br><br><b>To actually grow:</b> agent sheets (Kakobuy, CNFans, Sugargoo…) are <b>~97% the same products</b> with different links — loading another adds almost nothing. Grow with <b>different families/curators</b> or via <b>View demand</b> (what people search for that you lack). If <b>New = 0</b>, that sheet is already loaded.",
     src_good:"✅ Good source: lots of photos, worth it.", src_meh:"⚠️ So-so source: few photos; the ones without will be hidden.", src_bad:"❌ Almost no photos: adds little (they'll be hidden from the catalog).",
     srcm_h:"Source manager", srcm_reload:"Refresh", srcm_hint:"The sheets that feed the catalog. Add, enable/disable or remove — the automatic importer only runs the enabled ones. Prefer sheets with a high % with photo.",
