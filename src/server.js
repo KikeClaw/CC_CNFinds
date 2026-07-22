@@ -1728,7 +1728,7 @@ const server = createServer((req, res) => {
     if (req.method === "POST" && u.pathname === "/api/admin/qc-all") return void handleAdminQcAll(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/qc-popular") return void handleAdminQcPopular(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/product-delete") return void handleAdminDelete(req, res);
-    if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
+    if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
     if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
     // PNG rasterizados: og:image (WhatsApp/iMessage no renderizan SVG) e iconos PWA.
