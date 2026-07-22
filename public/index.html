@@ -96,6 +96,7 @@
   .seg span.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06); }
   .iconbtn{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; color:var(--ink); transition:.15s; }
   .iconbtn[hidden]{ display:none; } /* display:grid anula el hidden del navegador; esto lo restaura */
+  .navctrls{ display:none; } /* solo aparece dentro del menú móvil (ver @media) */
   .iconbtn:hover{ background:var(--soft); }
   .burger{ display:none; }
   @media(max-width:1024px){
@@ -107,6 +108,9 @@
     header.navopen .nav .navgroups{ display:flex; }
     .burger{ display:grid; }
     .seg{ display:none; }
+    .navctrls{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; padding-top:12px; border-top:1px solid var(--line); }
+    .navctrls button{ flex:1; min-width:88px; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer; }
+    .navctrls #mInstall{ background:var(--brand); color:#fff; border-color:transparent; }
   }
 
   /* vistas: home (por defecto) · herramientas (/herramientas) */
@@ -424,6 +428,12 @@
         <a href="/herramientas" data-i18n="nav_herramientas">Herramientas</a>
         <a href="/cupones" data-i18n="nav_cupones">Cupones</a>
         <a href="/ayuda" data-i18n="nav_ayuda">Ayuda</a>
+      </div>
+      <!-- Solo móvil: divisa/idioma/instalar viven aquí porque el selector del header se oculta -->
+      <div class="navctrls">
+        <button type="button" id="mCur" data-i18n-aria="a_cur" aria-label="Cambiar divisa">EUR</button>
+        <button type="button" id="mLang" aria-label="Change language">ES</button>
+        <button type="button" id="mInstall" hidden data-i18n="pwa_install">Instalar app</button>
       </div>
     </div>
     <div class="right">
@@ -916,7 +926,7 @@ const RATES={EUR:1};
 const CURS=[{code:"EUR",sym:"€"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},{code:"CNY",sym:"¥"}];
 const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); return CUR.sym+(CUR.code==="CNY"?v.toFixed(0):v.toFixed(2)); };
 async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
-function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; const b=document.getElementById("curBtn"); if(b) b.textContent=CUR.code; load(true); loadTrending(); }
+function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; const b=document.getElementById("curBtn"); if(b) b.textContent=CUR.code; const mb=document.getElementById("mCur"); if(mb) mb.textContent=CUR.code; load(true); loadTrending(); }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899",acbuy:"#0ea5e9",cssbuy:"#14b8a6",lovegobuy:"#f43f5e",joyagoo:"#a855f7",allchinabuy:"#eab308",orientdig:"#22c55e",hipobuy:"#6366f1"};
 /* analítica: registra clic en un agente (intención de compra) */
 function track(pid,agent){ try{ navigator.sendBeacon("/api/track", new Blob([JSON.stringify({product_id:pid,agent})],{type:"application/json"})); }catch(e){} }
@@ -1481,21 +1491,23 @@ if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceW
    si el navegador ofrece instalación (beforeinstallprompt), no está ya instalada, y no
    lo has descartado antes. iOS Safari no emite el evento, así que allí no aparece. */
 let _pwaEvt=null;
-const _pwaBanner=$("#pwaBanner"), _pwaBtn=$("#pwaBtn");
+const _pwaBanner=$("#pwaBanner"), _pwaBtn=$("#pwaBtn"), _mInstall=$("#mInstall");
 if(_pwaBtn) _pwaBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>';
 const _installable=()=> !!_pwaEvt && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone);
 function pwaBannerHide(){ if(_pwaBanner) _pwaBanner.hidden=true; }
 function pwaRefresh(){
   const can=_installable();
-  // El ICONO de la navbar aparece SIEMPRE que se pueda instalar (aunque se cerrara el
-  // banner) — así el usuario que quiera instalar más tarde siempre tiene por dónde.
+  // El ICONO de la navbar (y la opción del menú móvil) aparecen SIEMPRE que se pueda
+  // instalar, aunque se cerrara el banner — así siempre hay por dónde instalar.
   if(_pwaBtn) _pwaBtn.hidden=!can;
+  if(_mInstall) _mInstall.hidden=!can;
   // El BANNER solo si se puede instalar y no lo ha descartado.
   if(_pwaBanner) _pwaBanner.hidden=!(can && !localStorage.getItem("pwa_dismissed"));
 }
 async function pwaPrompt(){ if(!_pwaEvt) return; _pwaEvt.prompt(); try{ await _pwaEvt.userChoice; }catch(_){} _pwaEvt=null; pwaRefresh(); }
+if(_mInstall) _mInstall.onclick=pwaPrompt;
 addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); _pwaEvt=e; pwaRefresh(); });
-addEventListener("appinstalled",()=>{ _pwaEvt=null; pwaBannerHide(); if(_pwaBtn) _pwaBtn.hidden=true; });
+addEventListener("appinstalled",()=>{ _pwaEvt=null; pwaBannerHide(); if(_pwaBtn) _pwaBtn.hidden=true; if(_mInstall) _mInstall.hidden=true; });
 if($("#pwaInstall")) $("#pwaInstall").onclick=pwaPrompt;
 if(_pwaBtn) _pwaBtn.onclick=pwaPrompt;
 // La X solo cierra el BANNER; el icono de la navbar se queda para poder instalar luego.
@@ -1599,6 +1611,7 @@ function applyLang(){
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
   paintTrust();
   const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
+  const mlb=$("#mLang"); if(mlb) mlb.textContent=t("lang_name");
   document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();
 }
@@ -1606,6 +1619,8 @@ function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie
   if(EX.booted){ exApplyLangToInputs(); exFetch(); }
   else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); } }
 { const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
+// Controles del menú móvil (divisa/idioma/instalar): reusan las mismas funciones.
+{ const mc=$("#mCur"); if(mc) mc.onclick=cycleCur; const ml=$("#mLang"); if(ml) ml.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 /* ---- Explorador de catálogo (/productos): facetas cruzables ---- */
 const EX={ q:"",cats:new Set(),brands:new Set(),gender:"",pmin:"",pmax:"",sort:"trending",page:0,limit:48,total:0,brandsAll:[],brandFilter:"",booted:false };
 let exT;
