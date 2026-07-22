@@ -33,7 +33,6 @@ async function processTab(tab) {
   // se deja libre para la IA.
   const tabCat = rawCat ? canonCat(rawCat) : null;
   const locked = tabCat && tabCat !== "Other";
-  const category = locked ? tabCat : rawCat;
   const isHot = /hot\s*sale/i.test(rawCat) || /hot\s*sale/i.test(tab.name);
 
   const csv = await fetchSheet(SHEET_ID, tab.gid);
@@ -57,8 +56,9 @@ async function processTab(tab) {
       if (!p) { skipped++; continue; }
       // Categoria autoritaria = pestana. En HOT SALE dejamos la heuristica del
       // nombre (para items que solo viven ahi) y marcamos hot.
-      p.category = isHot ? p.category : category;
-      p.cat_locked = (!isHot && locked) ? 1 : 0;
+      // Solo la pestaña-categoría fija/bloquea; si no, se deja lo que trajo la fila
+      // (o null -> la pone la IA). Así "HOT SALE"/marca no ensucian la categoría.
+      if (!isHot && locked) { p.category = tabCat; p.cat_locked = 1; }
       p.hot = isHot ? 1 : 0;
 
       const key = `${p.platform}|${p.item_id}`;

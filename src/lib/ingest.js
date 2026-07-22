@@ -60,7 +60,7 @@ export function usableName(s) {
 
 // Dedup (dentro del lote + contra la DB) y clasifica new/existing.
 export function dedupe(db, cands) {
-  const seen = new Set(), res = [];
+  const at = new Map(), res = [];
   const q = db.prepare("SELECT 1 FROM products WHERE platform=? AND item_id=?");
   for (const c of cands) {
     if (!c.platform || !c.itemId) continue;
@@ -69,8 +69,15 @@ export function dedupe(db, cands) {
     if (!c.noName && !usableName(c.name)) continue;
     if (isAdult(c.name)) continue;     // fuera el sex shop (no es nuestro nicho)
     const key = c.platform + "|" + c.itemId;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    if (at.has(key)) {
+      // Mismo item en varias pestañas: si esta copia trae categoría BLOQUEADA (de una
+      // pestaña-categoría) y la guardada no, nos quedamos con la buena — así el orden
+      // de pestañas (p.ej. "HOT SALE" primero) no le roba la categoría correcta.
+      const prev = res[at.get(key)];
+      if (c.catLocked && !prev.catLocked) { prev.category = c.category; prev.catLocked = true; }
+      continue;
+    }
+    at.set(key, res.length);
     res.push({ ...c, status: q.get(c.platform, c.itemId) ? "existing" : "new" });
   }
   return res;

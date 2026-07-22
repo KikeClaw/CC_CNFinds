@@ -1179,13 +1179,12 @@ async function gatherCandidates(mode, content) {
       // (canonCat != "Other" — "Shoes","Bolsos","Sneakers"…), es autoritativa y se
       // fija (cat_locked) para que la IA no la pise. Si es "HOT SALE"/una marca/etc.,
       // no mapea → la dejamos libre para que la deduzca la IA/visión.
-      const rawCat = cleanCategory(t.name || "");
-      const tabCat = rawCat ? canonCat(rawCat) : null;
+      const tabCat = canonCat(cleanCategory(t.name || ""));
       const locked = tabCat && tabCat !== "Other";
-      for (const c of cands) {
-        if (locked) { c.category = tabCat; c.catLocked = true; }
-        else if (!c.category && rawCat) c.category = rawCat;
-      }
+      // Solo fijamos categoría cuando la pestaña ES una categoría real. Las pestañas
+      // "HOT SALE"/marca NO ensucian con su nombre crudo (dejaría "HOT SALE" de
+      // categoría y pisaría la buena al re-importar); esas las resuelve la IA.
+      if (locked) for (const c of cands) { c.category = tabCat; c.catLocked = true; }
       all.push(...cands);
     }
     // 2) HIPERVÍNCULOS (hojas tipo cnnewfinds) vía Sheets API, si hay clave.
