@@ -95,6 +95,7 @@
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
   .seg span.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06); }
   .iconbtn{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; color:var(--ink); transition:.15s; }
+  .iconbtn[hidden]{ display:none; } /* display:grid anula el hidden del navegador; esto lo restaura */
   .iconbtn:hover{ background:var(--soft); }
   .burger{ display:none; }
   @media(max-width:1024px){
@@ -427,6 +428,7 @@
     </div>
     <div class="right">
       <div class="seg"><span class="on" id="curBtn" role="button" tabindex="0" style="cursor:pointer" data-i18n-aria="a_cur" title="Cambiar divisa" aria-label="Cambiar divisa">EUR</span><span id="langBtn" role="button" tabindex="0" style="cursor:pointer" title="Language" aria-label="Change language">ES</span></div>
+      <button class="iconbtn" id="pwaBtn" hidden data-i18n-aria="a_install" title="Instalar app" aria-label="Instalar app"></button>
       <button class="iconbtn" id="fav" data-i18n-aria="a_fav" title="Favoritos" aria-label="Favoritos"></button>
       <button class="iconbtn" id="theme" data-i18n-aria="a_theme" title="Tema" aria-label="Cambiar tema"></button>
       <button class="iconbtn burger" id="burger" data-i18n-aria="a_menu" title="Menú" aria-label="Menú" aria-expanded="false"></button>
@@ -776,7 +778,7 @@ const T={
     v_ag_t:"13 agentes comparados",v_ag_d:"Cada producto trae el enlace listo para los 13. Comparas comisión y envío, y eliges tú.",
     v_cat_t:"Fotos y precios de verdad",v_cat_d:"Miles de fichas con foto y precio comprobado en la fuente. Una hoja solo te da un enlace a ciegas.",
     v_go:"Ver catálogo",v_try:"Probar",v_cmp:"Comparar",v_new:"Nuevo",
-    sim_h:(n)=>`Modelos similares · ${n+1} vendedores`,sim_save:(x)=>`Ahorras hasta ${x} eligiendo el más barato`,sim_more:(n)=>`y ${n} vendedor${n>1?'es':''} más`,size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",a_close:"Cerrar",a_cur:"Cambiar divisa",a_fav:"Favoritos",a_theme:"Cambiar tema",a_menu:"Menú",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
+    sim_h:(n)=>`Modelos similares · ${n+1} vendedores`,sim_save:(x)=>`Ahorras hasta ${x} eligiendo el más barato`,sim_more:(n)=>`y ${n} vendedor${n>1?'es':''} más`,size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",a_close:"Cerrar",a_cur:"Cambiar divisa",a_fav:"Favoritos",a_theme:"Cambiar tema",a_menu:"Menú",a_install:"Instalar app",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
     nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
@@ -835,7 +837,7 @@ const T={
     v_ag_t:"13 agents compared",v_ag_d:"Every product carries a ready link for all 13. Compare fees and shipping, and pick yourself.",
     v_cat_t:"Real photos and prices",v_cat_d:"Thousands of listings with a photo and a price verified at the source. A sheet just gives you a blind link.",
     v_go:"Browse catalog",v_try:"Try it",v_cmp:"Compare",v_new:"New",
-    sim_h:(n)=>`Similar models · ${n+1} sellers`,sim_save:(x)=>`Save up to ${x} by picking the cheapest`,sim_more:(n)=>`and ${n} more seller${n>1?'s':''}`,size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",a_close:"Close",a_cur:"Change currency",a_fav:"Favorites",a_theme:"Toggle theme",a_menu:"Menu",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
+    sim_h:(n)=>`Similar models · ${n+1} sellers`,sim_save:(x)=>`Save up to ${x} by picking the cheapest`,sim_more:(n)=>`and ${n} more seller${n>1?'s':''}`,size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",a_close:"Close",a_cur:"Change currency",a_fav:"Favorites",a_theme:"Toggle theme",a_menu:"Menu",a_install:"Install app",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
     nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -1479,18 +1481,25 @@ if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceW
    si el navegador ofrece instalación (beforeinstallprompt), no está ya instalada, y no
    lo has descartado antes. iOS Safari no emite el evento, así que allí no aparece. */
 let _pwaEvt=null;
-const _pwaBanner=$("#pwaBanner");
-function pwaHide(){ if(_pwaBanner) _pwaBanner.hidden=true; }
-function pwaMaybeShow(){
-  if(!_pwaBanner || !_pwaEvt) return;
-  if(localStorage.getItem("pwa_dismissed")) return;
-  if(matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
-  _pwaBanner.hidden=false;
+const _pwaBanner=$("#pwaBanner"), _pwaBtn=$("#pwaBtn");
+if(_pwaBtn) _pwaBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>';
+const _installable=()=> !!_pwaEvt && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone);
+function pwaBannerHide(){ if(_pwaBanner) _pwaBanner.hidden=true; }
+function pwaRefresh(){
+  const can=_installable();
+  // El ICONO de la navbar aparece SIEMPRE que se pueda instalar (aunque se cerrara el
+  // banner) — así el usuario que quiera instalar más tarde siempre tiene por dónde.
+  if(_pwaBtn) _pwaBtn.hidden=!can;
+  // El BANNER solo si se puede instalar y no lo ha descartado.
+  if(_pwaBanner) _pwaBanner.hidden=!(can && !localStorage.getItem("pwa_dismissed"));
 }
-addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); _pwaEvt=e; pwaMaybeShow(); });
-addEventListener("appinstalled",()=>{ _pwaEvt=null; localStorage.setItem("pwa_dismissed","1"); pwaHide(); });
-if($("#pwaInstall")) $("#pwaInstall").onclick=async()=>{ if(!_pwaEvt) return; _pwaEvt.prompt(); try{ await _pwaEvt.userChoice; }catch(_){} _pwaEvt=null; pwaHide(); };
-if($("#pwaClose")) $("#pwaClose").onclick=()=>{ localStorage.setItem("pwa_dismissed","1"); pwaHide(); };
+async function pwaPrompt(){ if(!_pwaEvt) return; _pwaEvt.prompt(); try{ await _pwaEvt.userChoice; }catch(_){} _pwaEvt=null; pwaRefresh(); }
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); _pwaEvt=e; pwaRefresh(); });
+addEventListener("appinstalled",()=>{ _pwaEvt=null; pwaBannerHide(); if(_pwaBtn) _pwaBtn.hidden=true; });
+if($("#pwaInstall")) $("#pwaInstall").onclick=pwaPrompt;
+if(_pwaBtn) _pwaBtn.onclick=pwaPrompt;
+// La X solo cierra el BANNER; el icono de la navbar se queda para poder instalar luego.
+if($("#pwaClose")) $("#pwaClose").onclick=()=>{ localStorage.setItem("pwa_dismissed","1"); pwaBannerHide(); };
 
 /* búsqueda visual (galería o CÁMARA -> encontrar equivalentes) */
 $("#visIc").innerHTML=ic("image",18,1.8);
