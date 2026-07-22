@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { FEATURED_DEFAULT, DEFAULT_RECOMMENDED } from "../../config/agents.js";
 
 // Esquema del catalogo.
 // Nota clave: NO se guardan columnas de links. Los enlaces de afiliado se
@@ -58,6 +59,17 @@ export function openDb(path) {
   for (const col of ["featured", "is_default"]) {
     try { db.exec(`ALTER TABLE agent_settings ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`); } catch {}
   }
+  // Semilla ÚNICA del Top: las filas de agentes que ya existían traen featured=0, y al
+  // cargarse borrarían el Top sembrado en config. Sembramos aquí, pero SOLO si nadie lo
+  // ha tocado aún (ni destacados ni recomendado) — así respeta lo que edites en el admin
+  // y funciona tanto en DB nueva como en una donde la columna ya se añadió vacía.
+  try {
+    const touched = db.prepare("SELECT COUNT(*) c FROM agent_settings WHERE featured=1 OR is_default=1").get().c;
+    if (!touched) {
+      for (const id of FEATURED_DEFAULT) db.prepare("UPDATE agent_settings SET featured=1 WHERE id=?").run(id);
+      db.prepare("UPDATE agent_settings SET is_default=1 WHERE id=?").run(DEFAULT_RECOMMENDED);
+    }
+  } catch {}
   // Suscriptores al boletín de "nuevos finds" (captura de email; el envío lo
   // conectas tú con tu proveedor). Solo se guarda el email + fecha + idioma.
   db.exec("CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT, lang TEXT)");
