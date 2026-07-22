@@ -326,6 +326,7 @@
   .acmp .row.reco{ border-color:#ff4d2e; box-shadow:0 0 0 1px #ff4d2e inset, var(--card-shadow); }
   .acmp .agbadge{ display:inline-block; background:#ff4d2e; color:#fff; font-size:10px; font-weight:800; line-height:1; padding:3px 6px; border-radius:6px; margin-left:7px; vertical-align:middle; letter-spacing:.01em; }
   .pwa{ position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:70; display:flex; align-items:center; gap:11px; background:var(--surface2); color:var(--ink); border:1px solid var(--line); box-shadow:0 10px 34px rgba(0,0,0,.20); border-radius:16px; padding:9px 10px 9px 16px; max-width:calc(100vw - 24px); animation:pwaUp .25s ease; }
+  .pwa[hidden]{ display:none; } /* .pwa{display:flex} anula el hidden del navegador; esto lo restaura */
   @keyframes pwaUp{ from{ opacity:0; transform:translate(-50%,10px);} to{ opacity:1; transform:translate(-50%,0);} }
   .pwa-ic{ color:#ff4d2e; flex:none; }
   .pwa-txt{ font-size:14px; font-weight:600; letter-spacing:-.01em; }
