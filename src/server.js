@@ -1337,6 +1337,38 @@ async function handleAdminTagAll(req, res) {
   json(res, 200, { ok: true, count: ids.length, jobId });
 }
 
+// Re-etiquetado de MUESTRA (forzado): re-procesa productos YA etiquetados para validar
+// el prompt nuevo antes de gastar en el catálogo entero. Síncrono y capado (coste
+// controlado). Devuelve el antes/después para poder juzgar la mejora de un vistazo.
+async function handleAdminRetagSample(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  if (!hasKey()) return json(res, 200, { ok: false, error: "IA no configurada (falta ANTHROPIC_API_KEY)." });
+  let body; try { body = await readBody(req); } catch { body = {}; }
+  const q = String(body.q || "").trim().slice(0, 60);
+  const limit = Math.min(Math.max(parseInt(body.limit, 10) || 30, 1), 60); // tope 60: es una muestra
+  const rows = q
+    ? db.prepare("SELECT id, name, category, price_eur, model_name FROM products WHERE clean_title IS NOT NULL AND (name LIKE ? OR clean_title LIKE ?) ORDER BY id LIMIT ?").all(`%${q}%`, `%${q}%`, limit)
+    : db.prepare("SELECT id, name, category, price_eur, model_name FROM products WHERE clean_title IS NOT NULL ORDER BY RANDOM() LIMIT ?").all(limit);
+  if (!rows.length) return json(res, 200, { ok: true, retagged: 0, failed: 0, cost_est_usd: 0, samples: [] });
+  const upd = db.prepare("UPDATE products SET clean_title=?, clean_title_en=?, brand=COALESCE(?,brand), model_name=?, colorway=?, gender=?, category=?, tags=? WHERE id=?");
+  const samples = []; let done = 0, failed = 0, idx = 0;
+  const worker = async () => {
+    while (idx < rows.length) {
+      const r = rows[idx++];
+      try {
+        const out = await tagOne({ name: r.name, category: r.category, price: r.price_eur });
+        const cat = canonCat(out.category);
+        upd.run(out.clean_title, out.clean_title_en, out.brand, out.model_name, out.colorway, out.gender === "unknown" ? "unisex" : out.gender, cat, JSON.stringify(out.tags || []), r.id);
+        samples.push({ id: r.id, name: (out.clean_title || r.name).slice(0, 50),
+          before: { model: r.model_name || "—", cat: r.category || "—" }, after: { model: out.model_name || "—", cat } });
+        done++;
+      } catch { failed++; }
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  json(res, 200, { ok: true, retagged: done, failed, cost_est_usd: Math.round(rows.length * 0.0016 * 1e4) / 1e4, samples });
+}
+
 function startQcJob(ids) {
   const id = "job_" + (++jobSeq);
   const job = { id, total: ids.length, done: 0, scored: 0, tagged: 0, withImage: 0, dead: 0, phase: "qc", status: "running" };
@@ -1692,6 +1724,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/admin/agents" && req.method === "POST") return void handleAdminAgentsSet(req, res);
     if (u.pathname === "/api/admin/job") return void handleAdminJob(req, res, u.searchParams.get("id"));
     if (req.method === "POST" && u.pathname === "/api/admin/tag-all") return void handleAdminTagAll(req, res);
+    if (req.method === "POST" && u.pathname === "/api/admin/retag-sample") return void handleAdminRetagSample(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/qc-all") return void handleAdminQcAll(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/qc-popular") return void handleAdminQcPopular(req, res);
     if (req.method === "POST" && u.pathname === "/api/admin/product-delete") return void handleAdminDelete(req, res);

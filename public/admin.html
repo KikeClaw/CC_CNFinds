@@ -156,6 +156,15 @@
     <p class="hint" style="margin-bottom:14px" data-i18n="tag_hint" data-i18n-html="1">Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.</p>
     <button class="primary" id="tagAll" data-i18n="tag_btn">Etiquetar catálogo con IA</button>
     <div id="tagOut"></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+      <p class="hint" data-i18n="retag_hint" data-i18n-html="1" style="margin-bottom:10px">Prueba el <b>prompt nuevo</b> re-etiquetando una muestra (sobrescribe los ya etiquetados). Úsalo para validar antes de re-etiquetar todo. Filtro vacío = muestra aleatoria.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="retagQ" placeholder="Filtro opcional (p.ej. Balenciaga Alaska)" style="padding:8px 10px;flex:1;min-width:190px" />
+        <label class="hint" style="display:flex;align-items:center;gap:6px;margin:0"><span data-i18n="qc_pop_n">Cuántos</span><input id="retagLimit" type="number" min="1" max="60" value="30" style="width:80px;padding:8px 10px" /></label>
+        <button class="ghost" id="retagBtn" data-i18n="retag_btn" style="padding:10px 16px">Re-etiquetar muestra</button>
+      </div>
+      <div id="retagOut"></div>
+    </div>
   </div>
   <div class="card" style="margin-top:34px">
     <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="qc_h">QC con IA (visión)</h2>
@@ -242,6 +251,7 @@ const T={
     preview:"Previsualizar", apply:"Añadir al catálogo", applying:"Añadiendo…", analyzing:"Analizando…",
     launching:"Lanzando…",
     tag_h:"Etiquetado con IA", tag_hint:'Genera <b>títulos limpios, marca, color y tags</b> para los productos sin etiquetar. Mejora la búsqueda (¡también en español!) y el SEO.', tag_btn:"Etiquetar catálogo con IA",
+    retag_hint:'Prueba el <b>prompt nuevo</b> re-etiquetando una muestra (sobrescribe los ya etiquetados). Úsalo para validar antes de re-etiquetar todo. Filtro vacío = muestra aleatoria.', retag_btn:"Re-etiquetar muestra", retag_wait:"Re-etiquetando muestra…", retag_before:"Antes (modelo · cat)", retag_after:"Después", th_product:"Producto", retag_done:(n,c)=>`Re-etiquetados ${n} · coste ≈ $${c}`,
     qc_h:"QC con IA (visión)", qc_hint:'Puntúa la calidad (1-10) analizando las fotos reales de cada producto. Usa el modelo de <b>visión</b>: más lento y caro que el etiquetado.', qc_btn:"Analizar todo el catálogo",
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
@@ -311,6 +321,7 @@ const T={
     preview:"Preview", apply:"Add to catalog", applying:"Adding…", analyzing:"Analyzing…",
     launching:"Launching…",
     tag_h:"AI tagging", tag_hint:'Generates <b>clean titles, brand, color and tags</b> for untagged products. Improves search (also in Spanish!) and SEO.', tag_btn:"Tag catalog with AI",
+    retag_hint:'Test the <b>new prompt</b> by re-tagging a sample (overwrites already-tagged ones). Use it to validate before re-tagging everything. Empty filter = random sample.', retag_btn:"Re-tag sample", retag_wait:"Re-tagging sample…", retag_before:"Before (model · cat)", retag_after:"After", th_product:"Product", retag_done:(n,c)=>`Re-tagged ${n} · cost ≈ $${c}`,
     qc_h:"AI QC (vision)", qc_hint:'Scores quality (1-10) by analyzing each product\'s real photos. Uses the <b>vision</b> model: slower and pricier than tagging.', qc_btn:"Analyze whole catalog",
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
@@ -499,6 +510,22 @@ $("#tagAll").onclick=async()=>{
   const line=document.createElement("p"); line.className="msg"; line.textContent=t("tagging")(d.count);
   $("#tagOut").innerHTML=""; $("#tagOut").appendChild(line);
   pollJob(d.jobId,line);
+};
+
+/* Re-etiquetado de muestra (validar el prompt nuevo) */
+if($("#retagBtn")) $("#retagBtn").onclick=async()=>{
+  const b=$("#retagBtn"), old=b.textContent; b.disabled=true; b.textContent="…";
+  $("#retagOut").innerHTML=`<p class="hint" style="margin-top:10px">${t("retag_wait")}</p>`;
+  try{
+    const r=await fetch("/api/admin/retag-sample",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({q:$("#retagQ").value.trim(),limit:+$("#retagLimit").value||30})});
+    const d=await r.json();
+    if(!d.ok){ $("#retagOut").innerHTML=`<p class="msg err">${d.error||t("err")}</p>`; }
+    else{
+      const rows=(d.samples||[]).map(s=>`<tr><td>#${s.id} ${s.name}</td><td style="color:var(--muted)">${s.before.model} · ${s.before.cat}</td><td><b>${s.after.model} · ${s.after.cat}</b></td></tr>`).join("");
+      $("#retagOut").innerHTML=`<p class="msg" style="color:var(--ok)">${t("retag_done")(d.retagged,d.cost_est_usd)}</p>`+(rows?`<table style="margin-top:8px"><thead><tr><th data-i18n="th_product">Producto</th><th>${t("retag_before")}</th><th>${t("retag_after")}</th></tr></thead><tbody>${rows}</tbody></table>`:"");
+    }
+  }catch(e){ $("#retagOut").innerHTML=`<p class="msg err">${e.message}</p>`; }
+  b.disabled=false; b.textContent=old;
 };
 
 /* QC del catálogo con IA */
