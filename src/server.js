@@ -1262,6 +1262,13 @@ function startEnrichTagJob(items, opts = {}) {
             db.prepare("UPDATE products SET last_checked=?, enrich_tries=COALESCE(enrich_tries,0)+1 WHERE id=?").run(now, it.id);
             res.ok ? job.dead++ : job.failed++;
           }
+          // Precio real de Weidian (verdad de campo): corrige parseos raros de la hoja
+          // —p.ej. un yuan leído como euro (€672 en vez de €87)— y lo mantiene fresco.
+          // fenToEur ya sanea el valor (null si es absurdo), así que null = no tocar.
+          if (res.ok && res.price != null) {
+            db.prepare("UPDATE products SET price_eur=? WHERE id=?").run(res.price, it.id);
+            job.priced = (job.priced || 0) + 1;
+          }
         } catch { job.failed++; }
         job.done++;
       }));
@@ -1550,7 +1557,9 @@ function startHealthJob(limit = HEALTH_BATCH) {
   const rows = db.prepare(`
     SELECT id, platform, item_id, image_url, price_eur, status, health_fails
     FROM products
-    ORDER BY last_checked IS NOT NULL, last_checked ASC
+    ORDER BY
+      (platform='weidian' AND price_eur > 300) DESC,  -- outliers de precio (yuan mal leído) primero
+      last_checked IS NOT NULL, last_checked ASC
     LIMIT ?`).all(limit);
   const id = "job_" + (++jobSeq);
   const job = {

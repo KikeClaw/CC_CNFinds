@@ -1232,6 +1232,7 @@ function openModal(p){
       <div class="note">${t("note")}</div>
     </div>`;
   $("#overlay").classList.add("open");
+  document.body.style.overflow="hidden"; // bloquea el scroll del fondo con el modal abierto
   loadSimilar(p.id, p.price_eur);
 }
 /* Comparador de vendedores del MISMO modelo (marca+modelo, banda de precio). Le
@@ -1288,7 +1289,7 @@ async function askSize(id){
     <div class="sizetip">${esc(tip||"")}</div>
     <div class="sizeconf">${t("size_conf")}: ${esc(d.confidence||"")}</div>`;
 }
-function closeModal(){ $("#overlay").classList.remove("open"); }
+function closeModal(){ $("#overlay").classList.remove("open"); document.body.style.overflow=""; }
 $("#overlay").onclick=(e)=>{ if(e.target.id==="overlay") closeModal(); };
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
 
