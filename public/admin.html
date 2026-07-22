@@ -7,9 +7,11 @@
 <title>CNFinds · Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.1);--brand:#ff4d2e;--ok:#16a34a;
+  /* Panel interno: siempre en claro, sin depender del tema del sistema. Antes seguía
+     prefers-color-scheme y en oscuro algunos inputs (que usaban --card, sin definir)
+     perdían el contraste. color-scheme:light evita además controles nativos oscuros. */
+  :root{color-scheme:light;--bg:#fff;--soft:#f4f4f6;--surface:#fff;--card:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.1);--brand:#ff4d2e;--ok:#16a34a;
   --fd:"Bricolage Grotesque",system-ui,sans-serif;--ft:"Geist",system-ui,sans-serif}
-  @media(prefers-color-scheme:dark){:root{--bg:#08080a;--soft:#141417;--surface:#161618;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.13)}}
   *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em}
   .wrap{max-width:920px;margin:0 auto;padding:30px 22px 80px}
   .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
