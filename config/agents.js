@@ -206,20 +206,39 @@ export const AGENTS = [
 // sin referido (pobla la comparación e invita a que te registres). El admin puede
 // desactivar agentes concretos. SHOW_ALL_AGENTS=off vuelve a "solo con tu código".
 export const SHOW_ALL_AGENTS = String(process.env.SHOW_ALL_AGENTS ?? "on").toLowerCase() !== "off";
+
+// Semilla del "Top" de agentes destacados y el recomendado por defecto. Es solo el
+// arranque: el admin lo edita y se persiste en la DB, así no depende del criterio
+// de nadie a fecha fija. Los clics reales (badge "más elegido") mandan por encima.
+export const FEATURED_DEFAULT = new Set(["kakobuy", "hoobuy", "mulebuy", "oopbuy", "cssbuy"]);
+export const DEFAULT_RECOMMENDED = "kakobuy";
+
 const STATE = {};
-for (const a of AGENTS) STATE[a.id] = { code: AFFILIATE_CODES[a.id], enabled: SHOW_ALL_AGENTS || !isPlaceholder(AFFILIATE_CODES[a.id]) };
+for (const a of AGENTS) STATE[a.id] = {
+  code: AFFILIATE_CODES[a.id],
+  enabled: SHOW_ALL_AGENTS || !isPlaceholder(AFFILIATE_CODES[a.id]),
+  featured: FEATURED_DEFAULT.has(a.id),
+  isDefault: a.id === DEFAULT_RECOMMENDED,
+};
 
 export function getAgentState() {
   return AGENTS.map((a) => ({
     id: a.id, name: a.name, code: STATE[a.id].code || "",
     enabled: STATE[a.id].enabled, configured: !isPlaceholder(STATE[a.id].code),
+    featured: !!STATE[a.id].featured, is_default: !!STATE[a.id].isDefault,
   }));
 }
 
-export function setAgentState(id, { code, enabled } = {}) {
+export function setAgentState(id, { code, enabled, featured, is_default } = {}) {
   if (!STATE[id]) return false;
   if (code !== undefined) STATE[id].code = code;
   if (enabled !== undefined) STATE[id].enabled = !!enabled;
+  if (featured !== undefined) STATE[id].featured = !!featured;
+  if (is_default !== undefined) {
+    // Solo puede haber UN recomendado por defecto: al marcar uno, se limpian los demás.
+    if (is_default) for (const k of Object.keys(STATE)) STATE[k].isDefault = false;
+    STATE[id].isDefault = !!is_default;
+  }
   return true;
 }
 
@@ -234,9 +253,11 @@ export function buildLinks(platform, itemId) {
     // …&ref=). Se ve roto y algún agente lo rechaza, así que quitamos ese parámetro
     // vacío del final. Con código no aplica (el valor no está vacío).
     const url = agent.buildUrl(platform, itemId, code).replace(/[?&][^=&?#]+=(?=$|#)/, "");
-    list.push({ id: agent.id, configured, data: { name: agent.name, url, configured } });
+    const featured = !!st.featured;
+    list.push({ id: agent.id, configured, featured, data: { name: agent.name, url, configured, featured } });
   }
-  list.sort((a, b) => Number(b.configured) - Number(a.configured)); // los que te pagan, primero
+  // Destacados (el Top) primero; dentro de cada grupo, los que te pagan primero.
+  list.sort((a, b) => Number(b.featured) - Number(a.featured) || Number(b.configured) - Number(a.configured));
   const out = {};
   for (const x of list) out[x.id] = x.data;
   return out;

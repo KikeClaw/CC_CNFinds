@@ -295,6 +295,7 @@ const T={
     qc_alldone:"No hay productos con foto pendientes de QC ✓", qcing:(n)=>`⏳ Analizando QC de ${n} productos… (en segundo plano)`,
     deleted:(d,tot)=>`Borrados: ${d} · catálogo: ${tot}`,
     th_agent:"Agente", th_code:"Código de afiliado", th_active:"Activo", code_ph:"tu código", save:"Guardar",
+    th_featured:"Top", th_default:"Reco", ag_feat_hint:"«Top» = agente destacado (sale arriba en la ficha, el resto se pliega). «Reco» = el recomendado por defecto (badge ⭐). En cuanto haya clics reales, el badge pasa solo a «Más elegido».",
     ag_note:'Kakobuy ya tiene tu código. Rellena Mulebuy/OOPBuy cuando te registres y márcalos "Activo".',
     err:"Error",
   },
@@ -363,6 +364,7 @@ const T={
     qc_alldone:"No products with a photo pending QC ✓", qcing:(n)=>`⏳ Analyzing QC of ${n} products… (in the background)`,
     deleted:(d,tot)=>`Deleted: ${d} · catalog: ${tot}`,
     th_agent:"Agent", th_code:"Affiliate code", th_active:"Active", code_ph:"your code", save:"Save",
+    th_featured:"Top", th_default:"Rec.", ag_feat_hint:"“Top” = featured agent (shown first on the card, the rest collapse). “Rec.” = the default recommended (⭐ badge). Once real clicks come in, the badge switches on its own to “Most chosen”.",
     ag_note:'Kakobuy already has your code. Fill in Mulebuy/OOPBuy when you register and mark them "Active".',
     err:"Error",
   },
@@ -542,19 +544,22 @@ async function loadAgents(){
   renderAgents(d.agents);
 }
 function renderAgents(agents){
-  $("#agents").innerHTML=`<table style="margin-top:14px"><thead><tr><th>${t("th_agent")}</th><th>${t("th_code")}</th><th style="text-align:center">${t("th_active")}</th><th></th></tr></thead><tbody>${agents.map(a=>`
+  $("#agents").innerHTML=`<table style="margin-top:14px"><thead><tr><th>${t("th_agent")}</th><th>${t("th_code")}</th><th style="text-align:center">${t("th_active")}</th><th style="text-align:center">${t("th_featured")}</th><th style="text-align:center">${t("th_default")}</th><th></th></tr></thead><tbody>${agents.map(a=>`
     <tr data-id="${a.id}">
       <td><b>${a.name}</b></td>
       <td><input class="ac-code" value="${a.configured?a.code:''}" placeholder="${t("code_ph")}" style="padding:7px 10px"></td>
       <td style="text-align:center"><input type="checkbox" class="ac-en" ${a.enabled?'checked':''}></td>
+      <td style="text-align:center"><input type="checkbox" class="ac-feat" ${a.featured?'checked':''}></td>
+      <td style="text-align:center"><input type="radio" name="ac-def" class="ac-def" ${a.is_default?'checked':''}></td>
       <td><button class="primary ac-save" style="padding:7px 14px">${t("save")}</button></td>
     </tr>`).join("")}</tbody></table>
-    <p class="hint">${t("ag_note")}</p>`;
+    <p class="hint">${t("ag_feat_hint")}</p>`;
   $("#agents").querySelectorAll(".ac-save").forEach(b=>b.onclick=async()=>{
     const tr=b.closest("tr"), id=tr.dataset.id;
     const code=tr.querySelector(".ac-code").value.trim(), enabled=tr.querySelector(".ac-en").checked;
+    const featured=tr.querySelector(".ac-feat").checked, is_default=tr.querySelector(".ac-def").checked;
     b.disabled=true; b.textContent="…";
-    const r=await fetch("/api/admin/agents",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id,code,enabled})});
+    const r=await fetch("/api/admin/agents",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify({id,code,enabled,featured,is_default})});
     const d=await r.json(); b.disabled=false; b.textContent=t("save");
     if(d.ok) renderAgents(d.agents); else $("#agents").insertAdjacentHTML("beforeend",`<p class="msg err">${d.error}</p>`);
   });

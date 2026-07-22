@@ -54,6 +54,10 @@ export function openDb(path) {
   }
   // Ajustes de afiliación por agente (editables desde /admin)
   db.exec("CREATE TABLE IF NOT EXISTS agent_settings (id TEXT PRIMARY KEY, code TEXT, enabled INTEGER NOT NULL DEFAULT 1)");
+  // Migración: destacado (Top) + recomendado por defecto. ALTER en dbs antiguas.
+  for (const col of ["featured", "is_default"]) {
+    try { db.exec(`ALTER TABLE agent_settings ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`); } catch {}
+  }
   // Suscriptores al boletín de "nuevos finds" (captura de email; el envío lo
   // conectas tú con tu proveedor). Solo se guarda el email + fecha + idioma.
   db.exec("CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT, lang TEXT)");

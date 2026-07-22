@@ -200,7 +200,7 @@ export function productPage(p, related, base, lang = "es") {
   const en = lang === "en";
   const bonusTxt = (l) => (l.bonus ? (en ? l.bonus.en || l.bonus.es : l.bonus.es) : "");
   const rows = Object.entries(p.links).map(([k, l]) =>
-    `<tr><td><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}</td><td>${l.cashback ? esc(l.cashback) : "—"}</td><td class="bn">${esc(bonusTxt(l)) || "—"}</td><td><a class="buy" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${esc(k)}" data-pid="${p.id}">${en ? "Buy" : "Comprar"} →</a></td></tr>`).join("");
+    `<tr><td><span class="d" style="background:${AGENT_COLOR[k] || "#888"}"></span>${esc(l.name)}${l.badge ? `<span style="display:inline-block;background:#ff4d2e;color:#fff;font-size:10px;font-weight:800;line-height:1;padding:3px 6px;border-radius:6px;margin-left:7px;vertical-align:middle">★ ${l.badge === "chosen" ? (en ? "Most chosen" : "Más elegido") : (en ? "Recommended" : "Recomendado")}</span>` : ""}</td><td>${l.cashback ? esc(l.cashback) : "—"}</td><td class="bn">${esc(bonusTxt(l)) || "—"}</td><td><a class="buy" href="${l.url}" target="_blank" rel="nofollow noopener" data-agent="${esc(k)}" data-pid="${p.id}">${en ? "Buy" : "Comprar"} →</a></td></tr>`).join("");
   const agents = Object.keys(p.links).length
     ? `<table class="acmp-t"><thead><tr><th>${en ? "Agent" : "Agente"}</th><th>Cashback</th><th>${en ? "Welcome bonus" : "Bono de bienvenida"}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
     : `<p class="note">${en ? "No agents enabled yet." : "Aún no hay agentes activos."}</p>`;

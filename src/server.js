@@ -51,8 +51,8 @@ const db = openDb(DB_PATH);
 
 // Aplica los códigos/estado de afiliado persistidos en la DB.
 try {
-  for (const r of db.prepare("SELECT id, code, enabled FROM agent_settings").all())
-    setAgentState(r.id, { code: r.code || undefined, enabled: !!r.enabled });
+  for (const r of db.prepare("SELECT id, code, enabled, featured, is_default FROM agent_settings").all())
+    setAgentState(r.id, { code: r.code || undefined, enabled: !!r.enabled, featured: !!r.featured, is_default: !!r.is_default });
 } catch {}
 
 // Fotos servidas por Google (hoja normal o publicada). Se piden SIEMPRE a este ancho
@@ -181,11 +181,38 @@ function tidyName(s) {
 
 // Enriquece los links de agente con su cashback y bono (bilingüe) para la
 // comparativa de agentes en la ficha/modal.
+// --- Badge "Recomendado / Más elegido" --------------------------------------
+// Cold-start: el recomendado editorial (lo marca el admin). En cuanto un agente
+// destacado acumula clics reales, el badge pasa solo a "Más elegido" con datos.
+// Cacheado 5 min (es global, no por producto) para no consultar clicks en cada card.
+const BADGE_CLICK_THRESHOLD = 15; // clics (60 días) para fiarnos del dato de comunidad
+let _badge = undefined, _badgeTs = 0;
+function resetBadge() { _badge = undefined; _badgeTs = 0; }
+function getBadgeAgent() {
+  const now = Date.now();
+  if (_badge !== undefined && now - _badgeTs < 300000) return _badge;
+  _badgeTs = now;
+  // Solo compiten los destacados que además están activos y con tu código (te pagan).
+  const feat = getAgentState().filter((a) => a.featured && a.enabled && a.configured);
+  if (!feat.length) { _badge = null; return null; }
+  const since = new Date(now - 60 * 864e5).toISOString();
+  const counts = {};
+  try { for (const r of db.prepare("SELECT agent, COUNT(*) c FROM clicks WHERE ts >= ? GROUP BY agent").all(since)) counts[r.agent] = r.c; } catch {}
+  let top = null;
+  for (const a of feat) { const c = counts[a.id] || 0; if (c >= BADGE_CLICK_THRESHOLD && (!top || c > top.c)) top = { id: a.id, c }; }
+  if (top) { _badge = { id: top.id, kind: "chosen" }; return _badge; }
+  const def = feat.find((a) => a.is_default) || feat[0];
+  _badge = { id: def.id, kind: "recommended" };
+  return _badge;
+}
+
 function enrichLinks(links) {
+  const badge = getBadgeAgent();
   const out = {};
   for (const [id, l] of Object.entries(links)) {
     const m = agentMeta(id);
-    out[id] = { ...l, cashback: (m && m.cashback) || null, bonus: (m && m.bonus) || null };
+    out[id] = { ...l, cashback: (m && m.cashback) || null, bonus: (m && m.bonus) || null,
+      badge: badge && badge.id === id ? badge.kind : null };
   }
   return out;
 }
@@ -849,12 +876,14 @@ function handleAdminAgentsGet(req, res) {
 async function handleAdminAgentsSet(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
-  if (!setAgentState(body.id, { code: body.code, enabled: body.enabled }))
+  if (!setAgentState(body.id, { code: body.code, enabled: body.enabled, featured: body.featured, is_default: body.is_default }))
     return json(res, 200, { ok: false, error: "Agente desconocido." });
-  const cur = getAgentState().find((a) => a.id === body.id);
-  db.prepare("INSERT INTO agent_settings(id,code,enabled) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET code=excluded.code, enabled=excluded.enabled")
-    .run(body.id, cur.code || null, cur.enabled ? 1 : 0);
-  json(res, 200, { ok: true, agents: getAgentState() });
+  // Persistimos TODOS: marcar un recomendado limpia el de los demás, y eso debe quedar en la DB.
+  const all = getAgentState();
+  const up = db.prepare("INSERT INTO agent_settings(id,code,enabled,featured,is_default) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET code=excluded.code, enabled=excluded.enabled, featured=excluded.featured, is_default=excluded.is_default");
+  for (const a of all) up.run(a.id, a.code || null, a.enabled ? 1 : 0, a.featured ? 1 : 0, a.is_default ? 1 : 0);
+  resetBadge();
+  json(res, 200, { ok: true, agents: all });
 }
 
 // ---- Paginas SSR indexables (SEO) ----
