@@ -206,6 +206,24 @@ function getBadgeAgent() {
   return _badge;
 }
 
+// --- Redes sociales (editables desde /admin, se muestran en la landing) ---
+const SOCIAL_KEYS = ["telegram", "twitter", "reddit", "tiktok", "instagram"];
+function getSocial() { try { const s = JSON.parse(metaGet("social_links") || "{}"); const o = {}; for (const k of SOCIAL_KEYS) if (s[k]) o[k] = s[k]; return o; } catch { return {}; } }
+function handleSocial(res) { json(res, 200, { ok: true, social: getSocial() }); }
+async function handleAdminSocialSet(req, res) {
+  if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
+  let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  const out = {};
+  for (const k of SOCIAL_KEYS) {
+    const v = String(body[k] || "").trim();
+    if (!v) continue;
+    if (!/^https?:\/\/.+/i.test(v)) return json(res, 200, { ok: false, error: `URL no válida para ${k} (debe empezar por http/https).` });
+    out[k] = v.slice(0, 300);
+  }
+  metaSet("social_links", JSON.stringify(out));
+  json(res, 200, { ok: true, social: out });
+}
+
 function enrichLinks(links) {
   const badge = getBadgeAgent();
   const out = {};
@@ -1773,6 +1791,8 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
     if (u.pathname === "/api/similar") return void handleSimilar(res, u.searchParams);
     if (u.pathname === "/api/trending") return void handleTrending(res, u.searchParams);
+    if (u.pathname === "/api/social") return void handleSocial(res);
+    if (req.method === "POST" && u.pathname === "/api/admin/social") return void handleAdminSocialSet(req, res);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }

@@ -285,6 +285,10 @@
   .newsband h2{ margin:0; font-size:22px; letter-spacing:-.02em; }
   .newsband .newsform{ flex:1; min-width:280px; max-width:460px; margin:0; box-shadow:var(--card-shadow); }
   @media(max-width:640px){ .newsband{ padding:20px; } .newsband .newsform{ max-width:none; } }
+  .socials{ display:flex; gap:12px; flex-wrap:wrap; }
+  .socials a{ width:48px; height:48px; border-radius:15px; display:grid; place-items:center; border:1px solid var(--line); background:var(--surface); color:var(--ink); box-shadow:var(--card-shadow); transition:.15s; }
+  .socials a:hover{ transform:translateY(-2px); border-color:var(--ink); }
+  .socials a svg{ width:22px; height:22px; }
   .conv .sic{ color:var(--muted); }
   .conv input{ flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font-size:15.5px; padding:13px 8px; outline:none; font-family:var(--font-t); }
   .conv select{ flex:1; min-width:120px; border:0; background:transparent; color:var(--ink); font-size:15px; padding:12px 8px; outline:none; font-family:var(--font-t); cursor:pointer; }
@@ -646,6 +650,16 @@
     <div class="more"><button id="more" class="viewall" style="display:none" data-i18n="viewall">Ver todo el catálogo →</button></div>
   </section>
 
+  <section id="socialSec" style="display:none;margin-bottom:22px">
+    <div class="newsband">
+      <div class="newstxt">
+        <h2 data-i18n="social_title">Redes sociales</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:14px" data-i18n="social_sub">Únete a la comunidad y no te pierdas ningún find.</p>
+      </div>
+      <div class="socials" id="socialLinks"></div>
+    </div>
+  </section>
+
   <section id="news">
     <div class="newsband">
       <div class="newstxt">
@@ -858,7 +872,7 @@ const T={
     track_title:"Rastreador de paquetes",track_sub:"Sigue tu envío en más de 1.000 transportistas",track_ph:"Nº de seguimiento…",track_btn:"Rastrear",track_note:"Abrimos el seguimiento en 17TRACK en una pestaña nueva.",new_title:"Nuevos finds",
     nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad",
     promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →",
-    news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
+    social_title:"Redes sociales",social_sub:"Únete a la comunidad y no te pierdas ningún find.",news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",
     share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
     pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓",
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
@@ -917,7 +931,7 @@ const T={
     track_title:"Package tracker",track_sub:"Track your parcel across 1,000+ carriers",track_ph:"Tracking number…",track_btn:"Track",track_note:"We open tracking on 17TRACK in a new tab.",new_title:"New finds",
     nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community",
     promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →",
-    news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
+    social_title:"Social media",social_sub:"Join the community and never miss a find.",news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",
     share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
     pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓",
     es_similar:"You might like these from our catalog",es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_help:"You can still get it:",es_agents:"Or search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera",
@@ -1553,6 +1567,23 @@ async function loadNewFinds(){
   trimRows($("#newfinds"),3);
 }
 
+/* Redes sociales: solo aparecen las que tengas configuradas en el admin. */
+const SOCIAL_SVG={
+  telegram:'<path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.5 1.201-.82 1.23-.697.065-1.226-.46-1.901-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212-.07-.062-.174-.041-.249-.024-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.788.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>',
+  twitter:'<path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>',
+  reddit:'<path d="M24 11.779c0-1.459-1.192-2.645-2.657-2.645-.715 0-1.363.286-1.84.746-1.81-1.191-4.259-1.949-6.971-2.046l1.483-4.669 4.016.941-.006.058c0 1.193.975 2.163 2.174 2.163 1.198 0 2.172-.97 2.172-2.163s-.975-2.164-2.172-2.164c-.92 0-1.704.574-2.021 1.379l-4.329-1.015c-.189-.046-.381.063-.44.249l-1.654 5.207c-2.762.076-5.256.83-7.098 2.031-.475-.461-1.124-.746-1.837-.746C1.192 9.135 0 10.32 0 11.779c0 .945.502 1.771 1.253 2.245-.31.9-.483 1.86-.483 2.857 0 4.13 4.68 7.489 10.435 7.489 5.756 0 10.436-3.359 10.436-7.489 0-.996-.171-1.955-.481-2.854.744-.472 1.245-1.298 1.245-2.248zm-18.7 3.223c0-.964.784-1.748 1.748-1.748.964 0 1.748.784 1.748 1.748 0 .965-.784 1.749-1.748 1.749-.964 0-1.748-.784-1.748-1.749zm10.7 4.882c-.797.797-2.395.859-2.895.859-.502 0-2.099-.062-2.897-.859-.118-.118-.118-.31 0-.428.118-.117.31-.117.428 0 .504.504 1.582.685 2.469.685.886 0 1.964-.181 2.467-.685.118-.117.311-.117.428 0 .119.118.119.31 0 .428zm-.229-3.133c-.965 0-1.749-.784-1.749-1.749 0-.964.784-1.748 1.749-1.748.965 0 1.748.784 1.748 1.748 0 .965-.783 1.749-1.748 1.749z"/>',
+  tiktok:'<path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>',
+  instagram:'<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>',
+};
+const SOCIAL_NAME={telegram:"Telegram",twitter:"X (Twitter)",reddit:"Reddit",tiktok:"TikTok",instagram:"Instagram"};
+async function loadSocial(){
+  const sec=$("#socialSec"); let s={}; try{ s=((await (await fetch("/api/social")).json()).social)||{}; }catch{}
+  const html=Object.keys(SOCIAL_SVG).filter(k=>s[k]).map(k=>`<a href="${s[k]}" target="_blank" rel="nofollow noopener" aria-label="${SOCIAL_NAME[k]}" title="${SOCIAL_NAME[k]}"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${SOCIAL_SVG[k]}</svg></a>`).join("");
+  const sl=$("#socialLinks"); if(sl) sl.innerHTML=html;
+  if(sec) sec.style.display=html?"":"none";
+  const foot=document.getElementById("social"); if(foot) foot.innerHTML=html; // footer (mismas redes)
+}
+
 /* newsletter */
 if($("#newsIc")) $("#newsIc").innerHTML=ic("sparkles",18,1.8);
 async function subscribe(){
@@ -1705,7 +1736,7 @@ function applyLang(){
 }
 function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang();
   if(EX.booted){ exApplyLangToInputs(); exFetch(); }
-  else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); } }
+  else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadSocial(); load(true); } }
 { const lb=$("#langBtn"); if(lb) lb.onclick=e=>{ e.stopPropagation(); togglePicker("langPicker", renderLangMenu); }; }
 // Controles del menú móvil (divisa/idioma/instalar): reusan las mismas funciones.
 /* ---- Explorador de catálogo (/productos): facetas cruzables ---- */
@@ -1831,7 +1862,7 @@ const EXPLORING=location.pathname==="/productos";
 const TOOLS=location.pathname==="/herramientas";
 const FAVSVIEW=location.pathname==="/favoritos";
 const PAGEVIEW=["/cupones","/ayuda","/coupons","/help"].includes(location.pathname);
-if(!EXPLORING&&!TOOLS&&!PAGEVIEW&&!FAVSVIEW){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); }
+if(!EXPLORING&&!TOOLS&&!PAGEVIEW&&!FAVSVIEW){ loadCats(); loadBrands(); loadTrending(); loadNewFinds(); loadRecent(); loadSocial(); }
 if(EXPLORING){ enterExplore(); }
 else if(TOOLS){ document.body.dataset.view="tools"; document.title=(LANG==="en"?"AI Tools — CNFinds":"Herramientas IA — CNFinds"); scrollTo(0,0); }
 else if(FAVSVIEW){ enterFavs(); }

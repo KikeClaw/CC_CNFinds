@@ -222,6 +222,19 @@
     </div>
     <div id="alOut"></div>
   </div>
+  <div class="card" style="margin-top:34px">
+    <h2 style="font-family:var(--fd);font-size:20px;margin:0 0 4px" data-i18n="soc_h">Redes sociales</h2>
+    <p class="hint" style="margin-bottom:14px" data-i18n="soc_hint">Pega la URL de tus redes. Solo las que rellenes salen en la web (card «Redes sociales» en la landing). Deja vacío para ocultar una.</p>
+    <div id="socInputs" style="display:grid;gap:10px;max-width:520px">
+      <label style="display:flex;align-items:center;gap:10px"><span style="width:92px;font-size:13px;font-weight:600">Telegram</span><input class="soc" data-k="telegram" placeholder="https://t.me/tucanal" style="flex:1;padding:9px 11px"></label>
+      <label style="display:flex;align-items:center;gap:10px"><span style="width:92px;font-size:13px;font-weight:600">X (Twitter)</span><input class="soc" data-k="twitter" placeholder="https://x.com/tucuenta" style="flex:1;padding:9px 11px"></label>
+      <label style="display:flex;align-items:center;gap:10px"><span style="width:92px;font-size:13px;font-weight:600">Reddit</span><input class="soc" data-k="reddit" placeholder="https://reddit.com/r/tusub" style="flex:1;padding:9px 11px"></label>
+      <label style="display:flex;align-items:center;gap:10px"><span style="width:92px;font-size:13px;font-weight:600">TikTok</span><input class="soc" data-k="tiktok" placeholder="https://tiktok.com/@tucuenta" style="flex:1;padding:9px 11px"></label>
+      <label style="display:flex;align-items:center;gap:10px"><span style="width:92px;font-size:13px;font-weight:600">Instagram</span><input class="soc" data-k="instagram" placeholder="https://instagram.com/tucuenta" style="flex:1;padding:9px 11px"></label>
+    </div>
+    <div style="margin-top:12px"><button class="primary" id="socSave" data-i18n="save">Guardar</button></div>
+    <div id="socOut"></div>
+  </div>
 
   <div class="phase"><span class="pnum">•</span><h2>Puntual</h2><span class="psub">acciones sueltas</span></div>
   <div class="card" style="margin-top:34px">
@@ -256,6 +269,7 @@ const T={
     del_h:"Borrar producto", del_hint:"Elimina un producto por su ID (para curar el catálogo).", del_ph:"ID del producto", del_btn:"Borrar", deleting:"…",
     ag_h:"Agentes y afiliación", ag_hint:'Rellena tu código por agente y actívalo según te registres. Solo los agentes <b>activos y con código real</b> se muestran en la web y generan tu comisión.', ag_load:"Cargar agentes",
     subs_h:"Suscriptores del boletín", subs_hint:"Emails capturados en la web. Expórtalos y conéctalos a tu proveedor de email.", subs_load:"Ver suscriptores", subs_export:"Descargar CSV", subs_count:"suscriptores", th_date:"Fecha",
+    soc_h:"Redes sociales", soc_hint:"Pega la URL de tus redes. Solo las que rellenes salen en la web (card «Redes sociales» en la landing). Deja vacío para ocultar una.", soc_ok:"Redes guardadas ✓",
     dg_btn:"Generar boletín de nuevos finds", dg_ready:(n,s)=>`Boletín listo con ${n} finds · ${s} suscriptores ✓`, dg_hint:"Copia este HTML y pégalo en tu proveedor de email (Mailchimp, Resend, Brevo…) para enviarlo a tus suscriptores.", dg_copy:"Copiar HTML", dg_copied:"¡Copiado! ✓", dg_prev:"Previsualizar",
     an_h:"Analítica de agentes", an_hint:"Clics en links de agente = intención de compra (= tu comisión). Mira qué agentes y productos convierten.", an_load:"Ver analítica", an_total:"clics totales", an_7:"últimos 7 días", an_30:"últimos 30 días", an_byagent:"Por agente", an_top:"Top productos", an_byday:"Por día (14 días)", an_none:"Aún no hay clics.",
     al_h:"Alertas de precio", al_hint:"Usuarios que quieren aviso si un producto baja de precio. Expórtalos para tu campaña.", al_load:"Ver alertas", al_count:"alertas", al_target:"Objetivo",
@@ -326,6 +340,7 @@ const T={
     del_h:"Delete product", del_hint:"Remove a product by its ID (to curate the catalog).", del_ph:"Product ID", del_btn:"Delete", deleting:"…",
     ag_h:"Agents & affiliation", ag_hint:'Fill in your code per agent and enable it as you register. Only <b>active agents with a real code</b> show on the site and earn your commission.', ag_load:"Load agents",
     subs_h:"Newsletter subscribers", subs_hint:"Emails captured on the site. Export them and connect to your email provider.", subs_load:"View subscribers", subs_export:"Download CSV", subs_count:"subscribers", th_date:"Date",
+    soc_h:"Social media", soc_hint:"Paste your social URLs. Only the ones you fill show on the site (the \"Social media\" card on the landing). Leave blank to hide one.", soc_ok:"Socials saved ✓",
     dg_btn:"Generate new-finds newsletter", dg_ready:(n,s)=>`Newsletter ready with ${n} finds · ${s} subscribers ✓`, dg_hint:"Copy this HTML and paste it into your email provider (Mailchimp, Resend, Brevo…) to send it to your subscribers.", dg_copy:"Copy HTML", dg_copied:"Copied! ✓", dg_prev:"Preview",
     an_h:"Agent analytics", an_hint:"Clicks on agent links = purchase intent (= your commission). See which agents and products convert.", an_load:"View analytics", an_total:"total clicks", an_7:"last 7 days", an_30:"last 30 days", an_byagent:"By agent", an_top:"Top products", an_byday:"By day (14 days)", an_none:"No clicks yet.",
     al_h:"Price alerts", al_hint:"Users who want a heads-up if a product drops in price. Export them for your campaign.", al_load:"View alerts", al_count:"alerts", al_target:"Target",
@@ -592,6 +607,21 @@ function renderAgents(agents){
   });
 }
 $("#loadAgents").onclick=loadAgents;
+
+/* Redes sociales */
+async function loadSocial(){
+  try{ const d=await (await fetch("/api/social")).json(); const s=d.social||{};
+    document.querySelectorAll("#socInputs .soc").forEach(i=>{ i.value=s[i.dataset.k]||""; }); }catch{}
+}
+$("#socSave").onclick=async()=>{
+  const b=$("#socSave"), old=b.textContent; b.disabled=true; b.textContent="…";
+  const body={}; document.querySelectorAll("#socInputs .soc").forEach(i=>{ body[i.dataset.k]=i.value.trim(); });
+  const r=await fetch("/api/admin/social",{method:"POST",headers:{"content-type":"application/json","x-admin-token":$("#token").value},body:JSON.stringify(body)});
+  const d=await r.json(); b.disabled=false; b.textContent=old;
+  $("#socOut").innerHTML=d.ok?`<p class="msg" style="color:var(--ok)">${t("soc_ok")}</p>`:`<p class="msg err">${d.error||t("err")}</p>`;
+  if(d.ok){ const s=d.social||{}; document.querySelectorAll("#socInputs .soc").forEach(i=>{ i.value=s[i.dataset.k]||""; }); }
+};
+loadSocial();
 
 /* Suscriptores del boletín */
 let SUBS=[];
