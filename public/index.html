@@ -392,13 +392,14 @@
   .ia-card .ib{ font-size:11px; font-weight:700; color:var(--brand); text-transform:uppercase; letter-spacing:.05em; margin-top:auto; display:inline-flex; align-items:center; gap:4px; }
 
   footer{ border-top:1px solid var(--line2); background:var(--soft); margin-top:24px; }
-  .fgrid{ display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr 1fr; gap:28px; padding:52px 0 30px; }
+  .fgrid{ display:grid; grid-template-columns:1.7fr 1fr 1fr 1fr 1fr; gap:28px; padding:52px 24px 30px; }
   @media(max-width:900px){ .fgrid{ grid-template-columns:1fr 1fr 1fr; } }
   @media(max-width:560px){ .fgrid{ grid-template-columns:1fr 1fr; } }
   .fgrid h4{ font-size:13px; margin:0 0 14px; letter-spacing:-.01em; }
   .fgrid a, .fgrid p{ color:var(--muted); font-size:13px; display:block; margin:8px 0; }
   .fgrid a:hover{ color:var(--ink); }
-  .disclaimer{ color:var(--muted); font-size:11.5px; line-height:1.6; border-top:1px solid var(--line2); padding:20px 0 46px; }
+  .fgrid .brand{ font-size:24px; color:var(--ink); margin:0 0 14px; } /* que "CNFinds" no herede el 13px de .fgrid a */
+  .disclaimer{ color:var(--muted); font-size:11.5px; line-height:1.6; border-top:1px solid var(--line2); padding:20px 24px 46px; }
 </style>
 </head>
 <body id="top">
