@@ -94,9 +94,9 @@
   .seg{ display:flex; background:var(--soft); border-radius:999px; padding:3px; font-size:12.5px; font-weight:500; }
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
   .seg span.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06); }
-  .pickers{ display:flex; gap:8px; }
-  .picker{ position:relative; }
-  .pickbtn{ display:flex; align-items:center; gap:5px; padding:7px 11px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:12.5px; font-weight:600; letter-spacing:.01em; cursor:pointer; transition:.15s; }
+  .pickers{ display:flex; gap:8px; flex:none; }
+  .picker{ position:relative; flex:none; }
+  .pickbtn{ display:flex; align-items:center; gap:5px; height:38px; padding:0 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:12.5px; font-weight:600; letter-spacing:.01em; cursor:pointer; white-space:nowrap; transition:.15s; }
   .pickbtn:hover{ border-color:var(--ink); }
   .pickbtn .cv{ opacity:.45; font-size:10px; }
   .pickmenu{ position:absolute; top:calc(100% + 6px); right:0; min-width:140px; background:var(--surface); border:1px solid var(--line); border-radius:13px; box-shadow:0 12px 34px rgba(0,0,0,.16); padding:5px; z-index:50; display:none; }
@@ -120,9 +120,13 @@
     header.navopen .nav .navgroups{ display:flex; }
     .burger{ display:grid; }
     .seg, .pickers{ display:none; }
-    .navctrls{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; padding-top:12px; border-top:1px solid var(--line); }
-    .navctrls button{ flex:1; min-width:88px; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer; }
-    .navctrls #mInstall{ background:var(--brand); color:#fff; border-color:transparent; }
+    .navctrls{ display:flex; flex-direction:column; gap:12px; margin-top:6px; padding-top:14px; border-top:1px solid var(--line); }
+    .navrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .navlbl{ font-size:13px; font-weight:600; color:var(--muted); min-width:54px; }
+    .chips{ display:flex; gap:6px; flex-wrap:wrap; }
+    .chips button{ padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:13.5px; font-weight:600; cursor:pointer; }
+    .chips button.sel{ background:var(--brand); color:#fff; border-color:transparent; }
+    .minstall{ padding:12px; border-radius:12px; border:0; background:var(--brand); color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
   }
 
   /* vistas: home (por defecto) · herramientas (/herramientas) */
@@ -443,9 +447,9 @@
       </div>
       <!-- Solo móvil: divisa/idioma/instalar viven aquí porque el selector del header se oculta -->
       <div class="navctrls">
-        <button type="button" id="mCur" data-i18n-aria="a_cur" aria-label="Cambiar divisa">EUR</button>
-        <button type="button" id="mLang" aria-label="Change language">ES</button>
-        <button type="button" id="mInstall" hidden data-i18n="pwa_install">Instalar app</button>
+        <div class="navrow"><span class="navlbl" data-i18n="cur_lbl">Divisa</span><div class="chips" id="mCurChips"></div></div>
+        <div class="navrow"><span class="navlbl" data-i18n="lang_lbl">Idioma</span><div class="chips" id="mLangChips"></div></div>
+        <button type="button" id="mInstall" hidden data-i18n="pwa_install" class="minstall">Instalar app</button>
       </div>
     </div>
     <div class="right">
@@ -809,7 +813,7 @@ const T={
     v_ag_t:"13 agentes comparados",v_ag_d:"Cada producto trae el enlace listo para los 13. Comparas comisión y envío, y eliges tú.",
     v_cat_t:"Fotos y precios de verdad",v_cat_d:"Miles de fichas con foto y precio comprobado en la fuente. Una hoja solo te da un enlace a ciegas.",
     v_go:"Ver catálogo",v_try:"Probar",v_cmp:"Comparar",v_new:"Nuevo",
-    sim_h:(n)=>`Modelos similares · ${n+1} vendedores`,sim_save:(x)=>`Ahorras hasta ${x} eligiendo el más barato`,sim_more:(n)=>`y ${n} vendedor${n>1?'es':''} más`,size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",a_close:"Cerrar",a_cur:"Cambiar divisa",a_fav:"Favoritos",a_theme:"Cambiar tema",a_menu:"Menú",a_install:"Instalar app",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
+    sim_h:(n)=>`Modelos similares · ${n+1} vendedores`,sim_save:(x)=>`Ahorras hasta ${x} eligiendo el más barato`,sim_more:(n)=>`y ${n} vendedor${n>1?'es':''} más`,size_h:"¿Qué talla pido?",size_ph:"Ej: uso M en Zara, 1,78 m y 75 kg",size_btn:"Aconséjame",size_wait:"Pensando…",size_conf:"Fiabilidad",size_nofit:"⚠️ Ninguna talla disponible te encajaría bien. Mejor busca otro producto.",size_err:"No pude calcularlo ahora. Inténtalo en un momento.",a_close:"Cerrar",a_cur:"Cambiar divisa",a_fav:"Favoritos",a_theme:"Cambiar tema",a_menu:"Menú",a_install:"Instalar app",cur_lbl:"Divisa",lang_lbl:"Idioma",fav_h:"Favoritos",fav_sub:"Guarda finds con el ♡ y ábrelos en tu agente de compra uno a uno.",haul_open:"Abrir en el agente",haul_next:(n,N)=>`Siguiente · ${n}/${N} →`,haul_reopen:"Reabrir todos ↻",haul_hint:"Se abren de una en una para que el navegador no bloquee las pestañas — pulsa para la siguiente.",
     nav_inicio:"Inicio",nav_herramientas:"Herramientas IA",tools_h:"Herramientas IA",tools_sub:"Todo lo que necesitas para comprar reps con cabeza: convierte enlaces a tu agente, analiza fotos QC con IA, monta outfits, busca por imagen y calcula el envío.",nav_catalogo:"Catálogo",viewall:"Ver todo el catálogo →",viewall_in:"Ver todo en",nav_explorar:"Explorar",ex_title:"Explorar catálogo",ex_gender:"Género",ex_price:"Precio (€)",ex_cats:"Categorías",ex_brands:"Marcas",ex_search_ph:"Buscar en el catálogo…",ex_brand_ph:"Filtrar marcas…",ex_clear:"Limpiar filtros",ex_filters:"Filtros",ex_done:"Ver resultados",ex_min:"mín",ex_max:"máx",s_popular:"Más populares",ex_copy:"Copiar enlace",ex_copied:"¡Copiado! ✓",recent_title:"Vistos recientemente",
     eyebrow:"Potenciado por IA · Fotos QC reales · Precios de fábrica",
     h1a:"Descubre productos de ",h1b:"calidad",h1c:", con confianza.",
@@ -868,7 +872,7 @@ const T={
     v_ag_t:"13 agents compared",v_ag_d:"Every product carries a ready link for all 13. Compare fees and shipping, and pick yourself.",
     v_cat_t:"Real photos and prices",v_cat_d:"Thousands of listings with a photo and a price verified at the source. A sheet just gives you a blind link.",
     v_go:"Browse catalog",v_try:"Try it",v_cmp:"Compare",v_new:"New",
-    sim_h:(n)=>`Similar models · ${n+1} sellers`,sim_save:(x)=>`Save up to ${x} by picking the cheapest`,sim_more:(n)=>`and ${n} more seller${n>1?'s':''}`,size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",a_close:"Close",a_cur:"Change currency",a_fav:"Favorites",a_theme:"Toggle theme",a_menu:"Menu",a_install:"Install app",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
+    sim_h:(n)=>`Similar models · ${n+1} sellers`,sim_save:(x)=>`Save up to ${x} by picking the cheapest`,sim_more:(n)=>`and ${n} more seller${n>1?'s':''}`,size_h:"What size should I order?",size_ph:"e.g. I wear M at Zara, 1.78 m and 75 kg",size_btn:"Advise me",size_wait:"Thinking…",size_conf:"Confidence",size_nofit:"⚠️ None of the available sizes would fit you well. Better look for another product.",size_err:"Couldn't work it out right now. Try again in a moment.",a_close:"Close",a_cur:"Change currency",a_fav:"Favorites",a_theme:"Toggle theme",a_menu:"Menu",a_install:"Install app",cur_lbl:"Currency",lang_lbl:"Language",fav_h:"Favorites",fav_sub:"Save finds with the ♡ and open them in your shopping agent one by one.",haul_open:"Open in agent",haul_next:(n,N)=>`Next · ${n}/${N} →`,haul_reopen:"Reopen all ↻",haul_hint:"They open one at a time so your browser doesn't block the tabs — click for the next.",
     nav_inicio:"Home",nav_herramientas:"AI Tools",tools_h:"AI Tools",tools_sub:"Everything you need to buy reps smarter: convert links to your agent, analyze QC photos with AI, build outfits, search by image and estimate shipping.",nav_catalogo:"Catalog",viewall:"See the full catalog →",viewall_in:"See all in",nav_explorar:"Explore",ex_title:"Explore the catalog",ex_gender:"Gender",ex_price:"Price (€)",ex_cats:"Categories",ex_brands:"Brands",ex_search_ph:"Search the catalog…",ex_brand_ph:"Filter brands…",ex_clear:"Clear filters",ex_filters:"Filters",ex_done:"See results",ex_min:"min",ex_max:"max",s_popular:"Most popular",ex_copy:"Copy link",ex_copied:"Copied! ✓",recent_title:"Recently viewed",
     eyebrow:"AI-powered · Real QC photos · Factory prices",
     h1a:"Discover ",h1b:"quality",h1c:" products, with confidence.",
@@ -947,7 +951,7 @@ const RATES={EUR:1};
 const CURS=[{code:"EUR",sym:"€"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},{code:"CNY",sym:"¥"}];
 const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); return CUR.sym+(CUR.code==="CNY"?v.toFixed(0):v.toFixed(2)); };
 async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
-function applyCur(){ const cl=$("#curLabel"); if(cl) cl.textContent=`${CUR.sym} ${CUR.code}`; const mb=$("#mCur"); if(mb) mb.textContent=CUR.code; renderCurMenu(); load(true); loadTrending(); }
+function applyCur(){ const cl=$("#curLabel"); if(cl) cl.textContent=`${CUR.sym} ${CUR.code}`; renderCurMenu(); renderMobileCtrls(); load(true); loadTrending(); }
 function setCur(code){ const n=CURS.find(c=>c.code===code)||CURS[0]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); }
 function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); } // solo móvil (botón que cicla)
 function renderCurMenu(){ const m=$("#curMenu"); if(!m) return;
@@ -956,6 +960,11 @@ function renderCurMenu(){ const m=$("#curMenu"); if(!m) return;
 function renderLangMenu(){ const m=$("#langMenu"); if(!m) return;
   m.innerHTML=[["es","Español"],["en","English"]].map(([code,name])=>`<button type="button" data-code="${code}" class="${code===LANG?'sel':''}"><span>${name}</span><span class="ck">✓</span></button>`).join("");
   m.querySelectorAll("button").forEach(b=>b.onclick=()=>{ setLang(b.dataset.code); closePickers(); }); }
+/* Menú móvil: divisa e idioma como chips seleccionables (mismas funciones setCur/setLang). */
+function renderMobileCtrls(){
+  const cc=$("#mCurChips"); if(cc){ cc.innerHTML=CURS.map(c=>`<button type="button" data-code="${c.code}" class="${c.code===CUR.code?'sel':''}">${c.sym} ${c.code}</button>`).join(""); cc.querySelectorAll("button").forEach(b=>b.onclick=()=>setCur(b.dataset.code)); }
+  const lc=$("#mLangChips"); if(lc){ lc.innerHTML=[["es","Español"],["en","English"]].map(([code,name])=>`<button type="button" data-code="${code}" class="${code===LANG?'sel':''}">${name}</button>`).join(""); lc.querySelectorAll("button").forEach(b=>b.onclick=()=>setLang(b.dataset.code)); }
+}
 function closePickers(){ document.querySelectorAll(".picker.open").forEach(p=>{ p.classList.remove("open"); const b=p.querySelector(".pickbtn"); if(b) b.setAttribute("aria-expanded","false"); }); }
 function togglePicker(id, render){ const p=$("#"+id); if(!p) return; const open=!p.classList.contains("open"); closePickers(); if(open){ render&&render(); p.classList.add("open"); const b=p.querySelector(".pickbtn"); if(b) b.setAttribute("aria-expanded","true"); } }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899",acbuy:"#0ea5e9",cssbuy:"#14b8a6",lovegobuy:"#f43f5e",joyagoo:"#a855f7",allchinabuy:"#eab308",orientdig:"#22c55e",hipobuy:"#6366f1"};
@@ -1668,7 +1677,7 @@ document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   else if(k==="qc"){ document.getElementById("qccheck").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#qcUrl").focus(),400); }
 });
 
-$("#curLabel").textContent=`${CUR.sym} ${CUR.code}`; renderCurMenu(); renderLangMenu(); loadRates();
+$("#curLabel").textContent=`${CUR.sym} ${CUR.code}`; renderCurMenu(); renderLangMenu(); renderMobileCtrls(); loadRates();
 $("#curBtn").onclick=e=>{ e.stopPropagation(); togglePicker("curPicker", renderCurMenu); };
 // Cerrar los desplegables al pulsar fuera o con Escape.
 document.addEventListener("click", e=>{ if(!e.target.closest(".picker")) closePickers(); });
@@ -1690,8 +1699,7 @@ function applyLang(){
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
   paintTrust();
   const lb=$("#langLabel"); if(lb) lb.textContent=t("lang_name");
-  const mlb=$("#mLang"); if(mlb) mlb.textContent=t("lang_name");
-  if(typeof renderLangMenu==="function") renderLangMenu();
+  if(typeof renderLangMenu==="function"){ renderLangMenu(); renderMobileCtrls(); }
   document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();
 }
@@ -1700,7 +1708,6 @@ function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie
   else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); } }
 { const lb=$("#langBtn"); if(lb) lb.onclick=e=>{ e.stopPropagation(); togglePicker("langPicker", renderLangMenu); }; }
 // Controles del menú móvil (divisa/idioma/instalar): reusan las mismas funciones.
-{ const mc=$("#mCur"); if(mc) mc.onclick=cycleCur; const ml=$("#mLang"); if(ml) ml.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 /* ---- Explorador de catálogo (/productos): facetas cruzables ---- */
 const EX={ q:"",cats:new Set(),brands:new Set(),gender:"",pmin:"",pmax:"",sort:"trending",page:0,limit:48,total:0,brandsAll:[],brandFilter:"",booted:false };
 let exT;
