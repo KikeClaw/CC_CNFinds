@@ -31,6 +31,7 @@ export const AFFILIATE_CODES = {
   allchinabuy: process.env.ALLCHINABUY_REF || "YOUR_ALLCHINABUY_CODE",
   orientdig: process.env.ORIENTDIG_REF || "YOUR_ORIENTDIG_CODE",
   hipobuy:  process.env.HIPOBUY_REF  || "YOUR_HIPOBUY_CODE",
+  usfans:   process.env.USFANS_REF   || "YOUR_USFANS_CODE",
 };
 
 export function isPlaceholder(code) {
@@ -71,6 +72,9 @@ const SHOP_TYPE = {
   acbuy: { taobao: "TB", weidian: "WD", "1688": "AL" },
   // CSSBuy incrusta el tipo en el slug del item (VERIFICAR)
   cssbuy: { taobao: "", weidian: "micro-", "1688": "1688-" },
+  // USFans usa número de plataforma en la ruta, estilo Hoobuy (VERIFICAR: en su hoja
+  // solo se vio "3" = 1688; confirmar 1=taobao / 2=weidian con un link real al activar).
+  usfans: { taobao: "1", weidian: "2", "1688": "3" },
 };
 
 // --- Generadores de link por agente -----------------------------------------
@@ -195,6 +199,16 @@ export const AGENTS = [
       return `https://hipobuy.com/product?id=${itemId}&shop_type=${t}&ref=${code}`;
     },
   },
+  {
+    id: "usfans",
+    name: "USFans",
+    // Formato sacado de su propia hoja: https://www.usfans.com/product/<N>/<itemId>?ref=CODE
+    // (N: 1=taobao, 2=weidian, 3=1688 — VERIFICAR el mapeo con un link real al activar).
+    buildUrl: (platform, itemId, code) => {
+      const n = SHOP_TYPE.usfans[platform] || "1";
+      return `https://www.usfans.com/product/${n}/${itemId}?ref=${code}`;
+    },
+  },
 ];
 
 // Genera todos los links de afiliado para un producto.
@@ -280,6 +294,7 @@ const SEARCH = {
   allchinabuy: (q, c) => `https://www.allchinabuy.com/en/goods/search/?keyword=${q}&partnercode=${c}`,
   orientdig: (q, c) => `https://orientdig.com/search?keyword=${q}&ref=${c}`,
   hipobuy: (q, c) => `https://hipobuy.com/search?keyword=${q}&ref=${c}`,
+  usfans: (q, c) => `https://www.usfans.com/search?keyword=${q}&ref=${c}`, // VERIFICAR formato al activar
 };
 
 // Enlaces de búsqueda por palabra clave, solo para agentes activados.
