@@ -567,7 +567,7 @@
   </section>
 
   <section id="recent" style="display:none">
-    <div class="head"><h2><span class="sq"></span><span data-i18n="recent_title">Vistos recientemente</span></h2><a class="link" href="/productos"><span data-i18n="vertodo">Ver todo</span></a></div>
+    <div class="head"><h2><span class="sq" id="hrecent"></span><span data-i18n="recent_title">Vistos recientemente</span></h2><a class="link" href="/productos"><span data-i18n="vertodo">Ver todo</span></a></div>
     <div class="grid" id="recentGrid"></div>
   </section>
 
@@ -620,7 +620,7 @@
   </section>
 
   <section id="catalogo">
-    <div class="head"><h2 data-i18n="catalogo">Catálogo</h2><span class="muted" id="count" style="font-size:13px"></span></div>
+    <div class="head"><h2><span class="sq" id="hcat"></span><span data-i18n="catalogo">Catálogo</span></h2><span class="muted" id="count" style="font-size:13px"></span></div>
     <div class="toolbar">
       <div class="gseg" id="gseg">
         <button class="gon" data-g="" data-i18n="all">Todos</button>
@@ -977,6 +977,7 @@ const ICONS={
   footprints:'<path d="M4 16v-2.4C4 11.5 3 10.5 3 8c0-2.7 1.5-6 4.5-6C9.4 2 10 3.8 10 5.5c0 3.1-2 5.7-2 8.7V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.4c0-2.1 1-3.1 1-5.6 0-2.7-1.5-6-4.5-6C14.6 6 14 7.8 14 9.5c0 3.1 2 5.7 2 8.7V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4M4 13h4"/>',
   flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
   trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.5 1-1 1.2C7.8 18.8 7 20.2 7 22"/><path d="M14 14.7V17c0 .6.5 1 1 1.2 1.2.5 2 1.9 2 3.8"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   box:'<path d="m7.5 4.3 9 5.1"/><path d="M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
   tag:'<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r=".9"/>',
   grid:'<rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/>',
@@ -1654,7 +1655,9 @@ document.querySelectorAll(".tab").forEach(tb=>tb.onclick=()=>{ document.querySel
 $("#hia").innerHTML=ic("sparkles",21,1.9); $("#hia").style.color="#8b5cf6";
 $("#hcomo").innerHTML=ic("layers",21,1.9); $("#hcomo").style.color="#2d7ff9";
 [["ia1","search"],["ia2","image"],["ia3","sparkles"],["ia4","shield"]].forEach(([id,name])=>{ const el=$("#"+id); if(el) el.innerHTML=ic(name,22,1.8); });
-const hv=$("#hvent"); if(hv){ hv.innerHTML=ic("sparkles",21,1.9); hv.style.color="#16a34a"; }
+const hv=$("#hvent"); if(hv){ hv.innerHTML=ic("trophy",21,1.9); hv.style.color="#16a34a"; }
+if($("#hrecent")){ $("#hrecent").innerHTML=ic("clock",21,1.9); $("#hrecent").style.color="#0ea5e9"; }
+if($("#hcat")){ $("#hcat").innerHTML=ic("bag",21,1.9); $("#hcat").style.color="#f59e0b"; }
 [["v1","search"],["v2","camera"],["v3","shirt"],["v4","shield"],["v5","layers"],["v6","grid"]].forEach(([id,name])=>{ const el=$("#"+id); if(el) el.innerHTML=ic(name,22,1.8); });
 document.querySelectorAll(".ia-card .iba").forEach(e=>e.innerHTML=ic("arrow",12,2));
 document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
