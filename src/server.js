@@ -276,7 +276,9 @@ function rateLimit(req, res, key, max, windowMs) {
 }
 
 const SORTS = {
-  trending: "(image_url IS NOT NULL) DESC, hot DESC, price_eur DESC",
+  // Destacados: con foto, luego CALIDAD (nota QC; los sin QC caen abajo por ser NULL) y
+  // frescura. Antes desempataba por precio↓ → abría con lo más caro, poco acogedor.
+  trending: "(image_url IS NOT NULL) DESC, qc_score DESC, hot DESC, id DESC",
   newest: "(image_url IS NOT NULL) DESC, id DESC",
   price_asc: "(image_url IS NOT NULL) DESC, price_eur ASC",
   price_desc: "(image_url IS NOT NULL) DESC, price_eur DESC",
