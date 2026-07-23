@@ -550,8 +550,8 @@
     <div class="grid" id="recentGrid"></div>
   </section>
 
-  <section id="tendencias">
-    <div class="head"><h2><span class="sq" id="hflame"></span><span data-i18n="trend">Tendencias ahora</span></h2><span class="muted" style="font-size:13px" data-i18n="trend_sub">Lo más buscado esta semana</span></div>
+  <section id="tendencias" style="display:none">
+    <div class="head"><h2><span class="sq" id="hflame"></span><span data-i18n="trend">Tendencias ahora</span></h2><span class="muted" style="font-size:13px" data-i18n="trend_sub">Lo más clicado ahora</span></div>
     <div class="grid" id="trending"></div>
   </section>
 
@@ -800,7 +800,7 @@ const T={
     como:"Cómo funciona",como_sub:"De descubrir a comprar, sin fricción",
     conv:"Conversor de enlaces",conv_sub:"Pega un link de Taobao, Weidian, 1688 o de un agente",convertir:"Convertir",
     cat:"Explorar por categoría",vertodo:"Ver todo",
-    trend:"Tendencias ahora",trend_sub:"Lo más buscado esta semana",
+    trend:"Tendencias ahora",trend_sub:"Lo más clicado por la comunidad",
     fit_title:"Arma tu fit con IA",fit_sub:"Dinos tu presupuesto y montamos un outfit",armar:"Armar",
     brands:"Marcas populares",brands_sub:"Toca para filtrar",catalogo:"Catálogo",
     s_trending:"Destacados",s_new:"Novedades",s_pa:"Precio: menor a mayor",s_pd:"Precio: mayor a menor",s_name:"Nombre A–Z",
@@ -859,7 +859,7 @@ const T={
     como:"How it works",como_sub:"From discovery to checkout, frictionless",
     conv:"Link converter",conv_sub:"Paste a Taobao, Weidian, 1688 or agent link",convertir:"Convert",
     cat:"Browse by category",vertodo:"See all",
-    trend:"Trending now",trend_sub:"Most searched this week",
+    trend:"Trending now",trend_sub:"Most clicked by the community",
     fit_title:"Build your fit with AI",fit_sub:"Tell us your budget and we'll build an outfit",armar:"Build",
     brands:"Popular brands",brands_sub:"Tap to filter",catalogo:"Catalog",
     s_trending:"Featured",s_new:"New",s_pa:"Price: low to high",s_pd:"Price: high to low",s_name:"Name A–Z",
@@ -1132,9 +1132,14 @@ let _rowsT; addEventListener("resize",()=>{ clearTimeout(_rowsT); _rowsT=setTime
 
 /* trending */
 async function loadTrending(){
-  const d=await (await fetch("/api/products?sort=trending&hot=1&limit=18")).json();
-  d.items.forEach(it=>CACHE[it.id]=it);
-  $("#trending").innerHTML=d.items.map(cardHtml).join(""); bindCards($("#trending"));
+  // Tendencias = lo más CLICADO de verdad. Sin tráfico aún no hay datos → la sección
+  // se queda oculta (nada de secciones vacías); se llenará sola cuando lleguen usuarios.
+  const sec=$("#tendencias");
+  let items=[]; try{ items=((await (await fetch("/api/trending?limit=18")).json()).items)||[]; }catch{}
+  if(!items.length){ if(sec) sec.style.display="none"; return; }
+  items.forEach(it=>CACHE[it.id]=it);
+  $("#trending").innerHTML=items.map(cardHtml).join(""); bindCards($("#trending"));
+  if(sec) sec.style.display="";
   trimRows($("#trending"),3);
 }
 /* Vistos recientemente (localStorage): retención para quien vuelve. */

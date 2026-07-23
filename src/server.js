@@ -222,6 +222,33 @@ function json(res, code, data) {
   res.end(JSON.stringify(data));
 }
 
+// Forma canónica de un producto para el frontend (reutilizada por listado y tendencias).
+function productItem(r) {
+  let gallery = [];
+  try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
+  let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
+  return {
+    id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en, raw_name: r.name, brand: r.brand, category: r.category,
+    price_eur: r.price_eur, hot: !!r.hot,
+    thumb: thumb(r.image_url), image: r.image_url, images: gallery,
+    qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
+    links: enrichLinks(buildLinks(r.platform, r.item_id)),
+  };
+}
+
+// "Tendencias ahora" = lo más CLICADO de verdad (intención de compra) en los últimos 30
+// días. Se llena solo cuando llega tráfico; sin clics devuelve vacío (la sección se oculta).
+const TREND_COLS = "id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes";
+function handleTrending(res, params) {
+  const limit = Math.min(parseInt(params.get("limit"), 10) || 18, 40);
+  const since = new Date(Date.now() - 30 * 864e5).toISOString();
+  const top = db.prepare("SELECT product_id, COUNT(*) c FROM clicks WHERE ts >= ? AND product_id IS NOT NULL GROUP BY product_id ORDER BY c DESC LIMIT ?").all(since, limit * 3);
+  const get = db.prepare(`SELECT ${TREND_COLS} FROM products WHERE id=? AND status <> 'hidden' AND image_url IS NOT NULL AND clean_title IS NOT NULL`);
+  const items = [];
+  for (const t of top) { const r = get.get(t.product_id); if (r) items.push(productItem(r)); if (items.length >= limit) break; }
+  json(res, 200, { total: items.length, items });
+}
+
 // --- Rate limiting sencillo en memoria (ventana fija por IP + clave) ---
 // Protege sobre todo los endpoints que cuestan dinero (IA) de spam/abuso.
 const rlBuckets = new Map();
@@ -346,18 +373,7 @@ function handleProducts(res, params) {
       ) WHERE rnc <= 2 AND rnb <= 2 ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset)
     : db.prepare(`SELECT ${COLS} FROM products ${wsql} ORDER BY ${sort} LIMIT ? OFFSET ?`).all(...args, limit, offset);
 
-  const items = rows.map((r) => {
-    let gallery = [];
-    try { gallery = r.images ? JSON.parse(r.images) : []; } catch { gallery = []; }
-    let qc = {}; try { qc = r.qc_notes ? JSON.parse(r.qc_notes) : {}; } catch {}
-    return {
-      id: r.id, name: r.clean_title || tidyName(r.name), title_en: r.clean_title_en, raw_name: r.name, brand: r.brand, category: r.category,
-      price_eur: r.price_eur, hot: !!r.hot,
-      thumb: thumb(r.image_url), image: r.image_url, images: gallery,
-      qc_score: r.qc_score, qc_summary: qc.summary, qc_summary_en: qc.summary_en,
-      links: enrichLinks(buildLinks(r.platform, r.item_id)),
-    };
-  });
+  const items = rows.map(productItem);
 
   json(res, 200, { total, limit, offset, items });
 }
@@ -1754,6 +1770,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/img") return void handleImgProxy(req, res, u);
     if (u.pathname === "/api/products") return handleProducts(res, u.searchParams);
     if (u.pathname === "/api/similar") return void handleSimilar(res, u.searchParams);
+    if (u.pathname === "/api/trending") return void handleTrending(res, u.searchParams);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
     if (u.pathname === "/robots.txt") { res.writeHead(200, { "Content-Type": "text/plain" }); return res.end(`User-agent: *\nAllow: /\nSitemap: ${baseUrl(req)}/sitemap.xml\n`); }
