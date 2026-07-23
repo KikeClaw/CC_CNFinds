@@ -72,9 +72,10 @@ const SHOP_TYPE = {
   acbuy: { taobao: "TB", weidian: "WD", "1688": "AL" },
   // CSSBuy incrusta el tipo en el slug del item (VERIFICAR)
   cssbuy: { taobao: "", weidian: "micro-", "1688": "1688-" },
-  // USFans usa número de plataforma en la ruta, estilo Hoobuy (VERIFICAR: en su hoja
-  // solo se vio "3" = 1688; confirmar 1=taobao / 2=weidian con un link real al activar).
-  usfans: { taobao: "1", weidian: "2", "1688": "3" },
+  // USFans usa número de plataforma en la ruta: 1=taobao (link real de 12 dígitos),
+  // 3=weidian (itemIds de su hoja verificados vía API Weidian), 2=1688 por eliminación
+  // (VERIFICAR el 2 con un link real de 1688 al activar).
+  usfans: { taobao: "1", weidian: "3", "1688": "2" },
 };
 
 // --- Generadores de link por agente -----------------------------------------
