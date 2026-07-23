@@ -172,7 +172,7 @@
   .trust span{ display:inline-flex; align-items:center; gap:8px; }
 
   /* sections */
-  section{ padding:52px 0; }
+  section{ padding:36px 0; }
   .head{ display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:24px; gap:16px; }
   .head h2{ font-size:clamp(23px,3.2vw,34px); letter-spacing:-.035em; margin:0; font-weight:700; display:flex; align-items:center; gap:11px; }
   .head .sq{ display:inline-grid; place-items:center; width:40px; height:40px; border-radius:12px; background:color-mix(in srgb,currentColor 14%,transparent); }
@@ -650,7 +650,7 @@
     <div class="more"><button id="more" class="viewall" style="display:none" data-i18n="viewall">Ver todo el catálogo →</button></div>
   </section>
 
-  <section id="socialSec" style="display:none;margin-bottom:22px">
+  <section id="socialSec" style="display:none">
     <div class="newsband">
       <div class="newstxt">
         <h2 data-i18n="social_title">Redes sociales</h2>
@@ -1150,12 +1150,13 @@ async function loadCats(){
 
 /* brands */
 async function loadBrands(){
-  const d=await (await fetch("/api/brands?limit=12")).json();
+  const d=await (await fetch("/api/brands?limit=21")).json();
   $("#brands").innerHTML=d.brands.map(b=>{
     const mono=b.thumb?`<img src="${b.thumb}" alt="">`:esc(b.brand.slice(0,2));
     return `<div class="bcard" data-brand="${esc(b.brand)}"><div class="mono">${mono}</div>
       <div class="bmeta"><div class="bn">${esc(b.brand)}</div><div class="bc">${b.count} ${t("prods")}</div></div></div>`;
   }).join("");
+  trimRows($("#brands"),2); // 2 filas siempre llenas
   $("#brands").querySelectorAll(".bcard").forEach(el=>el.onclick=()=>{ state.brand=state.brand===el.dataset.brand?"":el.dataset.brand; state.category=""; applyAndScroll(); });
 }
 
@@ -1179,7 +1180,7 @@ function trimRows(grid, maxRows){
 }
 function showAllRows(grid){ if(grid) [...grid.children].forEach(el=>el.style.removeProperty("display")); }
 function retrimLanding(){
-  trimRows($("#trending"),3); trimRows($("#recentGrid"),3); trimRows($("#newfinds"),3);
+  trimRows($("#trending"),3); trimRows($("#recentGrid"),3); trimRows($("#newfinds"),3); trimRows($("#brands"),2);
   const g=$("#grid");
   if(g){ if(!state.q && state.offset<state.total) trimRows(g,0); else showAllRows(g); }
 }
