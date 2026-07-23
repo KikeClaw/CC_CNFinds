@@ -94,6 +94,18 @@
   .seg{ display:flex; background:var(--soft); border-radius:999px; padding:3px; font-size:12.5px; font-weight:500; }
   .seg span{ padding:5px 11px; border-radius:999px; color:var(--muted); }
   .seg span.on{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  .pickers{ display:flex; gap:8px; }
+  .picker{ position:relative; }
+  .pickbtn{ display:flex; align-items:center; gap:5px; padding:7px 11px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:12.5px; font-weight:600; letter-spacing:.01em; cursor:pointer; transition:.15s; }
+  .pickbtn:hover{ border-color:var(--ink); }
+  .pickbtn .cv{ opacity:.45; font-size:10px; }
+  .pickmenu{ position:absolute; top:calc(100% + 6px); right:0; min-width:140px; background:var(--surface); border:1px solid var(--line); border-radius:13px; box-shadow:0 12px 34px rgba(0,0,0,.16); padding:5px; z-index:50; display:none; }
+  .picker.open .pickmenu{ display:block; animation:pwaUp .16s ease; }
+  .pickmenu button{ display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:9px 11px; border-radius:9px; border:0; background:transparent; color:var(--ink); font-size:13.5px; font-weight:500; cursor:pointer; white-space:nowrap; }
+  .pickmenu button:hover{ background:var(--soft); }
+  .pickmenu button.sel{ font-weight:700; }
+  .pickmenu button .ck{ margin-left:auto; color:var(--brand); visibility:hidden; }
+  .pickmenu button.sel .ck{ visibility:visible; }
   .iconbtn{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; color:var(--ink); transition:.15s; }
   .iconbtn[hidden]{ display:none; } /* display:grid anula el hidden del navegador; esto lo restaura */
   .navctrls{ display:none; } /* solo aparece dentro del menú móvil (ver @media) */
@@ -107,7 +119,7 @@
     .nav .links a.nav-cta{ text-align:left; }
     header.navopen .nav .navgroups{ display:flex; }
     .burger{ display:grid; }
-    .seg{ display:none; }
+    .seg, .pickers{ display:none; }
     .navctrls{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; padding-top:12px; border-top:1px solid var(--line); }
     .navctrls button{ flex:1; min-width:88px; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer; }
     .navctrls #mInstall{ background:var(--brand); color:#fff; border-color:transparent; }
@@ -437,7 +449,16 @@
       </div>
     </div>
     <div class="right">
-      <div class="seg"><span class="on" id="curBtn" role="button" tabindex="0" style="cursor:pointer" data-i18n-aria="a_cur" title="Cambiar divisa" aria-label="Cambiar divisa">EUR</span><span id="langBtn" role="button" tabindex="0" style="cursor:pointer" title="Language" aria-label="Change language">ES</span></div>
+      <div class="pickers">
+        <div class="picker" id="curPicker">
+          <button class="pickbtn" id="curBtn" aria-haspopup="listbox" aria-expanded="false" data-i18n-aria="a_cur" title="Cambiar divisa" aria-label="Cambiar divisa"><span id="curLabel">€ EUR</span><span class="cv" aria-hidden="true">▾</span></button>
+          <div class="pickmenu" id="curMenu" role="listbox"></div>
+        </div>
+        <div class="picker" id="langPicker">
+          <button class="pickbtn" id="langBtn" aria-haspopup="listbox" aria-expanded="false" title="Language" aria-label="Change language"><span aria-hidden="true" style="font-size:13px">🌐</span><span id="langLabel">ES</span><span class="cv" aria-hidden="true">▾</span></button>
+          <div class="pickmenu" id="langMenu" role="listbox"></div>
+        </div>
+      </div>
       <button class="iconbtn" id="pwaBtn" hidden data-i18n-aria="a_install" title="Instalar app" aria-label="Instalar app"></button>
       <button class="iconbtn" id="fav" data-i18n-aria="a_fav" title="Favoritos" aria-label="Favoritos"></button>
       <button class="iconbtn" id="theme" data-i18n-aria="a_theme" title="Tema" aria-label="Cambiar tema"></button>
@@ -926,7 +947,17 @@ const RATES={EUR:1};
 const CURS=[{code:"EUR",sym:"€"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},{code:"CNY",sym:"¥"}];
 const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); return CUR.sym+(CUR.code==="CNY"?v.toFixed(0):v.toFixed(2)); };
 async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
-function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; const b=document.getElementById("curBtn"); if(b) b.textContent=CUR.code; const mb=document.getElementById("mCur"); if(mb) mb.textContent=CUR.code; load(true); loadTrending(); }
+function applyCur(){ const cl=$("#curLabel"); if(cl) cl.textContent=`${CUR.sym} ${CUR.code}`; const mb=$("#mCur"); if(mb) mb.textContent=CUR.code; renderCurMenu(); load(true); loadTrending(); }
+function setCur(code){ const n=CURS.find(c=>c.code===code)||CURS[0]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); }
+function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); } // solo móvil (botón que cicla)
+function renderCurMenu(){ const m=$("#curMenu"); if(!m) return;
+  m.innerHTML=CURS.map(c=>`<button type="button" data-code="${c.code}" class="${c.code===CUR.code?'sel':''}"><span>${c.sym} ${c.code}</span><span class="ck">✓</span></button>`).join("");
+  m.querySelectorAll("button").forEach(b=>b.onclick=()=>{ setCur(b.dataset.code); closePickers(); }); }
+function renderLangMenu(){ const m=$("#langMenu"); if(!m) return;
+  m.innerHTML=[["es","Español"],["en","English"]].map(([code,name])=>`<button type="button" data-code="${code}" class="${code===LANG?'sel':''}"><span>${name}</span><span class="ck">✓</span></button>`).join("");
+  m.querySelectorAll("button").forEach(b=>b.onclick=()=>{ setLang(b.dataset.code); closePickers(); }); }
+function closePickers(){ document.querySelectorAll(".picker.open").forEach(p=>{ p.classList.remove("open"); const b=p.querySelector(".pickbtn"); if(b) b.setAttribute("aria-expanded","false"); }); }
+function togglePicker(id, render){ const p=$("#"+id); if(!p) return; const open=!p.classList.contains("open"); closePickers(); if(open){ render&&render(); p.classList.add("open"); const b=p.querySelector(".pickbtn"); if(b) b.setAttribute("aria-expanded","true"); } }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899",acbuy:"#0ea5e9",cssbuy:"#14b8a6",lovegobuy:"#f43f5e",joyagoo:"#a855f7",allchinabuy:"#eab308",orientdig:"#22c55e",hipobuy:"#6366f1"};
 /* analítica: registra clic en un agente (intención de compra) */
 function track(pid,agent){ try{ navigator.sendBeacon("/api/track", new Blob([JSON.stringify({product_id:pid,agent})],{type:"application/json"})); }catch(e){} }
@@ -1634,7 +1665,11 @@ document.querySelectorAll(".ia-card[data-ia]").forEach(c=>c.onclick=()=>{
   else if(k==="qc"){ document.getElementById("qccheck").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#qcUrl").focus(),400); }
 });
 
-document.getElementById("curBtn").onclick=cycleCur; loadRates();
+$("#curLabel").textContent=`${CUR.sym} ${CUR.code}`; renderCurMenu(); renderLangMenu(); loadRates();
+$("#curBtn").onclick=e=>{ e.stopPropagation(); togglePicker("curPicker", renderCurMenu); };
+// Cerrar los desplegables al pulsar fuera o con Escape.
+document.addEventListener("click", e=>{ if(!e.target.closest(".picker")) closePickers(); });
+addEventListener("keydown", e=>{ if(e.key==="Escape") closePickers(); });
 /* accesibilidad: activar toggles (spans) con Enter/Espacio */
 ["curBtn","langBtn"].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); el.click(); } }); });
 document.querySelectorAll("#gseg button").forEach(b=>b.onclick=()=>{ document.querySelectorAll("#gseg button").forEach(x=>x.classList.remove("gon")); b.classList.add("gon"); state.gender=b.dataset.g; load(true); });
@@ -1651,15 +1686,16 @@ function applyLang(){
   document.querySelectorAll("[data-i18n-aria]").forEach(el=>{ const v=t(el.getAttribute("data-i18n-aria")); if(v!=null){ el.setAttribute("aria-label",v); if(el.hasAttribute("title")) el.setAttribute("title",v); } });
   const eb=$("#eyebrow"); if(eb) eb.innerHTML=ic("shield",14,1.9)+" "+t("eyebrow");
   paintTrust();
-  const lb=$("#langBtn"); if(lb) lb.textContent=t("lang_name");
+  const lb=$("#langLabel"); if(lb) lb.textContent=t("lang_name");
   const mlb=$("#mLang"); if(mlb) mlb.textContent=t("lang_name");
+  if(typeof renderLangMenu==="function") renderLangMenu();
   document.querySelectorAll("[data-tipkey]").forEach(el=>{ const v=t(el.getAttribute("data-tipkey")); if(v!=null){ el.setAttribute("data-tip",v); el.setAttribute("aria-label",v); } });
   populateShip();
 }
 function setLang(l){ LANG=l; localStorage.setItem("cnf_lang",l); document.cookie="cnf_lang="+l+";path=/;max-age=31536000;samesite=lax"; applyLang();
   if(EX.booted){ exApplyLangToInputs(); exFetch(); }
   else { loadCats(); loadBrands(); loadTrending(); loadNewFinds(); load(true); } }
-{ const lb=$("#langBtn"); if(lb) lb.onclick=()=>setLang(LANG==="es"?"en":"es"); }
+{ const lb=$("#langBtn"); if(lb) lb.onclick=e=>{ e.stopPropagation(); togglePicker("langPicker", renderLangMenu); }; }
 // Controles del menú móvil (divisa/idioma/instalar): reusan las mismas funciones.
 { const mc=$("#mCur"); if(mc) mc.onclick=cycleCur; const ml=$("#mLang"); if(ml) ml.onclick=()=>setLang(LANG==="es"?"en":"es"); }
 /* ---- Explorador de catálogo (/productos): facetas cruzables ---- */
