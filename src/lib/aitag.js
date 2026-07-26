@@ -34,7 +34,12 @@ const SYSTEM =
   "model_name distinto, o un comparador las mezclaria como si fueran el mismo producto. " +
   "category: clasifica por el OBJETO FISICO real, NUNCA por el nombre del modelo ni la linea de marca. " +
   "Unas botas, zapatillas o sandalias son 'Shoes' aunque el modelo se llame 'Alaska'; un bolso es 'Bags'; " +
-  "una chaqueta 'Coats & Jackets'. Fijate en QUE es el articulo, no en como se llama.";
+  "una chaqueta 'Coats & Jackets'. Fijate en QUE es el articulo, no en como se llama. " +
+  "IMPORTANTISIMO: NO INVENTES. Si el nombre crudo no dice que producto es (esta vacio, es un " +
+  "placeholder tipo 'LINK HERE', o solo trae un precio o un numero), NO te inventes un titulo " +
+  "generico como 'Producto no identificado' o 'Articulo sin especificar': copia el nombre crudo TAL CUAL " +
+  "en clean_title y pon category 'Other'. Un titulo inventado publica una ficha basura; " +
+  "copiar el crudo nos deja detectarla y ocultarla.";
 
 export async function tagOne({ name, category, price }) {
   return structured({

@@ -55,6 +55,9 @@ export function usableName(s) {
   if (NAV_WORD.test(t)) return false;                               // menú de la hoja
   if (/^(weidian|taobao|1688)-\d+$/i.test(t)) return false;         // nuestro propio fallback
   if (/^(link|image|imagen|price|precio|name|nombre|qc|na|n\/a)$/i.test(t)) return false;
+  // Plantilla de la hoja sin rellenar ("LINK HERE", "ADD LINK HERE", "PUT LINK"…).
+  // Entraban 1.596 fichas así, y el etiquetado IA les inventaba un título encima.
+  if (/\b(link|url|photo|image)s?\s+here\b|\b(add|put|insert|paste)\s+(the\s+)?(link|url)\b|^here$/i.test(t)) return false;
   return true;
 }
 

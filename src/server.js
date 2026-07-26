@@ -2086,6 +2086,20 @@ function purgeJunkProducts() {
       "DELETE FROM products WHERE (name LIKE 'weidian-%' OR name LIKE 'taobao-%' OR name LIKE '1688-%') AND name GLOB '*-[0-9]*'"
     ).run();
     if (r.changes) console.log(`Limpieza: ${r.changes} productos sin nombre real eliminados.`);
+    // Fichas sin nombre útil: la celda de la hoja decía "LINK HERE"/"ADD HERE" (plantilla
+    // sin rellenar) y el etiquetado IA, en vez de dejarlo vacío, INVENTÓ un título
+    // ("Producto no identificado", "Artículo sin especificar"). Salían publicadas, con
+    // foto y en el sitemap: es exactamente lo que hace que Google te marque como thin
+    // affiliate. Se OCULTAN (no se borran): si la fuente las corrige, vuelven solas.
+    try {
+      const junk = db.prepare(`UPDATE products SET status='hidden' WHERE status <> 'hidden' AND (
+        name LIKE '%LINK HERE%' OR name LIKE '%ADD HERE%' OR name LIKE '%PUT LINK%' OR name LIKE '%INSERT LINK%'
+        OR clean_title LIKE '%no identificab%' OR clean_title LIKE '%no identificad%'
+        OR clean_title LIKE '%sin especificar%' OR clean_title LIKE '%sin identificar%'
+        OR clean_title LIKE '%unidentified%' OR clean_title LIKE '%unspecified%'
+        OR clean_title LIKE 'Producto no %' OR clean_title LIKE 'Art_culo sin %')`).run();
+      if (junk.changes) console.log(`Limpieza: ${junk.changes} fichas sin nombre útil ocultadas.`);
+    } catch (e) { console.error("Purga de placeholders falló:", e.message); }
     // Categorías no-canónicas heredadas (p.ej. "HOT SALE" o nombres de pestaña crudos):
     // se mapean a la lista canónica. Si el mapeo directo da "Other", se intenta deducir
     // del nombre (recupera las que llevan el tipo dentro). Gratis; deja los filtros limpios.
