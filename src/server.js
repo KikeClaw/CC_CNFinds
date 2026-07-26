@@ -1040,8 +1040,11 @@ function agentsForLang(lang) {
       id: a.id, name: a.name, enabled: a.enabled,
       bonus: pick(m.bonus), desc: pick(m.desc), cashback: m.cashback || null,
       pros: m.pros ? (lang === "en" ? m.pros.en : m.pros.es) : [],
-      coupons: (m.coupons || []).map((c) => ({ code: c.code, text: pick(c.text) })),
-      signup: signupUrl(a.id),
+      // Sin `code`: publicábamos códigos inventados ("NEW", "WELCOME") que fallan en el
+      // checkout del agente. El bono se describe en texto, que sí es cierto.
+      coupons: (m.coupons || []).map((c) => ({ text: pick(c.text) })),
+      // El código VIENE del estado en runtime (el del admin), no de la config estática.
+      signup: signupUrl(a.id, a.code),
     };
   }).filter(Boolean);
 }

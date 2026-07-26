@@ -216,11 +216,11 @@ export const AGENTS = [
 // Estado en runtime de cada agente (código + activado). Se inicializa desde
 // AFFILIATE_CODES; el admin lo edita y se persiste en la DB (agent_settings).
 // Un agente arranca activado solo si trae un código real (no placeholder).
-// Por defecto TODOS los agentes se muestran (comparación poblada = nuestro USP).
-// El que tiene código real genera tu comisión; el resto sale con enlace funcional
-// sin referido (pobla la comparación e invita a que te registres). El admin puede
-// desactivar agentes concretos. SHOW_ALL_AGENTS=off vuelve a "solo con tu código".
-export const SHOW_ALL_AGENTS = String(process.env.SHOW_ALL_AGENTS ?? "on").toLowerCase() !== "off";
+// Por defecto solo se muestran los agentes CON tu código: un agente sin código recibe
+// el clic (y la posible compra) sin atribuirte nada, en las 32.000+ fichas. Con 12 de 14
+// configurados la comparación sigue poblada, así que ocultar los que no pagan no cuesta
+// USP y cierra la fuga. SHOW_ALL_AGENTS=on vuelve a mostrarlos todos (enlace sin referido).
+export const SHOW_ALL_AGENTS = String(process.env.SHOW_ALL_AGENTS ?? "off").toLowerCase() === "on";
 
 // Semilla del "Top" de agentes destacados y el recomendado por defecto. Es solo el
 // arranque: el admin lo edita y se persiste en la DB, así no depende del criterio

@@ -112,11 +112,17 @@ export const AGENT_META = {
   },
 };
 
-export function signupUrl(id) {
-  const code = AFFILIATE_CODES[id];
+// URL de registro CON tu código. `code` debe venir del estado en runtime (el que
+// edita el admin y persiste en agent_settings); si no se pasa, cae a la config estática.
+// Sin código real devuelve NULL: antes emitía la URL con el parámetro VACÍO, así que
+// cada registro que traíamos no se atribuía a nadie (la vía de ingreso permanente).
+// Devolver null hace que el render omita el enlace en vez de regalar el tráfico.
+export function signupUrl(id, code) {
   const fn = SIGNUP[id];
   if (!fn) return null;
-  return fn(isPlaceholder(code) ? "" : code);
+  const c = code !== undefined ? code : AFFILIATE_CODES[id];
+  if (isPlaceholder(c)) return null;
+  return fn(c);
 }
 
 export function agentMeta(id) {
