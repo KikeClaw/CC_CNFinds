@@ -399,7 +399,17 @@ function buildWhere(f, exclude = {}) {
   // 'hidden' = el barrido de salud lo dio por caído tras varios fallos seguidos. No
   // se borra: si vuelve a estar vivo (o reaparece en una hoja) se reactiva solo.
   const where = ["status <> 'hidden'"], args = [];
-  if (f.q) { where.push("(name LIKE ? OR clean_title LIKE ? OR brand LIKE ? OR tags LIKE ?)"); args.push(`%${f.q}%`, `%${f.q}%`, `%${f.q}%`, `%${f.q}%`); }
+  // Búsqueda por TOKENS (AND), no por la frase entera: antes "zapatillas nike" exigía esa
+  // subcadena literal y devolvía 0, porque la ficha es "Nike Air Max Zapatillas". Ahora
+  // cada palabra debe aparecer en algún campo, en cualquier orden. Máx 6 tokens.
+  if (f.q) {
+    const toks = String(f.q).trim().split(/\s+/).filter((t) => t.length > 1).slice(0, 6);
+    for (const t of (toks.length ? toks : [f.q])) {
+      where.push("(name LIKE ? OR clean_title LIKE ? OR clean_title_en LIKE ? OR brand LIKE ? OR model_name LIKE ? OR tags LIKE ? OR category LIKE ?)");
+      const like = `%${t}%`;
+      args.push(like, like, like, like, like, like, like);
+    }
+  }
   if (!exclude.cat && f.cats.length) { where.push(`category IN (${f.cats.map(() => "?").join(",")})`); args.push(...f.cats); }
   if (!exclude.brand && f.brands.length) { where.push(`brand IN (${f.brands.map(() => "?").join(",")})`); args.push(...f.brands); }
   if (f.gender === "men") where.push("gender IN ('men','unisex')");
@@ -1210,10 +1220,16 @@ function handleListPage(req, res, kind, name) {
     name = canon;
   }
   const col = kind === "marca" ? "brand" : "category";
+  // La marca se compara SIN distinguir mayúsculas: /marca/nike y /marca/LV daban 404
+  // porque en la DB están como "Nike" y "Louis Vuitton". Un enlace entrante que apunte en
+  // minúsculas es tráfico gratis que estábamos tirando.
+  const cmp = kind === "marca" ? `${col}=? COLLATE NOCASE` : `${col}=?`;
   const rows = db.prepare(
-    `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${col}=? ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
+    `SELECT id,name,clean_title,brand,price_eur,image_url FROM products WHERE ${cmp} ORDER BY (image_url IS NOT NULL) DESC, hot DESC, price_eur DESC LIMIT 120`
   ).all(name).map((r) => ({ id: r.id, name: r.clean_title || tidyName(r.name), brand: r.brand, price_eur: r.price_eur, image: r.image_url }));
   if (!rows.length) return html(res, "<h1>404</h1>", 404);
+  // Nombre canónico tal y como está en la DB (para título, canonical y enlaces internos).
+  if (kind === "marca" && rows[0].brand) name = rows[0].brand;
   const lang = reqLang(req);
   const lp = lang === "en" ? "?lang=en" : "";
   const topLinks = kind === "marca"
