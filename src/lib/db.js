@@ -78,6 +78,10 @@ export function openDb(path) {
   db.exec("CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, created_at TEXT, lang TEXT)");
   // Analítica: clic en un link de agente = intención de compra (= tu ingreso).
   db.exec("CREATE TABLE IF NOT EXISTS clicks (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER, agent TEXT, ts TEXT)");
+  // De dónde venía el visitante que hizo clic (referrer/utm_source). Responde "¿qué canal
+  // me trae compradores?", no solo visitas. Va DESPUÉS del CREATE: un ALTER sobre una
+  // tabla que aún no existe falla y, al ir en try/catch, la columna faltaba en silencio.
+  try { db.exec("ALTER TABLE clicks ADD COLUMN src TEXT"); } catch {}
   db.exec("CREATE INDEX IF NOT EXISTS idx_clicks_agent ON clicks(agent)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_clicks_ts ON clicks(ts)");
   // Alertas de precio: avísame si un producto baja de X (captura; el aviso lo

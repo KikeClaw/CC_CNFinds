@@ -994,7 +994,10 @@ function closePickers(){ document.querySelectorAll(".picker.open").forEach(p=>{ 
 function togglePicker(id, render){ const p=$("#"+id); if(!p) return; const open=!p.classList.contains("open"); closePickers(); if(open){ render&&render(); p.classList.add("open"); const b=p.querySelector(".pickbtn"); if(b) b.setAttribute("aria-expanded","true"); } }
 const AGENT_COLOR={cnfans:"#ff5a2c",mulebuy:"#2d7ff9",kakobuy:"#18a558",oopbuy:"#8b5cf6",hoobuy:"#e11d48",superbuy:"#f59e0b",sugargoo:"#ec4899",acbuy:"#0ea5e9",cssbuy:"#14b8a6",lovegobuy:"#f43f5e",joyagoo:"#a855f7",allchinabuy:"#eab308",orientdig:"#22c55e",hipobuy:"#6366f1"};
 /* analítica: registra clic en un agente (intención de compra) */
-function track(pid,agent){ try{ navigator.sendBeacon("/api/track", new Blob([JSON.stringify({product_id:pid,agent})],{type:"application/json"})); }catch(e){} }
+/* utm_source de la URL (campañas): se guarda en la sesión para atribuir también los
+   clics que ocurren tras navegar. Sin él, el servidor cae al dominio del referrer. */
+function trackSrc(){ try{ const u=new URLSearchParams(location.search).get("utm_source"); if(u){ sessionStorage.setItem("cnf_src",u.slice(0,60)); return u.slice(0,60);} return sessionStorage.getItem("cnf_src")||""; }catch(e){ return ""; } }
+function track(pid,agent){ try{ navigator.sendBeacon("/api/track", new Blob([JSON.stringify({product_id:pid,agent,src:trackSrc()})],{type:"application/json"})); }catch(e){} }
 document.addEventListener("click",e=>{ const a=e.target.closest("a[data-agent]"); if(a) track(a.dataset.pid?+a.dataset.pid:null, a.dataset.agent); }, true);
 
 const ICONS={

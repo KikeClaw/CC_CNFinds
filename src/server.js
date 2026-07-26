@@ -43,6 +43,9 @@ const ROOT = join(__dir, "..");
 const PORT = parseInt(process.env.PORT || "5178", 10);
 const DB_PATH = process.env.DB_PATH || "data/catalog.db";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "cnfinds-admin"; // ⚠️ cámbialo en producción
+// Origen de tu analítica (p.ej. "https://plausible.io"). Se añade a la CSP para que el
+// snippet de ANALYTICS_SNIPPET pueda cargar; sin él, la CSP lo bloquea sin avisar.
+const ANALYTICS_HOST = (process.env.ANALYTICS_HOST || "").trim();
 // Si la DB arranca vacía (primer deploy), se auto-siembra desde esta Sheet.
 // Pon SEED_SHEET_URL="" para desactivarlo.
 const SEED_SHEET_URL = process.env.SEED_SHEET_URL ??
@@ -491,7 +494,14 @@ async function handleTrack(req, res) {
   const pid = parseInt(body.product_id, 10) || null;
   const agent = String(body.agent || "").slice(0, 40).toLowerCase().replace(/[^a-z0-9_-]/g, "");
   if (agent) {
-    try { db.prepare("INSERT INTO clicks (product_id, agent, ts) VALUES (?, ?, ?)").run(pid, agent, new Date().toISOString()); } catch {}
+    // Origen del visitante: utm_source si viene, si no el dominio del referrer. Solo el
+    // host (nada de URLs completas ni nada que identifique a nadie): responde "¿qué canal
+    // me trae clics de compra?" sin recoger datos personales.
+    let src = String(body.src || "").slice(0, 60).replace(/[^a-zA-Z0-9._-]/g, "") || null;
+    if (!src) {
+      try { const r = req.headers.referer; if (r) { const h = new URL(r).hostname; if (h && h !== new URL(baseUrl(req)).hostname) src = h.slice(0, 60); } } catch {}
+    }
+    try { db.prepare("INSERT INTO clicks (product_id, agent, ts, src) VALUES (?, ?, ?, ?)").run(pid, agent, new Date().toISOString(), src); } catch {}
   }
   res.writeHead(204); res.end();
 }
@@ -518,13 +528,16 @@ function handleAdminAnalytics(req, res) {
   const last7 = db.prepare("SELECT COUNT(*) c FROM clicks WHERE ts >= ?").get(d7).c;
   const last30 = db.prepare("SELECT COUNT(*) c FROM clicks WHERE ts >= ?").get(d30).c;
   const byAgent = db.prepare("SELECT agent, COUNT(*) c FROM clicks GROUP BY agent ORDER BY c DESC").all();
+  // Qué canal trae clics de compra (no solo visitas): directo = sin referrer externo.
+  let bySrc = [];
+  try { bySrc = db.prepare("SELECT COALESCE(src,'(directo)') s, COUNT(*) c FROM clicks GROUP BY s ORDER BY c DESC LIMIT 15").all(); } catch {}
   const byDay = db.prepare("SELECT substr(ts,1,10) d, COUNT(*) c FROM clicks WHERE ts >= ? GROUP BY d ORDER BY d").all(new Date(Date.now() - 14 * 864e5).toISOString());
   const topRows = db.prepare("SELECT product_id, COUNT(*) c FROM clicks WHERE product_id IS NOT NULL GROUP BY product_id ORDER BY c DESC LIMIT 10").all();
   const top = topRows.map((r) => {
     const p = db.prepare("SELECT clean_title, name FROM products WHERE id=?").get(r.product_id);
     return { product_id: r.product_id, name: p ? tidyName(p.clean_title || p.name) : `#${r.product_id}`, clicks: r.c };
   });
-  json(res, 200, { ok: true, total, last7, last30, byAgent, byDay, top });
+  json(res, 200, { ok: true, total, last7, last30, byAgent, bySrc, byDay, top });
 }
 
 // Admin: alertas de precio capturadas.
@@ -1762,8 +1775,11 @@ const server = createServer((req, res) => {
       "img-src 'self' data: https:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "script-src 'self' 'unsafe-inline'", // nota: si añades ANALYTICS_SNIPPET externo, amplía aquí
-      "connect-src 'self' https://api.frankfurter.app",
+      // ANALYTICS_HOST abre el origen de tu analítica (p.ej. https://plausible.io) en
+      // script-src y connect-src. Sin esto, cualquier snippet que pegues lo bloquea la
+      // CSP en silencio y te quedas sin medir el tráfico de la primera cohorte.
+      `script-src 'self' 'unsafe-inline'${ANALYTICS_HOST ? " " + ANALYTICS_HOST : ""}`,
+      `connect-src 'self' https://api.frankfurter.app${ANALYTICS_HOST ? " " + ANALYTICS_HOST : ""}`,
     ].join("; "));
     // Rate-limit en endpoints que cuestan IA (evita spam/coste) y de captura.
     if (req.method === "POST" && u.pathname === "/api/visual-search") { if (!rateLimit(req, res, "vis", 15, 3600e3)) return; return void handleVisualSearch(req, res); }
