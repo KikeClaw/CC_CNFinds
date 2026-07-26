@@ -8,6 +8,7 @@
 import { createServer } from "node:http";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { readFile, writeFile, mkdir, rename, access } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -235,9 +236,26 @@ function enrichLinks(links) {
   return out;
 }
 
+// Envía texto comprimido si el cliente lo acepta. Una vista de catálogo son ~260 KB de
+// JSON y la home ~160 KB de HTML: sin comprimir eso se paga en LCP, y el canal de
+// captación es móvil. gzipSync de node:zlib, sin dependencias. `res.req` lo da Node.
+function sendText(res, code, type, body, extra = {}) {
+  const headers = { "Content-Type": type, ...extra };
+  const accepts = String(res.req?.headers?.["accept-encoding"] || "").includes("gzip");
+  const buf = Buffer.from(body);
+  if (accepts && buf.length > 1024) {
+    try {
+      const gz = gzipSync(buf);
+      res.writeHead(code, { ...headers, "Content-Encoding": "gzip", Vary: "Accept-Encoding", "Content-Length": gz.length });
+      return res.end(gz);
+    } catch { /* si falla, se envía sin comprimir */ }
+  }
+  res.writeHead(code, { ...headers, "Content-Length": buf.length });
+  res.end(buf);
+}
+
 function json(res, code, data) {
-  res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" });
-  res.end(JSON.stringify(data));
+  sendText(res, code, "application/json; charset=utf-8", JSON.stringify(data));
 }
 
 // Entero de un query param, acotado y a prueba de basura. `parseInt("abc")` es NaN y
@@ -932,7 +950,7 @@ async function handleAdminAgentsSet(req, res) {
 }
 
 // ---- Paginas SSR indexables (SEO) ----
-function html(res, body, code = 200) { res.writeHead(code, { "Content-Type": "text/html; charset=utf-8" }); res.end(body); }
+function html(res, body, code = 200) { sendText(res, code, "text/html; charset=utf-8", body); }
 function serveStatic(res, name, type) {
   try {
     const b = readFileSync(join(ROOT, "public", name));
@@ -1841,8 +1859,7 @@ const server = createServer((req, res) => {
       page = page.replace("<!--SEOHUB-->", () => seoHubHtml(reqLang(req))); // hub de enlaces internos crawlable
       // Analítica opcional: define ANALYTICS_SNIPPET (Plausible/GA/Umami…) y se inyecta.
       if (process.env.ANALYTICS_SNIPPET) page = page.replace("</head>", process.env.ANALYTICS_SNIPPET + "\n</head>");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      return res.end(page);
+      return html(res, page); // por html() para que se sirva comprimido (~160 KB -> ~30 KB)
     }
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not found");

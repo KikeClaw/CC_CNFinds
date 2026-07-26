@@ -57,7 +57,7 @@ function breadcrumbLd(base, items) {
 }
 
 const CSS = `
-:root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.13);--brand:#ff4d2e;--hot:#ff2d55;--radius:20px;--card-shadow:0 1px 2px rgba(10,10,20,.05),0 5px 16px rgba(10,10,20,.07);
+:root{--bg:#fff;--soft:#f4f4f6;--surface:#fff;--ink:#0a0a0b;--muted:#77777f;--line:rgba(10,10,15,.13);--brand:#ff4d2e;--brandc:#e63e1f;--hot:#ff2d55;--radius:20px;--card-shadow:0 1px 2px rgba(10,10,20,.05),0 5px 16px rgba(10,10,20,.07);
 --fd:"Bricolage Grotesque",-apple-system,system-ui,sans-serif;--ft:"Geist",-apple-system,system-ui,sans-serif}
 :root[data-theme="dark"]{--bg:#08080a;--soft:#141417;--surface:#17171b;--ink:#f6f6f8;--muted:#8b8b95;--line:rgba(255,255,255,.15);--card-shadow:0 1px 2px rgba(0,0,0,.5)}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ft);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
