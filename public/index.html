@@ -22,9 +22,9 @@
 <link rel="alternate" hreflang="en" href="https://cnfinds.online/?lang=en" />
 <link rel="alternate" hreflang="x-default" href="https://cnfinds.online/" />
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://cnfinds.online/#org","name":"CNFinds","url":"https://cnfinds.online/","logo":"https://cnfinds.online/favicon.svg"},{"@type":"WebSite","@id":"https://cnfinds.online/#website","name":"CNFinds","url":"https://cnfinds.online/","publisher":{"@id":"https://cnfinds.online/#org"},"inLanguage":["es","en"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://cnfinds.online/?q={search_term_string}"},"query-input":"required name=search_term_string"}}]}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@300;400;450;500;600;700&display=swap" rel="stylesheet">
+<!-- Fuentes autoalojadas: servirlas desde Google enviaba la IP de cada visitante a un
+     tercero (exposición RGPD sin consentimiento) y añadía 2 conexiones en móvil. -->
+<link href="/fonts/fonts.css" rel="stylesheet">
 <style>
   :root{
     --bg:#ffffff; --soft:#f4f4f6; --surface:#ffffff; --surface2:#fafafb;
@@ -975,7 +975,9 @@ let CUR={code:"EUR",sym:"€",rate:1};
 const RATES={EUR:1};
 const CURS=[{code:"EUR",sym:"€"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},{code:"CNY",sym:"¥"}];
 const eur=(p)=>{ if(p==null) return "—"; const v=Number(p)*(CUR.rate||1); return CUR.sym+(CUR.code==="CNY"?v.toFixed(0):v.toFixed(2)); };
-async function loadRates(){ try{ const d=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
+/* Vía nuestro dominio: antes el navegador llamaba a un tercero y le entregaba la IP de
+   cada visitante (exposición RGPD). El servidor lo cachea 6 h. */
+async function loadRates(){ try{ const d=await (await fetch("/api/rates")).json(); if(d&&d.rates) Object.assign(RATES,d.rates); }catch{} }
 function applyCur(){ const cl=$("#curLabel"); if(cl) cl.textContent=`${CUR.sym} ${CUR.code}`; renderCurMenu(); renderMobileCtrls(); load(true); loadTrending(); }
 function setCur(code){ const n=CURS.find(c=>c.code===code)||CURS[0]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); }
 function cycleCur(){ const i=CURS.findIndex(c=>c.code===CUR.code); const n=CURS[(i+1)%CURS.length]; CUR={...n, rate: RATES[n.code]||1}; applyCur(); } // solo móvil (botón que cicla)

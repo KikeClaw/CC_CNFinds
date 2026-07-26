@@ -214,6 +214,24 @@ function getBadgeAgent() {
 const SOCIAL_KEYS = ["telegram", "twitter", "reddit", "tiktok", "instagram"];
 function getSocial() { try { const s = JSON.parse(metaGet("social_links") || "{}"); const o = {}; for (const k of SOCIAL_KEYS) if (s[k]) o[k] = s[k]; return o; } catch { return {}; } }
 function handleSocial(res) { json(res, 200, { ok: true, social: getSocial() }); }
+
+// --- Tipos de cambio (proxy) --------------------------------------------------
+// El navegador llamaba directamente a api.frankfurter.app, lo que enviaba la IP de cada
+// visitante a un tercero (exposición RGPD sin base legal ni consentimiento) y añadía una
+// conexión extra en móvil. Ahora lo pide el servidor y lo cachea 6 h: un origen menos,
+// una petición menos, y la CSP puede volver a 'self'.
+let _rates = { EUR: 1 }, _ratesTs = 0;
+async function handleRates(res) {
+  const now = Date.now();
+  if (now - _ratesTs > 6 * 3600e3) {
+    try {
+      const r = await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CNY", { signal: AbortSignal.timeout(6000) });
+      const d = await r.json();
+      if (d && d.rates) { _rates = { EUR: 1, ...d.rates }; _ratesTs = now; }
+    } catch { _ratesTs = now - 5.5 * 3600e3; } // si falla, reintenta en 30 min, no en cada visita
+  }
+  json(res, 200, { ok: true, rates: _rates });
+}
 async function handleAdminSocialSet(req, res) {
   if (!adminAuth(req)) return json(res, 401, { ok: false, error: "No autorizado." });
   let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
@@ -1773,13 +1791,13 @@ const server = createServer((req, res) => {
       "default-src 'self'", "base-uri 'self'", "object-src 'none'",
       "frame-ancestors 'self'", "form-action 'self'",
       "img-src 'self' data: https:",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
+      "style-src 'self' 'unsafe-inline'", // fuentes autoalojadas: ya no hace falta Google
+      "font-src 'self' data:",
       // ANALYTICS_HOST abre el origen de tu analítica (p.ej. https://plausible.io) en
       // script-src y connect-src. Sin esto, cualquier snippet que pegues lo bloquea la
       // CSP en silencio y te quedas sin medir el tráfico de la primera cohorte.
       `script-src 'self' 'unsafe-inline'${ANALYTICS_HOST ? " " + ANALYTICS_HOST : ""}`,
-      `connect-src 'self' https://api.frankfurter.app${ANALYTICS_HOST ? " " + ANALYTICS_HOST : ""}`,
+      `connect-src 'self'${ANALYTICS_HOST ? " " + ANALYTICS_HOST : ""}`, // las divisas ya van por /api/rates
     ].join("; "));
     // Rate-limit en endpoints que cuestan IA (evita spam/coste) y de captura.
     if (req.method === "POST" && u.pathname === "/api/visual-search") { if (!rateLimit(req, res, "vis", 15, 3600e3)) return; return void handleVisualSearch(req, res); }
@@ -1821,6 +1839,13 @@ const server = createServer((req, res) => {
     if (u.pathname === "/admin") { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" }); return res.end(readFileSync(join(ROOT, "public", "admin.html"))); }
     if (u.pathname === "/favicon.svg" || u.pathname === "/favicon.ico") return void serveStatic(res, "favicon.svg", "image/svg+xml");
     if (u.pathname === "/og.svg") return void serveStatic(res, "og.svg", "image/svg+xml");
+    // Fuentes autoalojadas (/fonts/fonts.css + los .woff2). Nombre acotado a [\w.-] para
+    // que no se pueda salir del directorio con ../
+    if (u.pathname.startsWith("/fonts/")) {
+      const f = u.pathname.slice(7);
+      if (!/^[\w.-]+\.(css|woff2)$/.test(f)) { res.writeHead(404); return res.end(); }
+      return void serveStatic(res, "fonts/" + f, f.endsWith(".css") ? "text/css; charset=utf-8" : "font/woff2");
+    }
     // PNG rasterizados: og:image (WhatsApp/iMessage no renderizan SVG) e iconos PWA.
     if (u.pathname === "/og.png") return void serveStatic(res, "og.png", "image/png");
     if (u.pathname === "/apple-touch-icon.png") return void serveStatic(res, "apple-touch-icon.png", "image/png");
@@ -1838,6 +1863,7 @@ const server = createServer((req, res) => {
     if (u.pathname === "/api/similar") return void handleSimilar(res, u.searchParams);
     if (u.pathname === "/api/trending") return void handleTrending(res, u.searchParams);
     if (u.pathname === "/api/social") return void handleSocial(res);
+    if (u.pathname === "/api/rates") return void handleRates(res);
     if (req.method === "POST" && u.pathname === "/api/admin/social") return void handleAdminSocialSet(req, res);
     if (u.pathname === "/api/facets") return handleFacets(res, u.searchParams);
     // --- Paginas SSR (SEO) ---
