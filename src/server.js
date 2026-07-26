@@ -2033,8 +2033,14 @@ function resumePhotos() {
   // Reintenta los que siguen sin foto: ventana corta (30 min entre intentos) y
   // tope de 6 intentos. Recupera los throttled sin re-machacar los sin-foto-real.
   const cutoff = new Date(Date.now() - 30 * 60e3).toISOString();
+  // Selecciona los que no tienen foto principal O no tienen GALERÍA. Antes solo miraba
+  // image_url: un producto que llegaba de la hoja ya con foto nunca se enriquecía, así
+  // que `images` se quedaba NULL para siempre… y el QC exige images IS NOT NULL. Los
+  // 11k del último lote eran así: estructuralmente imposibles de puntuar, justo los que
+  // querríamos puntuar cuando tengan clics. Misma llamada a la API (una por producto),
+  // no cuesta IA: rellena galería y de paso refresca la foto.
   const items = db.prepare(
-    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND image_url IS NULL AND COALESCE(enrich_tries,0) < 12 AND (last_checked IS NULL OR last_checked < ?) ORDER BY COALESCE(enrich_tries,0), id LIMIT 120"
+    "SELECT id, platform, item_id FROM products WHERE platform='weidian' AND (image_url IS NULL OR images IS NULL) AND status <> 'hidden' AND COALESCE(enrich_tries,0) < 12 AND (last_checked IS NULL OR last_checked < ?) ORDER BY (image_url IS NULL) DESC, COALESCE(enrich_tries,0), id LIMIT 120"
   ).all(cutoff).map((x) => ({ id: x.id, platform: x.platform, item_id: x.item_id }));
   if (!items.length) return;
   photoJobRunning = true;
