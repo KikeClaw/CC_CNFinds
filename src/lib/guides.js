@@ -1,4 +1,10 @@
 // Guías de contenido (SEO + confianza). Renderizadas como páginas indexables.
+
+// Email de contacto público. Publicarlo no es opcional: la LSSI (art. 10) exige un medio
+// de contacto directo, y el RGPD una vía para ejercer derechos. Configúralo con
+// CONTACT_EMAIL; el buzón tiene que existir de verdad.
+export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "hola@cnfinds.online";
+
 export const GUIDES = [
   {
     slug: "como-comprar-en-kakobuy",
@@ -462,11 +468,19 @@ export const LEGAL = {
 <p>Algunos enlaces a agentes de compra son de afiliado: podemos recibir una pequeña comisión (normalmente sobre la tarifa de envío del agente) si compras a través de ellos, sin coste adicional para ti. Esto ayuda a mantener el sitio.</p>
 <h2>Marcas y propiedad intelectual</h2>
 <p>Los nombres de marca y logotipos pertenecen a sus respectivos propietarios. CNFinds no está afiliado ni patrocinado por ninguna de las marcas mencionadas, y la aparición de un producto no implica autenticidad ni respaldo de la marca.</p>
-<h2>Privacidad y cookies</h2>
-<p>Guardamos tus favoritos y preferencias localmente en tu navegador (localStorage), no en nuestros servidores. Si usamos analítica, es de forma agregada y respetuosa con la privacidad. No vendemos tus datos.</p>
+<h2>Privacidad y datos</h2>
+<p><b>En tu navegador (no salen de tu dispositivo):</b> tus favoritos, el idioma, la divisa y el tema se guardan en <code>localStorage</code>. No usamos cookies de publicidad ni de seguimiento entre sitios.</p>
+<p><b>En nuestro servidor sí guardamos, y solo si tú los envías:</b></p>
+<ul>
+<li><b>Tu email</b>, si te suscribes al boletín, creas una alerta de precio o pides un producto que no tenemos. Base legal: tu <b>consentimiento</b>, que das al enviar el formulario.</li>
+<li><b>Clics en enlaces de agente</b>, de forma <b>anónima</b> (producto y agente, sin identificarte). Base legal: interés legítimo, para saber qué es útil y mantener el sitio.</li>
+</ul>
+<p><b>Cuánto tiempo:</b> conservamos tu email mientras quieras seguir recibiendo avisos; si te das de baja o nos lo pides, lo borramos. <b>No vendemos ni cedemos tus datos a terceros</b>, y no los usamos para nada distinto de aquello para lo que los enviaste.</p>
+<p><b>Tus derechos (RGPD):</b> puedes pedirnos acceso, rectificación, supresión, limitación, portabilidad u oposición escribiendo a nuestro email de contacto. También puedes reclamar ante la autoridad de protección de datos de tu país (en España, la AEPD).</p>
+<p><b>Terceros:</b> al pulsar un enlace de agente sales a un sitio de terceros con su propia política de privacidad; no controlamos lo que hagan con tus datos. Las imágenes de producto se sirven desde nuestro dominio o desde las plataformas de origen.</p>
 <h2>Contacto</h2>
-<p>Para cualquier consulta, escríbenos.</p>
-<p class="tip">Este texto es una plantilla informativa y no constituye asesoramiento legal. Adáptalo con un profesional según tu jurisdicción.</p>`,
+<p>Responsable del sitio: CNFinds. Para cualquier consulta, ejercicio de derechos o aviso legal, escríbenos a <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
+<p class="tip">Este texto es informativo y no constituye asesoramiento legal. Si operas a escala, revísalo con un profesional de tu jurisdicción.</p>`,
   title_en: "Legal notice, privacy and affiliation",
   desc_en: "CNFinds legal information: independent resource, affiliate disclosure, trademarks, privacy and contact.",
   body_en: `
@@ -476,11 +490,19 @@ export const LEGAL = {
 <p>Some links to shopping agents are affiliate links: we may receive a small commission (usually on the agent's shipping fee) if you buy through them, at no extra cost to you. This helps keep the site running.</p>
 <h2>Trademarks and intellectual property</h2>
 <p>Brand names and logos belong to their respective owners. CNFinds is not affiliated with or sponsored by any of the brands mentioned, and the appearance of a product does not imply authenticity or brand endorsement.</p>
-<h2>Privacy and cookies</h2>
-<p>We store your favorites and preferences locally in your browser (localStorage), not on our servers. If we use analytics, it is aggregated and privacy-respecting. We do not sell your data.</p>
+<h2>Privacy and data</h2>
+<p><b>In your browser (never leaves your device):</b> favorites, language, currency and theme are stored in <code>localStorage</code>. We use no advertising or cross-site tracking cookies.</p>
+<p><b>On our server we do store, and only if you send it:</b></p>
+<ul>
+<li><b>Your email</b>, if you subscribe to the newsletter, create a price alert or request a product we don't have. Legal basis: your <b>consent</b>, given when you submit the form.</li>
+<li><b>Agent link clicks</b>, <b>anonymously</b> (product and agent, with no identification of you). Legal basis: legitimate interest, to learn what's useful and keep the site running.</li>
+</ul>
+<p><b>How long:</b> we keep your email for as long as you want to receive updates; if you unsubscribe or ask us, we delete it. <b>We do not sell or share your data</b>, and we don't use it for anything other than what you sent it for.</p>
+<p><b>Your rights (GDPR):</b> you can request access, rectification, erasure, restriction, portability or object by writing to our contact email. You may also complain to your country's data protection authority.</p>
+<p><b>Third parties:</b> clicking an agent link takes you to a third-party site with its own privacy policy; we don't control what they do with your data. Product images are served from our domain or from the source platforms.</p>
 <h2>Contact</h2>
-<p>For any questions, get in touch.</p>
-<p class="tip">This text is an informational template and does not constitute legal advice. Adapt it with a professional for your jurisdiction.</p>`,
+<p>Site operator: CNFinds. For any question, rights request or legal notice, write to <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
+<p class="tip">This text is informational and does not constitute legal advice. If you operate at scale, review it with a professional in your jurisdiction.</p>`,
 };
 
 export const guideBySlug = (slug) => [...GUIDES, LEGAL].find((g) => g.slug === slug);
