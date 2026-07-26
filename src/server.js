@@ -240,6 +240,15 @@ function json(res, code, data) {
   res.end(JSON.stringify(data));
 }
 
+// Entero de un query param, acotado y a prueba de basura. `parseInt("abc")` es NaN y
+// `Math.min(NaN, 200)` sigue siendo NaN: si eso llega a SQLite, la consulta revienta
+// (500 con ?limit=abc). Aquí NaN cae siempre al valor por defecto.
+function intParam(raw, def, min, max) {
+  const n = parseInt(raw, 10);
+  const v = Number.isFinite(n) ? n : def;
+  return Math.min(Math.max(v, min), max);
+}
+
 // Forma canónica de un producto para el frontend (reutilizada por listado y tendencias).
 function productItem(r) {
   let gallery = [];
@@ -258,7 +267,7 @@ function productItem(r) {
 // días. Se llena solo cuando llega tráfico; sin clics devuelve vacío (la sección se oculta).
 const TREND_COLS = "id, platform, item_id, name, clean_title, clean_title_en, brand, category, price_eur, image_url, images, hot, qc_score, qc_notes";
 function handleTrending(res, params) {
-  const limit = Math.min(parseInt(params.get("limit"), 10) || 18, 40);
+  const limit = intParam(params.get("limit"), 18, 1, 40);
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
   const top = db.prepare("SELECT product_id, COUNT(*) c FROM clicks WHERE ts >= ? AND product_id IS NOT NULL GROUP BY product_id ORDER BY c DESC LIMIT ?").all(since, limit * 3);
   const get = db.prepare(`SELECT ${TREND_COLS} FROM products WHERE id=? AND status <> 'hidden' AND image_url IS NOT NULL AND clean_title IS NOT NULL`);
@@ -320,7 +329,7 @@ function handleCategories(res) {
 }
 
 function handleBrands(res, params) {
-  const limit = Math.min(parseInt(params.get("limit") || "12", 10), 60);
+  const limit = intParam(params.get("limit"), 12, 1, 60);
   const rows = db.prepare(`
     SELECT brand, COUNT(*) AS count,
            MAX(image_url) AS sample
@@ -365,8 +374,8 @@ function buildWhere(f, exclude = {}) {
 function handleProducts(res, params) {
   const hot = params.get("hot") === "1";
   const sort = SORTS[params.get("sort")] || SORTS.trending;
-  const limit = Math.min(parseInt(params.get("limit") || "48", 10), 200);
-  const offset = Math.max(parseInt(params.get("offset") || "0", 10), 0);
+  const limit = intParam(params.get("limit"), 48, 1, 200);
+  const offset = intParam(params.get("offset"), 0, 0, 1e7);
   // Lista explícita de IDs (favoritos compartidos por URL). Máx 100.
   const ids = (params.get("ids") || "").split(",").map((x) => parseInt(x, 10)).filter(Boolean).slice(0, 100);
 
