@@ -113,6 +113,10 @@
   .iconbtn{ width:38px; height:38px; border-radius:999px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; color:var(--ink); transition:.15s; }
   .iconbtn[hidden]{ display:none; } /* display:grid anula el hidden del navegador; esto lo restaura */
   .navctrls{ display:none; } /* solo aparece dentro del menú móvil (ver @media) */
+  /* Foco visible: no había NINGUNA regla de foco, y el buscador del hero llevaba
+     outline:none. Sin esto el sitio no se puede navegar con teclado (WCAG 2.4.7). */
+  :focus-visible{ outline:2px solid var(--brand); outline-offset:2px; border-radius:6px; }
+  .searchbox:focus-within{ outline:2px solid var(--brand); outline-offset:2px; }
   .iconbtn:hover{ background:var(--soft); }
   .burger{ display:none; }
   @media(max-width:1024px){
@@ -883,7 +887,7 @@ const T={
     track_title:"Rastreador de paquetes",track_sub:"Sigue tu envío en más de 1.000 transportistas",track_ph:"Nº de seguimiento…",track_btn:"Rastrear",track_note:"Abrimos el seguimiento en 17TRACK en una pestaña nueva.",new_title:"Nuevos finds",
     nav_ayuda:"Ayuda",nav_cupones:"Cupones",f_help:"Ayuda",f_coupons:"Cupones",f_agents:"Agentes",community:"Comunidad",
     promo_text:"Bonos de bienvenida y cupones de envío en tus agentes de compra",promo_cta:"Ver cupones →",
-    social_title:"Redes sociales",social_sub:"Únete a la comunidad y no te pierdas ningún find.",news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",news_err:"Email no válido",news_consent:'Al suscribirte aceptas recibir nuestros emails y nuestra <a href="/guia/legal">política de privacidad</a>. Puedes darte de baja cuando quieras.',
+    social_title:"Redes sociales",social_sub:"Únete a la comunidad y no te pierdas ningún find.",news_title:"Nuevos finds en tu email",news_sub:"Recibe los mejores hallazgos de la semana. Sin spam, cancela cuando quieras.",news_ph:"tu@email.com",news_btn:"Suscribirme",news_sending:"Enviando…",news_ok:"¡Listo! Te avisaremos de los nuevos finds ✓",news_dup:"Ya estabas suscrito ✓",load_err:"No pudimos cargar el catálogo. Comprueba tu conexión.",retry:"Reintentar",news_err:"Email no válido",news_consent:'Al suscribirte aceptas recibir nuestros emails y nuestra <a href="/guia/legal">política de privacidad</a>. Puedes darte de baja cuando quieras.',
     share_favs:"Compartir lista",share_copied:"¡Enlace copiado!",shared_title:"Lista compartida",shared_sub:"Alguien compartió estos finds contigo.",
     pa_btn:"Avísame si baja de precio",pa_target:"objetivo",pa_send:"Avísame",pa_ok:"¡Listo! Te avisaremos si baja ✓",
     es_similar:"Quizá te interese de nuestro catálogo",es_title:"No está en nuestro catálogo… todavía",es_sub:"No encontramos",es_help:"Aun así, puedes conseguirlo:",es_agents:"O búscalo directamente en tus agentes:",es_convert:"¿Tienes el link? Pégalo en el conversor",es_qph:"¿Qué buscas?",es_email:"Email (opcional, te avisamos)",es_req_btn:"Pídelo",es_req_ok:"¡Gracias! Lo tendremos en cuenta ✓",cam_btn:"Cámara",
@@ -942,7 +946,7 @@ const T={
     track_title:"Package tracker",track_sub:"Track your parcel across 1,000+ carriers",track_ph:"Tracking number…",track_btn:"Track",track_note:"We open tracking on 17TRACK in a new tab.",new_title:"New finds",
     nav_ayuda:"Help",nav_cupones:"Coupons",f_help:"Help",f_coupons:"Coupons",f_agents:"Agents",community:"Community",
     promo_text:"Welcome bonuses and shipping coupons at your shopping agents",promo_cta:"See coupons →",
-    social_title:"Social media",social_sub:"Join the community and never miss a find.",news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",news_err:"Invalid email",news_consent:'By subscribing you agree to receive our emails and to our <a href="/guia/legal">privacy policy</a>. You can unsubscribe anytime.',
+    social_title:"Social media",social_sub:"Join the community and never miss a find.",news_title:"New finds in your inbox",news_sub:"Get the best finds of the week. No spam, unsubscribe anytime.",news_ph:"you@email.com",news_btn:"Subscribe",news_sending:"Sending…",news_ok:"Done! We'll ping you about new finds ✓",news_dup:"You're already subscribed ✓",load_err:"We could not load the catalog. Check your connection.",retry:"Retry",news_err:"Invalid email",news_consent:'By subscribing you agree to receive our emails and to our <a href="/guia/legal">privacy policy</a>. You can unsubscribe anytime.',
     share_favs:"Share list",share_copied:"Link copied!",shared_title:"Shared list",shared_sub:"Someone shared these finds with you.",
     pa_btn:"Alert me on price drop",pa_target:"target",pa_send:"Alert me",pa_ok:"Done! We'll alert you on a drop ✓",
     es_similar:"You might like these from our catalog",es_title:"Not in our catalog… yet",es_sub:"We couldn't find",es_help:"You can still get it:",es_agents:"Or search it directly on your agents:",es_convert:"Got the link? Paste it in the converter",es_qph:"What are you looking for?",es_email:"Email (optional, we'll notify you)",es_req_btn:"Request it",es_req_ok:"Thanks! We'll take it into account ✓",cam_btn:"Camera",
@@ -1247,20 +1251,34 @@ function bindCards(root){ root.querySelectorAll(".card").forEach(el=>el.onclick=
 async function load(reset){
   if(state.loading) return; state.loading=true; if(reset) state.offset=0;
   const p=new URLSearchParams({q:state.q,category:state.category,brand:state.brand,gender:state.gender,sort:state.sort,limit:state.limit,offset:state.offset});
-  const d=await (await fetch("/api/products?"+p)).json();
-  state.total=d.total; d.items.forEach(it=>CACHE[it.id]=it);
-  if(reset) $("#grid").innerHTML="";
-  $("#grid").insertAdjacentHTML("beforeend",d.items.map(cardHtml).join("")); bindCards($("#grid"));
-  state.offset+=d.items.length;
-  $("#count").textContent=`${state.total} ${t("p_count")}`;
-  if(state.total===0){
-    if(state.q) renderEmptyState(state.q);
-    else { const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign=""; emp.textContent=t("noresults"); }
-  } else { $("#empty").style.display="none"; }
-  $("#more").style.display=state.offset<state.total?"inline-block":"none";
-  // Última fila siempre llena mientras se navega; al buscar o al agotar, se muestra todo.
-  if(!state.q && state.offset<state.total) trimRows($("#grid"),0); else showAllRows($("#grid"));
-  renderFilters(); state.loading=false;
+  // Si el fetch falla (red, 500, JSON roto) el catálogo se quedaba EN BLANCO PARA SIEMPRE:
+  // state.loading nunca volvía a false, así que todas las llamadas siguientes salían por
+  // el return de arriba. Ahora hay error visible con botón de reintentar, y el finally
+  // garantiza que se libera el flag pase lo que pase.
+  try{
+    const r=await fetch("/api/products?"+p);
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    state.total=d.total; (d.items||[]).forEach(it=>CACHE[it.id]=it);
+    if(reset) $("#grid").innerHTML="";
+    $("#grid").insertAdjacentHTML("beforeend",(d.items||[]).map(cardHtml).join("")); bindCards($("#grid"));
+    state.offset+=(d.items||[]).length;
+    $("#count").textContent=`${state.total} ${t("p_count")}`;
+    if(state.total===0){
+      if(state.q) renderEmptyState(state.q);
+      else { const emp=$("#empty"); emp.style.display="block"; emp.style.textAlign=""; emp.textContent=t("noresults"); }
+    } else { $("#empty").style.display="none"; }
+    $("#more").style.display=state.offset<state.total?"inline-block":"none";
+    // Última fila siempre llena mientras se navega; al buscar o al agotar, se muestra todo.
+    if(!state.q && state.offset<state.total) trimRows($("#grid"),0); else showAllRows($("#grid"));
+    renderFilters();
+  }catch(e){
+    const emp=$("#empty");
+    if(emp){ emp.style.display="block"; emp.style.textAlign="center";
+      emp.innerHTML=`<p style="margin:0 0 10px">${t("load_err")}</p><button class="ghost" id="retryLoad">${t("retry")}</button>`;
+      const rb=document.getElementById("retryLoad"); if(rb) rb.onclick=()=>{ emp.style.display="none"; load(reset); };
+    }
+  }finally{ state.loading=false; }
 }
 function renderFilters(){
   const chips=[];
